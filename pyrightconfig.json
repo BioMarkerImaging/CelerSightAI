@@ -1,0 +1,15 @@
+{
+    "typeCheckingMode": "basic",
+    "exclude": [
+        "build"
+    ],
+    "venvPath": ".",
+    "venv": "celer_sight_env",
+    "reportOptionalMemberAccess": false, // None/Optional access
+    "reportOverride": false, // parameter name mismatches
+    "reportIncompatibleMethodOverride": false, // Silences method override incompatibilities
+    "reportCallIssue": false, // Silences function call/overload issues
+    "reportAttributeAccessIssue": false,
+    "reportOperatorIssue": false,
+    "reportGeneralTypeIssues": false
+}

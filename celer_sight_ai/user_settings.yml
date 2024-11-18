@@ -1,0 +1,209 @@
+# CHANNEL
+CHANNEL: "r" # "r" for release, "b" for beta, "d" for developer
+
+# allowed features
+ALLOW_ELEGANS : true
+ALLOW_TISSUE : true
+ALLOW_CELLS : true
+ALLOW_ON_PLATE: true
+ALLOW_GENERIC_CELL : true
+ALLOW_PLOTTING_TOOLS : true
+ALLOW_MD : true
+ALLOW_COLOC : true
+ALLOW_INTENSITY : true
+ALLOW_PARTICLES : true
+ALLOW_FLIES : true
+ALLOW_ELEGANS_BODY : true
+ALLOW_ELEGANS_HEAD : true
+ALLOW_ELEGANS_EMBRYO : true
+ALLOW_RIGHT_CLICK_ON_ORGANISM_PART : false
+ALLOW_IMPORT_IMAGES_BUTTON : false
+
+# CELER SIGHT API
+CELER_SIGHT_API_IP: "s1.biomarkerimaging.com"
+
+# Update settings
+BETA_ENROLL : false
+FORCE_UPDATE : false # for debugging only
+FORCE_UPDATE_LOCATION : "C:/Users/manos/Code/celer_sight_ai_desktop_compiled/dist/old_version"
+OVERRIDE_VERSION : false
+OVERRIDE_VERSION_NUMBER : false
+
+# menu actions
+ALLOW_ACTION_NEW : false
+ALLOW_ACTION_OPEN : false
+ALLOW_MENU_OPEN_AS : false
+ALLOW_MENU_IMPORT_IMAGES_AS : false
+ALLOW_ACTION_CLOSE : false
+ALLOW_ACTION_SAVE : false
+ALLOW_ACTION_SAVE_AS : false
+ALLOW_ACTION_PRINT : false
+ALLOW_ACTION_SEND_FOR_TRAINING: false
+ALLOW_ACTION_IMPORT_FROM_COCO: false
+ALLOW_ACTION_EXPORT_TO_IMAGEJ: true
+ALLOW_ACTION_EXPORT : false
+ALLOW_MENU_MODELS : false
+ALLOW_MENU_WORKFLOW : false
+ALLOW_MENU_IMAGE : false
+ALLOW_MENU_VIEW : false
+ALLOW_ABOUT : false
+ALLOW_SEND_LOGS : false
+ALLOW_PREFERENCES : false
+ALLOW_SUBMIT_ANNOTATIONS_ADMIN : false
+
+# Threading
+USER_WORKERS : false # Do not use worker for debugging purposes
+MAX_WORKERS: 6
+MAX_WORKER_SIGNALS: 6
+MAX_CONCURENT_INFERENCE_REQUESTS: 5
+
+# log in overrides
+FORCE_REJECT_AUTO_LOGIN : false # --> for debugging pruposes, always bring up the loging dialog
+IGNORE_LOGIN : false # --> offline mode
+OFFLINE_MODE : false # work offline, just in dev mode for now
+
+# debug settings
+FORCE_EMPTY_LOCAL_DIRECTORY : false # force to empty the local directory
+
+HIDE_SETTINGS_BUTTON_MAIN: true
+HIDE_INFO_BUTTON_MAIN: true
+
+# active learning
+SEND_CORRECTED_ANNOTATIONS : true
+
+
+# Remote annotation settings: Admin dabase image data auditing tool
+ANNOTATE_DATA_MODE: false # used only by admins to connect to the database to annotate data
+ANNOTATED_DATA_AMOUNT: 10  # request 100 images for annotation
+REMOTE_ANNOTATATION_CATEGORIES:
+  - "worm"
+REMOTE_ANNOTATION_CATEGORIES_TO_EXCLUDE:
+  # - "head"
+REMOTE_ANNOTATIONS_WITHOUT_ANNOTATIONS: null #False | True if we querry images without annotations
+REMOTE_ANNOTATIONS_PARTIAL_ID: null # string id of the partial annotation, or "latest" to get the latest
+REMOTE_ANNOTATION_CATEGORY: "cell" # if its null, it will fetch images without categories
+REMOTE_ANNOTATIONS_AUDITED: true # if the annotations are audited or not
+
+production:
+
+  # Admin dabase image data auditing tool
+  ##################################
+  ##### REMOTE ANNOTATION MODE #####
+  ##################################
+  ANNOTATE_DATA_MODE: false # used only by admins to connect to the database to annotate data
+  ANNOTATED_DATA_AMOUNT: 1 # request 100 images for annotation
+  REMOTE_ANNOTATATION_CATEGORIES: # audited
+    - "worm eggs"
+    # - "head"
+  REMOTE_ANNOTATION_CATEGORIES_TO_EXCLUDE:
+    # - "body" 
+  REMOTE_ANNOTATION_CONTRIBUTE_MODE : "partially_annotated" #["corrected" , "partially_annotated", "fully_annotated"]
+  REMOTE_ANNOTATIONS_WITHOUT_ANNOTATIONS: null #false | True if we querry images without annotations
+  REMOTE_ANNOTATION_SUPERCATEGORY: "on_plate" # if its null, it will fetch images without supercategories, if they exist?
+  REMOTE_ANNOTATIONS_AUDITED: true # if the annotations are audited or not
+  REMOTE_ANNOTATIONS_RANDOMIZED: false # shuffle annotations before sending them to client
+  REMOTE_ANNOTATIONS_ORDER: -1 # can be -1 for the last one first or 1 for the first one first
+
+
+  # menu actions
+  ALLOW_ACTION_NEW : true
+  ALLOW_ACTION_OPEN : true
+  ALLOW_MENU_OPEN_AS : true
+  ALLOW_ACTION_CLOSE : true
+  ALLOW_ACTION_SAVE : true
+  ALLOW_ACTION_SAVE_AS : true
+  ALLOW_ACTION_PRINT : true
+  ALLOW_ACTION_SEND_FOR_TRAINING: true
+  ALLOW_ACTION_EXPORT_TO_IMAGEJ: true
+  ALLOW_ACTION_EXPORT : true
+  ALLOW_MENU_MODELS : true
+  ALLOW_MENU_WORKFLOW : true
+  ALLOW_MENU_IMAGE : true
+  ALLOW_MENU_VIEW : true
+  ALLOW_ABOUT: true
+  ALLOW_SUBMIT_ANNOTATIONS_ADMIN: true
+
+
+
+  USER_WORKERS : true # Do not use worker for debugging purposes
+  FORCE_DISK : true # forces to link all images disk instead of loading to ram.
+  SEND_CORRECTED_ANNOTATIONS : false
+  ALLOW_EXPERIMENT_SAVE : false
+  ALLOW_ELEGANS : true
+  ALLOW_TISSUE : true
+  ALLOW_CELLS : true
+  ALLOW_GENERIC_CELL : true
+  ALLOW_PLOTTING_TOOLS : false
+  ALLOW_MD : false
+  ALLOW_FLIES : false
+  ALLOW_PARTICLES : false
+  ALLOW_COLOC : false
+  ALLOW_ELEGANS_EMBRYO : true
+  ALLOW_ELEGANS_HEAD : true
+
+  OFFLINE_MODE : false # work offline
+
+
+developer:
+  USER_WORKERS : true # single or multithreaded mode
+  OFFLINE_MODE : false # work offline
+
+  # Admin dabase image data auditing tool
+  ##################################
+  ##### REMOTE ANNOTATION MODE #####
+  ##################################
+  ANNOTATE_DATA_MODE: false # used only by admins to connect to the database to annotate data
+  ANNOTATED_DATA_AMOUNT: 10 # request 100 images for annotation
+  REMOTE_ANNOTATATION_CATEGORIES: # audited
+    - "head"
+  REMOTE_ANNOTATION_CATEGORIES_TO_EXCLUDE:
+    # - "body" 
+  REMOTE_ANNOTATION_CONTRIBUTE_MODE : "fully_annotated" #["corrected" , "partially_annotated", "fully_annotated"]
+  REMOTE_ANNOTATIONS_WITHOUT_ANNOTATIONS: null #false | True if we querry images without annotations
+  # REMOTE_ANNOTATIONS_PARTIAL_ID: null # string id of the partial annotation, or "latest" to get the latest
+  REMOTE_ANNOTATION_SUPERCATEGORY: "worm" # if its null, it will fetch images without supercategories, if they exist?
+  REMOTE_ANNOTATIONS_AUDITED: true # if the annotations are audited or not
+  REMOTE_ANNOTATIONS_RANDOMIZED: false # shuffle annotations before sending them to client
+  REMOTE_ANNOTATIONS_ORDER: -1 # can be -1 for the last one first or 1 for the first one first
+
+  ######## CONTRIBUTION MODE #######
+  SEND_CORRECTED_ANNOTATIONS: false
+
+  # log in
+  FORCE_REJECT_AUTO_LOGIN: false # force log in window to show and not log in automatically
+
+  FORCE_DISK : true # forces to link all images disk instead of loading to ram.
+  ALLOW_EXPERIMENT_SAVE : true
+
+  # update
+  BETA_ENROLL : true
+  FORCE_UPDATE : false
+
+  # CELER SIGHT API
+  CELER_SIGHT_API_IP: "s1.biomarkerimaging.com" # dev
+
+  # menu actions
+  ALLOW_ACTION_NEW : true
+  ALLOW_ACTION_OPEN : true
+  ALLOW_MENU_OPEN_AS : true
+  ALLOW_ACTION_CLOSE : true
+  ALLOW_ACTION_SAVE : true
+  ALLOW_ACTION_SAVE_AS : true
+  ALLOW_ACTION_PRINT : true
+  ALLOW_ACTION_SEND_FOR_TRAINING: true
+  ALLOW_ACTION_IMPORT_FROM_COCO: true
+  ALLOW_ACTION_EXPORT_TO_IMAGEJ: true
+  ALLOW_MENU_MODELS : true
+  ALLOW_MENU_WORKFLOW : true
+  ALLOW_MENU_IMAGE : true
+  ALLOW_MENU_VIEW : true
+  ALLOW_ABOUT: true
+  ALLOW_SUBMIT_ANNOTATIONS_ADMIN: true
+
+  IGNORE_LOGIN : false
+
+  HIDE_SETTINGS_BUTTON_MAIN: false
+  HIDE_INFO_BUTTON_MAIN: false
+
+
+

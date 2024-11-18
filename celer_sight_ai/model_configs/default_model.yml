@@ -1,0 +1,4 @@
+REMOVE_EDGE_ANNOTATIONS: false
+REMOVE_EDGE_ANNOTATION_PERCENT: 0.4  #  The percentage of the pixels of the total Width / Height to use to remove annotations
+REMOVE_HOLES: true
+REMOVE_HOLES_PERCENT: 20  # any hole with area less than this value (refence is total mask area) will get deleted

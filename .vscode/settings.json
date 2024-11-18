@@ -1,0 +1,24 @@
+{
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": true,
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test_*.py"
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "python.formatting.provider": "none",
+    "python.analysis.extraPaths": [
+        "/Users/mchaniotakis/.vscode/extensions/continue.continue-0.0.412-darwin-arm64"
+    ],
+    "python.autoComplete.extraPaths": [
+        "/Users/mchaniotakis/.vscode/extensions/continue.continue-0.0.412-darwin-arm64"
+    ]
+}

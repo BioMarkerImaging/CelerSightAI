@@ -1,0 +1,4 @@
+{"maxImageResImport_X": 5000, "maxImageResImport_Y": 5000, "maxImageResImport_Toggle": true, "maxImageResResize_X": 1334, "maxImageResResize_Y": 1100,
+ "maxImageResResize_Toggle": true, "PolyColor_1": "#0000FF", "PolyOpacity_1": 100, "PolyCircleSize_1": 5, "PolyWidth_1": 2, "MagicBrushSize": 70, 
+ "MagicSkeletonRadius": 75, "MagicSkeletonColor": "#0000FF", "MagicSkeletonOpacity": 50, "LastUsedEntity": "cel", "AutoLogIn": false, 
+ "prev_cel_network": "whole_body", "prev_cel_analysis": "MeanIntensity"}

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog_for_category_creation</class>
+ <widget class="QDialog" name="Dialog_for_category_creation">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>376</width>
+    <height>398</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog{
+	background-color:rgb(27,27,27);
+}
+</string>
+  </property>
+  <layout class="QGridLayout" name="outer_layout">
+   <property name="leftMargin">
+    <number>34</number>
+   </property>
+   <property name="topMargin">
+    <number>12</number>
+   </property>
+   <property name="rightMargin">
+    <number>34</number>
+   </property>
+   <property name="bottomMargin">
+    <number>12</number>
+   </property>
+   <item row="0" column="0" colspan="3">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="3" column="0">
+      <widget class="QLabel" name="create_category_model_type">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>33</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>-1</pointsize>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(255,255,255);
+margin-top:20;
+font-size:16px;</string>
+       </property>
+       <property name="text">
+        <string>AI model type :</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="create_category_new_label">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>33</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>-1</pointsize>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(255,255,255);
+padding-top: 15px;
+font-size:16px;</string>
+       </property>
+       <property name="text">
+        <string>New Label Name :</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QPlainTextEdit" name="create_category_new_plain_text">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-radius: 8px;
+background-color: rgb(45,45,45);
+color: rgb(255,255,255);
+padding-left: 5px;
+padding-top: 0px;
+font-size:13px;</string>
+       </property>
+       <property name="tabChangesFocus">
+        <bool>true</bool>
+       </property>
+       <property name="plainText">
+        <string/>
+       </property>
+       <property name="placeholderText">
+        <string extracomment="my_new_category"/>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QComboBox" name="create_category_model_type_comboBox">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QComboBox{
+	border-radius: 8px;
+	background-color: rgb(45,45,45);
+	color: rgb(255,255,255);
+}
+QComboBox:editable{
+	background-color: rgb(45,45,45);
+	border: 0px solid;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 300px;
+	color: rgb(150,150,150);
+    border-left-width: 1px;
+    border-left-color: darkgray;
+    border-left-style: solid; /* just a single line */
+    border-top-right-radius: 3px; /* same radius as the QComboBox */
+    border-bottom-right-radius: 3px;
+}
+font-size:13px;
+</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Performance</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Quality</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="create_category_new_label_explanation">
+       <property name="styleSheet">
+        <string notr="true">color: rgb(185,185,185);
+font-size:13px;</string>
+       </property>
+       <property name="text">
+        <string>Create a new label. The label name should be representative of a region across phenotypes and lens magnifications. For example, &quot;tail&quot; is a good label, where as &quot;dcr_1_tail&quot; is not.</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="create_category_model_type_explanation">
+       <property name="styleSheet">
+        <string notr="true">color: rgb(185,185,185);
+font-size:13px;</string>
+       </property>
+       <property name="text">
+        <string>Create a new label. The label name should be representative of a region across phenotypes and lens magnifications. For example, &quot;tail&quot; is a good label, where as &quot;dcr_1_tail&quot; is not. 
+ For performance mode models update faster and masks are generated up to x5 times faster than quality mode</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="create_category_cancel_button">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>25</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+     background-color: rgba(0,0,0,0);
+     color: rgb(105,215,105);
+     border: 0px solid rgb(165,255,165);
+     border-radius: 5px;
+}
+QPushButton:hover{
+      background-color: rgba(105,215,105, 30);
+       color: rgb(155,255,155);
+}
+</string>
+     </property>
+     <property name="text">
+      <string>next</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="create_category_next_button">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>25</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">            QPushButton{
+                    background-color: rgba(0,0,0,0);
+                    color: rgb(215 ,105,105);
+                    border: 0px solid rgb(165,255,165);
+                    border-radius: 5px;
+                    }
+            QPushButton:hover{
+                    background-color: rgba(215,105,105, 30);
+                    color: rgb(255,155,155);
+                    }</string>
+     </property>
+     <property name="text">
+      <string>cancel</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

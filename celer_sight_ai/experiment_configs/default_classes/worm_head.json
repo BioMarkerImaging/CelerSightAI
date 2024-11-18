@@ -1,0 +1,10 @@
+{
+    "supercategory" : "worm",
+    "text" : "Head",
+    "classes":
+        [
+        {"class_name" : "head",
+            "parent_class" : "body"
+        }],
+    "image" : "data/icons/elegans_head_off.png"
+}

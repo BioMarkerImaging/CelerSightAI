@@ -1,0 +1,85 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Current File + envs",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Win: Current File + envs",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "pytest + envs",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "--tb=native",
+                "-s"
+            ], //"-q","-p"
+            "console": "integratedTerminal",
+            "env": {
+                "CELER_SIGHT_AI_HOME": "${workspaceRoot}",
+                "CELER_SIGHT_TESTING": "true"
+            },
+        },
+        {
+            "name": "Win :prod",
+            "type": "python",
+            "request": "launch",
+            "program": "C:/Users/manos/Code/celer_sight_ai/celer_sight_ai/Celer Sight AI.py",
+            "console": "integratedTerminal",
+            "env": {
+                // "CELER_SIGHT_AI_HOME": "${workspaceRoot}",
+                // "OVERRIDE_DEV_MODE_CELER_SIGHT" : "true"
+            }
+        },
+        {
+            "name": "Win : Celer Sight AI.py",
+            "type": "python",
+            "request": "launch",
+            "program": "C:/Users/manos_p10dzie/Code/celer_sight_ai/celer_sight_ai/Celer Sight AI.py",
+            "console": "integratedTerminal",
+            "args": [
+                // "--offline"
+            ]
+        },
+        {
+            "name": "Mac : Celer Sight AI.py",
+            "request": "launch",
+            "type": "python",
+            "program": "/Users/mchaniotakis/Code/celer_sight_ai_desktop/celer_sight_ai/Celer Sight AI.py",
+            "console": "integratedTerminal",
+            "args": [
+                // "--empty-local-dir",
+                // "--offline",
+                // "--run-tests-short"
+                // "--load-from-file",
+                // "/Users/mchaniotakis/Downloads/test_project_2.bmics"
+            ]
+        },
+        {
+            "name": "Mac : production",
+            "type": "python",
+            // "python":"/Users/mchaniotakis/opt/anaconda3/envs/py39/bin/python",
+            "request": "launch",
+            "program": "/Users/mchaniotakis/Code/celer_sight_ai_desktop/celer_sight_ai/Celer Sight AI.py",
+            "console": "integratedTerminal",
+            "env": {
+                // "CELER_SIGHT_AI_HOME": "${workspaceRoot}",
+                "OVERRIDE_DEV_MODE_CELER_SIGHT": "true"
+            }
+        }
+    ]
+}

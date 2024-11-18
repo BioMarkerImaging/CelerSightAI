@@ -1,0 +1,12 @@
+{
+    "supercategory" : "on_plate",
+    "text" : "On Plate Worm",
+    "classes":
+        [
+        {"class_name" : "worm",
+            "parent_class" : null,
+            "keywords":[ "brightfield" ]
+
+        }],
+    "image" : "data/icons/worms_at_plate.png"
+}

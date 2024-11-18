@@ -1,0 +1,29 @@
+{
+    "supercategory" : "worm",
+    "text" : "Head and body",
+    "classes":
+        [
+        {"class_name" : "body",
+            "keypoints" : [
+                "head",
+                "neck",
+                "midbody",
+                "tail"
+            ],
+            "parent_class" : null,
+            "children_classes" : [
+                {"class_name" : "head"},
+                {"class_name" : "intestine"}, 
+                {"class_name" : "tail"}
+            ]
+        },
+        {"class_name" : "impurities",
+            "parent_class" : null,
+            "children_classes" : []
+        },
+        {"class_name" : "embryo",
+        "parent_class" : null,
+        "children_classes" : []}
+    ],
+    "image" : "data/icons/elegans_whole_body_off.png"
+}

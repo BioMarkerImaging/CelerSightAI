@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>tool_selection_onscreen_menu</class>
+ <widget class="QDialog" name="tool_selection_onscreen_menu">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>781</width>
+    <height>532</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QPushButton{
+
+font: 16pt &quot;Calibri&quot;;
+border-width: 2px;
+border-color:  rgb(40, 40, 40);
+border-style: solid;
+border-radius:30;
+	color: rgba(255, 255, 255,25);
+
+background-color: rgba(0,0,0,0);
+}
+QPushButton:hover{
+border-width: 2px;
+border-color:  rgb(255, 160, 0);
+border-style: solid;
+border-radius:45;
+	color: black;
+background-color: rgba(0,0,0,0);
+
+}
+
+QPushButton#tool_selection_menu_auto_cut_btn{
+
+border-image: url(&quot;C:/Users/manos/Documents/Ntopfluov1/data/icons/icons_aa_tool/PopUP Menu Magic.png&quot;) 178 178 178 178 stretch stretch;
+
+}
+QPushButton#tool_selection_menu_auto_cut_btn:checked {
+border-image: url();
+}
+QPushButton#tool_selection_menu_selection_btn{
+border-image: url(C:/Users/manos/Documents/Ntopfluov1/data/icons/icons_aa_tool/PopUP MenuArrow.png) 178 178 178 178 stretch stretch;
+}
+QPushButton#tool_selection_menu_selection_btn:checked {
+border-image: url();
+}
+QPushButton#tool_selection_menu_polygon_btn{
+border-image: url(C:/Users/manos/Documents/Ntopfluov1/data/icons/icons_aa_tool/PopUP Menu DrawPol.png) 178 178 178 178 stretch stretch;
+}
+QPushButton#tool_selection_menu_polygon_btn:checked {
+border-image: url();
+}QPushButton#tool_selection_menu_erase{
+border-image: url(&quot;C:/Users/manos/Documents/Ntopfluov1/data/icons/icons_aa_tool/PopUP Menu Erase.png&quot;)  178 178 178 178 stretch stretch;;
+}
+QPushButton#tool_selection_menu_erase:checked {
+border-image: url();
+}
+
+QPushButton#tool_selection_menu_Center{
+border-image: url(&quot;C:/Users/manos/Documents/Ntopfluov1/data/icons/icons_aa_tool/PopUP Menu Center.png&quot;)  190 190 190 190 stretch stretch;;
+
+font: 16pt &quot;Calibri&quot;;
+border-width: 2px;
+border-color:  rgb(40, 40, 40);
+border-style: solid;
+border-radius:30;
+	color: rgba(255, 255, 255,25);
+
+background-color: rgba(0,0,0,0);
+
+
+}
+QPushButton#tool_selection_menu_Center:hover{
+
+border-width: 2px;
+border-color:   rgb(40, 40, 40);
+border-style: solid;
+border-radius:30;
+	color: black;
+background-color: rgba(0,0,0,0);
+
+}
+
+
+
+
+
+</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QFrame" name="OouterFrame">
+     <property name="styleSheet">
+      <string notr="true">QFrame{
+background-color: rgba(255, 255, 255,0);
+}
+</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <widget class="QFrame" name="InnerFrame">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>90</y>
+        <width>491</width>
+        <height>291</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QFrame{
+background-color: rgba(255, 255, 255,0);
+}
+</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <widget class="QPushButton" name="tool_selection_menu_polygon_btn">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>140</y>
+         <width>91</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Calibri</family>
+         <pointsize>16</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Polygon</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="tool_selection_menu_selection_btn">
+       <property name="geometry">
+        <rect>
+         <x>370</x>
+         <y>140</y>
+         <width>91</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Calibri</family>
+         <pointsize>16</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Selection</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="tool_selection_menu_erase">
+       <property name="geometry">
+        <rect>
+         <x>260</x>
+         <y>50</y>
+         <width>91</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Calibri</family>
+         <pointsize>16</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Eraser</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="tool_selection_menu_auto_cut_btn">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>50</y>
+         <width>91</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Calibri</family>
+         <pointsize>16</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Magic
+Tool</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="tool_selection_menu_Center">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>220</y>
+         <width>60</width>
+         <height>60</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Calibri</family>
+         <pointsize>16</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

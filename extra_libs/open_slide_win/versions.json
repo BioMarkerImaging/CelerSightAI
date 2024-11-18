@@ -1,0 +1,130 @@
+{
+  "versions": [
+    {
+      "display": "OpenSlide",
+      "id": "openslide",
+      "type": "primary",
+      "version": "4.0.0"
+    },
+    {
+      "display": "OpenSlide Java",
+      "id": "openslide-java",
+      "type": "primary",
+      "version": "0.12.4"
+    },
+    {
+      "display": "cairo",
+      "id": "cairo",
+      "type": "dependency",
+      "version": "1.18.0-1"
+    },
+    {
+      "display": "gdk-pixbuf",
+      "id": "gdk-pixbuf",
+      "type": "dependency",
+      "version": "2.42.10-1"
+    },
+    {
+      "display": "glib",
+      "id": "glib",
+      "type": "dependency",
+      "version": "2.80.0-1"
+    },
+    {
+      "display": "libdicom",
+      "id": "libdicom",
+      "type": "dependency",
+      "version": "1.1.0-1"
+    },
+    {
+      "display": "libffi",
+      "id": "libffi",
+      "type": "dependency",
+      "version": "3.4.4-3"
+    },
+    {
+      "display": "libjpeg-turbo",
+      "id": "libjpeg-turbo",
+      "type": "dependency",
+      "version": "3.0.2-1"
+    },
+    {
+      "display": "libpng",
+      "id": "libpng",
+      "type": "dependency",
+      "version": "1.6.43-1"
+    },
+    {
+      "display": "libtiff",
+      "id": "libtiff",
+      "type": "dependency",
+      "version": "4.6.0-1"
+    },
+    {
+      "display": "libxml2",
+      "id": "libxml2",
+      "type": "dependency",
+      "version": "2.12.6-1"
+    },
+    {
+      "display": "OpenJPEG",
+      "id": "libopenjp2",
+      "type": "dependency",
+      "version": "2.5.2-2"
+    },
+    {
+      "display": "PCRE2",
+      "id": "pcre2",
+      "type": "dependency",
+      "version": "10.43-1"
+    },
+    {
+      "display": "pixman",
+      "id": "pixman",
+      "type": "dependency",
+      "version": "0.43.4-1"
+    },
+    {
+      "display": "proxy-libintl",
+      "id": "proxy-libintl",
+      "type": "dependency",
+      "version": "0.4-1"
+    },
+    {
+      "display": "SQLite",
+      "id": "sqlite3",
+      "type": "dependency",
+      "version": "3.45.2-1"
+    },
+    {
+      "display": "uthash",
+      "id": "uthash",
+      "type": "dependency",
+      "version": "2.3.0"
+    },
+    {
+      "display": "zlib",
+      "id": "zlib",
+      "type": "dependency",
+      "version": "1.3.1-1"
+    },
+    {
+      "display": "Binutils",
+      "id": "binutils",
+      "type": "tool",
+      "version": "GNU ld (Gentoo 2.42 p3) 2.42.0"
+    },
+    {
+      "display": "GCC",
+      "id": "gcc",
+      "type": "tool",
+      "version": "(Gentoo 13.2.1_p20240210 p14) 13.2.1 20240210"
+    },
+    {
+      "display": "MinGW-w64",
+      "id": "mingw-w64",
+      "type": "tool",
+      "version": "11.0.0"
+    }
+  ]
+}

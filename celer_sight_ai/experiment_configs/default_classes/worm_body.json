@@ -1,0 +1,18 @@
+{
+    "supercategory" : "worm",
+    "text" : "Body",
+    "classes":
+        [
+        {"class_name" : "body",
+            "keypoints" : [
+                "head",
+                "neck",
+                "midbody",
+                "tail"
+            ],
+            "parent_class" : null,
+            "keywords":["fluorescent" , "brightfield" ]
+
+        }],
+    "image" : "data/icons/elegans_whole_body_off.png"
+}

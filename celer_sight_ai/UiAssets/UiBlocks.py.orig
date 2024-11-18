@@ -1,0 +1,893 @@
+"""
+This is a module that applies the css sepcified to the the whole app 
+and brings the app together essensialy
+"""
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+# class StylesheetApplierClass(self):
+from celer_sight_ai.QtAssets.DockEssentialComponents.Mainwindow_pg1_v1 import Ui_MainWindow
+from celer_sight_ai.QtAssets.Utilities.scene import PhotoViewer
+from celer_sight_ai.QtAssets.Utilities.scene import ColorPrefsPhotoViewer as ColorPrefsPhotoViewer
+from PyQt6.QtCore import pyqtSlot
+
+
+# Mainwindow_pg1_v1_class = Mainwindow_pg1_v1()
+class UiBlocksBuilder(QtWidgets.QMainWindow, Ui_MainWindow):
+    def __init__(self, parent=None):
+        super(UiBlocksBuilder, self).__init__(parent)
+
+        # self.viewer = PhotoViewer()
+
+    def SetupAll(self):
+        """
+        This function makes an instant of the Mainwinow and sets everything up
+        """
+        import sys
+        from celer_sight_ai.AA_cls import Grab_cut_tool
+        self.auto_tool_1 = Grab_cut_tool()
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.setupUi(self.MainWindow)
+        # menu triggers need to be here otherwise if placed later they arent working
+        self.actionSave_as.triggered.connect(lambda: self.save_celer_sight_file(plab_object=self.DH.plab_object_user))
+        self.actionOpen.triggered.connect(lambda: print("open works i guees"))
+        self.actionOpen.triggered.connect(lambda: self.plaba_load_process(plab_object=self.DH.plab_object_user))
+        self.actionOpen_recent.triggered.connect(lambda: self.Ui_control(lock_wdigets=True))
+        self.actionOpen_recent.triggered.connect(lambda: self.OpenFolderTree())
+        self.actionOpen_recent.triggered.connect(lambda: self.Ui_control(lock_wdigets=False))
+        self.actionExport.triggered.connect(lambda: self.ExportCOCOTools())
+        self.actionNew.triggered.connect(lambda: self.ExecNewFile())
+        # Set up viewer
+        print("sdas", self.MainWindow)
+        self.viewer = PhotoViewer(self)  # Create an instance of the photoviwer
+        # self.viewer.photoClicked.connect(self.viewer.draw_mask_Qgraphics) # polygon draw mode starts
+        self.viewer.viewport().installEventFilter(self)
+        self.viewer.setMouseTracking(True)
+        self.viewer.setAcceptDrops(True)
+        self.ColorPrefsViewer = ColorPrefsPhotoViewer(self)
+        self.ExtendUi(self.MainWindow)
+        # Add icons to toolbar
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("data/icons/draw_polygon.PNG"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("data/icons/icons_aa_tool/Assisted_line_on.png"), QtGui.QIcon.Mode.Normal,
+                        QtGui.QIcon.State.Off)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("data/icons/Selection(CHANGE THIS).png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        # self.PolygonTool.setIcon(icon)
+        # self.actionAutoTool.setIcon(icon1)
+        # self.actionSelectionTool.setIcon(icon2)
+        self.PolygonTool.triggered.connect(lambda: self.viewer.update_tool("polygon"))
+        self.PolygonTool.triggered.connect(lambda: self.ApplyUiSelectionBtn("polygon"))
+        self.actionAutoTool.triggered.connect(lambda: self.viewer.update_tool("auto"))
+        self.actionAutoTool.triggered.connect(lambda: self.ApplyUiSelectionBtn("auto"))
+        self.actionSelectionTool.triggered.connect(lambda: self.viewer.update_tool("selection"))
+        self.actionSelectionTool.triggered.connect(lambda: self.ApplyUiSelectionBtn("selection"))
+        # self.toolBar.setOrientation(QtCore.Qt.Orientation.Vertical )
+        self.toolBar.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.X11BypassWindowManagerHint)
+        self.toolBar.move(100, 100)
+        self.toolBar.adjustSize()
+        self.toolBar.show()
+        self.add_images_btn.clicked.connect(lambda: QtWidgets.QApplication.processEvents())
+
+        # self.add_images_btn.clicked.connect(lambda: QtWidgets.QApplication.processEvents())
+
+        # 
+
+        self.menubar.setStyleSheet("""
+        
+        background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(45, 45, 45, 255), stop:1 rgba(70, 70, 70, 255));
+
+        color: rgb(255, 255, 255);
+        QFrame{
+            background-color: rgba(0,0,0,0);
+            border: 0px solid #000;
+
+        }
+        """)
+
+        # Set up preview windows for analysis
+        from celer_sight_ai.QtAssets.AnalWin1 import Ui_pop_up_window1
+        from celer_sight_ai.QtAssets.AnalWin2 import Ui_pop_up_window2
+        from celer_sight_ai.QtAssets.AnalWin3 import Ui_pop_up_window3
+        self.AnalWin1UI = Ui_pop_up_window1()
+        self.AnalWin2UI = Ui_pop_up_window2()
+        self.AnalWin3UI = Ui_pop_up_window3()
+        self.Win1Dialg = QtWidgets.QDialog()
+        self.Win2Dialg = QtWidgets.QDialog()
+        self.Win3Dialg = QtWidgets.QDialog()
+        self.AnalWin1UI.setupUi(self.Win1Dialg)
+        self.AnalWin2UI.setupUi(self.Win2Dialg)
+        self.AnalWin3UI.setupUi(self.Win3Dialg)
+
+        # self.canvas.setMinimumSize(QtCore.QSize(116, 700)) # TODO: maybe change this?
+
+        #
+        # SetUp New window that selects the analysis type, organism etc
+        #
+
+        from celer_sight_ai.NewAnalysisSetUp import NewAnalysis
+
+        self.new_analysis_object = NewAnalysis()
+
+        #
+        # Add Shaddows to some buttons and frames
+        #
+        listToAddShadow = [
+            self.pg1_MaskAttributes_ApplyToAllImages,
+            self.pg1_MaskAttributes_ApplyToEmpty,
+            self.pg1_MaskAttributes_groupBox_ToolBox,
+            self.pg1_Maskshandler_groupBox_ToolBox,
+            self.pg1_Maskshandler_DeleteAllBit_button,
+            self.pg1_Maskshandler_DeleteAllPolygon_button,
+            self.pg1_Maskshandler_DeleteAll_button,
+            self.pg1_settings_lasso_Render,
+            self.pg1_settings_groupBox_ToolBox,
+            self.pg1_settings_lasso_plus_button,
+            self.pg1_settings_lasso_remove_button,
+            self.pg1_settings_poly_add_button,
+            self.pg1_settings_poly_remove_button,
+            self.pg1_settings_groupBox_brightness_contrast,
+            self.pg1_settings_groupBox_mask_appearance,
+            self.pg1_settings_adjust_brightness_sliders_checkbox,
+            self.pg1_settings_mask_visibility_checkbox
+
+        ]
+        for widget in listToAddShadow:
+            self.AddShadowToWidget(widget)
+
+        #
+        # Adjust QGroupBoxes
+        #
+        from celer_sight_ai.QtAssets.animate_qgroupbox import QGroupBoxCollapsable_Maker
+        listOfGrouBoxesToEnhance = [
+            self.pg1_settings_groupBox_brightness_contrast,
+            self.pg1_settings_groupBox_mask_appearance,
+            self.pg2_general_attributes_groupBox,
+            self.groupBox,
+            self.pg_2_graph_colors_groupBox,
+            self.pg_2_statistical_analysis_groupBox,
+            self.pg1_MaskAttributes_groupBox_ToolBox,
+            self.pg1_Maskshandler_groupBox_ToolBox,
+            self.pg1_settings_groupBox_ToolBox
+        ]
+        for widget in listOfGrouBoxesToEnhance:
+            OneGbox = QGroupBoxCollapsable_Maker(widget)
+
+        #
+        # Set Up custom WIndow Borders, top
+        #
+
+        self.ModernizeWindow()
+        self.SetUpButtons()
+
+    def AddShadowToWidget(self, widget):
+        BR = 40  # blur radius
+        xo = -5  # xoffset
+        yo = 7  # yoffset
+        colorGUI = QtGui.QColor(0, 0, 0, 90)
+        shadow = QtWidgets.QGraphicsDropShadowEffect( \
+            blurRadius=BR, xOffset=xo, yOffset=yo, color=colorGUI)
+        widget.setGraphicsEffect(shadow)
+
+    def ModernizeWindow(self):
+        # self.MainWindow.setWindowFlags( QtCore.Qt.WindowType.FramelessWindowHint)
+        from PyQt6.QtCore import Qt as Qt
+        self.MainWindow.setWindowFlags(
+            Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint |
+            Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+
+        from CustomMovement import CustomWidgetMovement
+        self.MyCustomWidget2 = CustomWidgetMovement(self.MainWindow)
+        self.PushButtonTopWindow = self.MyCustomWidget2.findChild(QtWidgets.QFrame, "FrameFIllerTopWindow")
+        width = self.MainWindow.geometry().width()
+        self.PushButtonTopWindow.resize(width - 300, self.MyCustomWidget2.height())
+        self.PushButtonTopWindow.setMinimumSize(QtCore.QSize(width - 300, self.MyCustomWidget2.minimumHeight()))
+        self.menubar.setCornerWidget(self.MyCustomWidget2)
+
+    def ExtendUi(self, MainWindow):
+        """
+        This function gets the Ui that we have previoyusly build with the setup function(only the essentials)
+         and adds all the compononents to the docks and hides the ones that should not be seen
+        """
+        self.MainWindow_GridLayout.addWidget(self.viewer)
+        import os
+        import pathlib
+
+        ROOTDIR = pathlib.Path(__file__).parent.absolute()
+        os.chdir(ROOTDIR)
+
+        # Page 1>>>
+        from celer_sight_ai.QtAssets.DockEssentialComponents.group_pg1_left_widget import Ui_Form as group_pg1_left_widget
+        group_pg1_left_widget.setupUi(self, self.replace1)  # add the widgets
+        group_pg1_left_widget.retranslateUi(self, self.replace1)  # translate properties
+
+        from celer_sight_ai.QtAssets.DockEssentialComponents.TabsWidget import Ui_Form as TabsWidget
+        TabsWidget.setupUi(self, self.replace1_2)  # add the widgets
+        TabsWidget.retranslateUi(self, self.replace1_2)  # translate properties
+
+        from celer_sight_ai.QtAssets.DockEssentialComponents.overview_tabs_widget import Ui_Form as overview_tabs_widget
+        overview_tabs_widget.setupUi(self, self.replace1_4)  # add the widgets
+        overview_tabs_widget.retranslateUi(self, self.replace1_4)  # translate properties
+
+        from celer_sight_ai.QtAssets.DockEssentialComponents.pg1_widget_mask_settings import \
+            Ui_pg1_settings_widget as pg1_widget_mask_settings
+        pg1_widget_mask_settings.setupUi(self, self.replace1_3)  # add the widgets
+        pg1_widget_mask_settings.retranslateUi(self, self.replace1_3)  # translate properties
+
+        # Page 2>>>
+        from celer_sight_ai.QtAssets.DockEssentialComponents.Mainwindow_pg2_v1 import Ui_MainWindow as MainWindowpage2
+        MainWindowpage2.setupUi(self, self.MainWindow)
+        self.mainwindow_tabs.currentChanged.connect(lambda: self.check_mainwindow_tabs_and_update(self.MainWindow))
+        self.check_mainwindow_tabs_and_update(self.MainWindow)
+
+        # PAge 2 Assets
+
+        # Plot Settings Widget
+        from celer_sight_ai.QtAssets.DockEssentialComponents.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
+        plot_tools_widget_v4.setupUi(self, self.scrollArea_for_plot_tools)  # add the widgets
+        plot_tools_widget_v4.retranslateUi(self, self.scrollArea_for_plot_tools)  # translate properties
+        self.pg2_graphs_view.itemSelectionChanged.connect(self.show_only_active_plot_settings)
+
+        # function to plce the settings for all the plots and hide them, then show_only_active_plot_settings whoces which settings to use
+        self.setup_widgets()
+
+        from celer_sight_ai.QtAssets.DockEssentialComponents.results_inspector_widgets import Ui_Form as results_inspector_widgets
+        results_inspector_widgets.setupUi(self, self.ReviewAreaWidget)  # add the widgets
+        results_inspector_widgets.retranslateUi(self, self.ReviewAreaWidget)  # translate properties
+
+        # Selected Mask DIalog set up>>>
+        self.SelectedMaskDialog = QtWidgets.QDialog()
+        from celer_sight_ai.QtAssets.DockEssentialComponents.SelectedSettintgsDialog import Ui_Dialog as SelectedSettintgsDialog
+        SelectedSettintgsDialog.setupUi(self, self.SelectedMaskDialog)  # add the widgets
+        SelectedSettintgsDialog.retranslateUi(self, self.SelectedMaskDialog)  # translate properties
+
+        # Set SelectedMaskDialog Attributes
+        self.SelectedMaskDialog.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
+        self.SelectedMaskDialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground )
+        for item in self.SelectedMaskDialog.children():
+            print("Children are -- - -- - - - -  ", item.objectName())
+        self.SelectedMaskDialog.hide()
+        # self.ApplyStyleSheet()
+
+    def ApplyStyleSheet(self):
+
+        orange = "orange1.stylesheet"
+        blue = "blue1.stylesheet"
+        with open(orange, "r") as fh:
+            self.OrangeStylesheet = fh.read()
+            self.MainWindow.setStyleSheet(self.OrangeStylesheet)
+            self.SelectedMaskDialog.setStyleSheet(self.OrangeStylesheet)
+
+    def setup_widgets(self):
+        """
+        function that sets up our widgets for plot and jitter, box bar etc...
+        """
+        from celer_sight_ai.QtAssets.bar_plot_settings_widget_v2 import Bar_Ui_Form
+        from celer_sight_ai.QtAssets.bax_plot_settings_widget_v2 import Box_Ui_Form
+        from celer_sight_ai.QtAssets.swarm_plot_settings_widget_v2 import Swarm_Ui_Form
+        from celer_sight_ai.QtAssets.stripplot_settings_wdiget_v2 import strip_plot_settings_form
+        from celer_sight_ai.QtAssets.violin_plot_settings_widget_v2 import Violin_Ui_Form
+        from celer_sight_ai.QtAssets.plot_handler import PlotViewerHandler
+
+        # Bar Plot
+        self.barplot_settings_user = Bar_Ui_Form()
+        self.barplot_settings_user.setupUi(self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Bar)
+        # Add Color dialog box to pg2
+        self.pg_2_graph_colors_pallete_1_bar_plot.clicked.connect(
+            lambda: self.Bar_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_1_bar_plot))
+        self.pg_2_graph_colors_pallete_2_bar_plot.clicked.connect(
+            lambda: self.Bar_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_2_bar_plot))
+        self.pg_2_graph_colors_pallete_3_bar_plot.clicked.connect(
+            lambda: self.Bar_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_3_bar_plot))
+        # add custom palette method
+        self.pg_2_graph_barplot_pallete_style_combobox.currentIndexChanged.connect(
+            lambda: self.bar_palette_custom_pg2())
+        # Save Values
+        bar_list = [self.pg_2_graph_barplot_pallete_style_combobox,
+                    self.pg_2_graph_colors_pallete_2_bar_plot,
+                    self.pg_2_graph_colors_pallete_1_bar_plot, self.pg2_graph_saturation_spinBox_box_plot,
+                    self.pg2_graph_orientaitno_combobox_barplot, self.pg2_graph_index_combobox_barplot,
+                    self.pg_2_graph_colors_pallete_3_bar_plot, self.pg2_graph_bar_errwidth_spinBox_box_plot,
+                    self.pg2_graph_bar_ci_spinBox_box_plot, self.pg2_graph_flier_size_spinBox_box_plot]
+
+        text = self.pg2_graphs_view.currentItem().text()
+        plot_instance = self.MyVisualPlotHandler.WidgetDictionary[text]
+        for obj in bar_list:
+            from PyQt6 import QtWidgets
+            if type(obj) == QtWidgets.QComboBox:
+                self.pg_2_graph_barplot_pallete_style_combobox.currentIndexChanged.connect(
+                    lambda: self.Bar_save_variables())
+                self.pg_2_graph_barplot_pallete_style_combobox.currentIndexChanged.connect(
+                    lambda _, b=plot_instance: self.RecordValues(MyInstance=b))
+                self.pg2_graph_orientaitno_combobox_barplot.currentIndexChanged.connect(
+                    lambda: self.Bar_save_variables())
+                self.pg2_graph_index_combobox_barplot.currentIndexChanged.connect(lambda: self.Bar_save_variables())
+
+            elif type(obj) == QtWidgets.QPushButton:
+                self.pg_2_graph_colors_pallete_2_bar_plot.clicked.connect(lambda: self.Bar_save_variables())
+                self.pg_2_graph_colors_pallete_1_bar_plot.clicked.connect(lambda: self.Bar_save_variables())
+                self.pg_2_graph_colors_pallete_3_bar_plot.clicked.connect(lambda: self.Bar_save_variables())
+
+            # elif type(obj) == QtWidgets.QSpinBox:
+            #
+            # elif type(obj) == QtWidgets.QDoubleSpinBox:
+
+        # self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Bar.hide()
+
+        # Strip Plot
+        # self.stripplot_settings_user  = strip_plot_settings_form()
+        # self.stripplot_settings_user.setup(self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Dot)
+        # # Add Color dialog box to pg2
+        # self.stripplot_settings_user.pg_2_graph_border_colors_pallete_1_stripplot_plot.clicked.connect(
+        #     lambda: self.AssignColorDialogToButton_pg2(self.stripplot_settings_user.pg_2_graph_border_colors_pallete_1_stripplot_plot))
+        # # self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Dot.hide()
+
+        # Violin Plot
+        self.violinplot_settings_user = Violin_Ui_Form()
+        self.violinplot_settings_user.setupUi(self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Violin)
+        # Add Color dialog box to pg2
+        self.pg_2_graph_colors_pallete_2_violinplot.clicked.connect(
+            lambda: self.Violin_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_2_violinplot))
+        self.pg2_graph_border_color_violinplot_pallete_button.clicked.connect(
+            lambda: self.Violin_AssignColorDialogToButton_pg2(self.pg2_graph_border_color_violinplot_pallete_button))
+        # add custom palette method
+        self.pg_2_graph_violinplot_pallete_style_combobox.currentIndexChanged.connect(
+            lambda: self.violin_palette_custom_pg2())
+        # self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Violin.hide()
+
+        # Swarm Plot
+        self.swarmplot_settings_user = Swarm_Ui_Form()
+        self.swarmplot_settings_user.setupUi(self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Swarm)
+        # Add Color dialog box to pg2
+        self.pg_2_graph_colors_pallete_swarmplot_plot.clicked.connect(
+            lambda: self.Swarm_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_swarmplot_plot))
+        self.pg_2_graph_colors_pallete_2_swarmplot_plot.clicked.connect(
+            lambda: self.Swarm_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_2_swarmplot_plot))
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Swarm.hide()
+        # add custom palette method
+        self.pg_2_graph_swarmplot_pallete_style_combobox.currentIndexChanged.connect(
+            lambda: self.swarm_palette_custom_pg2())
+
+        # Box Plot
+        self.boxplot_settings_user = Box_Ui_Form()
+        self.boxplot_settings_user.setupUi(self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Box)
+        # Add Color dialog box to pg2
+        self.pg_2_graph_colors_pallete_1_box_plot.clicked.connect(
+            lambda: self.Box_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_1_box_plot))
+        self.pg_2_graph_colors_pallete_2_box_plot.clicked.connect(
+            lambda: self.Box_AssignColorDialogToButton_pg2(self.pg_2_graph_colors_pallete_2_box_plot))
+        # add custom palette method
+        self.pg_2_graph_boxplot_pallete_style_combobox.currentIndexChanged.connect(
+            lambda: self.box_palette_custom_pg2())
+        # self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Box.hide()
+        print('wortking')
+
+    def RecordValues(self, MyInstance):
+        # This needs to run every time we change a value
+        # connect signal with this function and connect it like this:
+        # Signals need to go in UI_Blocks in set_up_widgets
+        # lambda function needs to be like this: lambda _, b=(Instance): self.RecordValues(MyInstacne=b))
+
+        if MyInstance.type == 'Bar Plot':
+            MyInstance.palette = self.pg_2_graph_barplot_pallete_style_combobox.currentText()
+
+    def Bar_AssignColorDialogToButton_pg2(self, bar_button_pg2, bar_comboboxItem_pg2=None, bar_index_pg2=None):
+        from PyQt6 import QtCore, QtGui, QtWidgets
+        """
+        This functions opens a color picker and assigns the button of interest the selected color
+        If we have a pallete color already set then we need to adjust the pallete color
+        """
+        bar_color_pg2 = QtWidgets.QColorDialog.getColor()
+        bar_fg_pg2 = bar_color_pg2.name()
+
+        if self.pg_2_graph_barplot_pallete_style_combobox.currentText() == 'Custom':
+            bar_button_pg2.setText('')
+            bar_button_pg2.setStyleSheet(
+                "background-color:" + str(bar_fg_pg2) + ";"
+            )
+        if bar_comboboxItem_pg2 != None:
+            bar_comboboxItem_pg2.setItemData(bar_index_pg2, bar_color_pg2, QtCore.Qt.BackgroundRole)
+
+    def Box_AssignColorDialogToButton_pg2(self, box_button_pg2, box_comboboxItem_pg2=None, box_index_pg2=None):
+        from PyQt6 import QtCore, QtGui, QtWidgets
+        """
+        This functions opens a color picker and assigns the button of interest the selected color
+        """
+        box_color_pg2 = QtWidgets.QColorDialog.getColor()
+        box_fg_pg2 = box_color_pg2.name()
+
+        if self.pg_2_graph_boxplot_pallete_style_combobox.currentText() == 'Custom':
+            box_button_pg2.setText('')
+            box_button_pg2.setStyleSheet(
+                "background-color:" + str(box_fg_pg2) + ";"
+            )
+        if box_comboboxItem_pg2 != None:
+            box_comboboxItem_pg2.setItemData(box_index_pg2, box_color_pg2, QtCore.Qt.BackgroundRole)
+
+    def Swarm_AssignColorDialogToButton_pg2(self, swarm_button_pg2, swarm_comboboxItem_pg2=None, swarm_index_pg2=None):
+        from PyQt6 import QtCore, QtGui, QtWidgets
+        """
+        This functions opens a color picker and assigns the button of interest the selected color
+        """
+        swarm_color_pg2 = QtWidgets.QColorDialog.getColor()
+        swarm_fg_pg2 = swarm_color_pg2.name()
+
+        if self.pg_2_graph_swarmplot_pallete_style_combobox.currentText() == 'Custom':
+            swarm_button_pg2.setText('')
+            swarm_button_pg2.setStyleSheet(
+                "background-color:" + str(swarm_fg_pg2) + ";"
+            )
+        if swarm_comboboxItem_pg2 != None:
+            swarm_comboboxItem_pg2.setItemData(swarm_index_pg2, swarm_color_pg2, QtCore.Qt.BackgroundRole)
+
+    def Violin_AssignColorDialogToButton_pg2(self, violin_button_pg2, violin_comboboxItem_pg2=None,
+                                             violin_index_pg2=None):
+        from PyQt6 import QtCore, QtGui, QtWidgets
+        """
+        This functions opens a color picker and assigns the button of interest the selected color
+        """
+        violin_color_pg2 = QtWidgets.QColorDialog.getColor()
+        violin_fg_pg2 = violin_color_pg2.name()
+
+        if self.pg_2_graph_violinplot_pallete_style_combobox.currentText() == 'Custom':
+            violin_button_pg2.setText('')
+            violin_button_pg2.setStyleSheet(
+                "background-color:" + str(violin_fg_pg2) + ";"
+            )
+        if violin_comboboxItem_pg2 != None:
+            violin_comboboxItem_pg2.setItemData(violin_index_pg2, violin_color_pg2, QtCore.Qt.BackgroundRole)
+
+    def swarm_palette_custom_pg2(self):
+        for count in range(self.pg_2_graph_swarmplot_pallete_style_combobox.count()):
+            if count != 0:
+                self.pg_2_graph_colors_pallete_2_swarmplot_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_2_swarmplot_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+                self.pg_2_graph_colors_pallete_swarmplot_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_swarmplot_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+
+    def violin_palette_custom_pg2(self):
+        for count in range(self.pg_2_graph_violinplot_pallete_style_combobox.count()):
+            if count != 0:
+                self.pg_2_graph_colors_pallete_2_violinplot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_2_violinplot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+                self.pg2_graph_border_color_violinplot_pallete_button.setText('Pallet')
+                self.pg2_graph_border_color_violinplot_pallete_button.setStyleSheet(
+                    "background-color: #4c4c4c;")
+
+    def bar_palette_custom_pg2(self):
+        for count in range(self.pg_2_graph_barplot_pallete_style_combobox.count()):
+            if count != 0:
+                self.pg_2_graph_colors_pallete_2_bar_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_2_bar_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+                self.pg_2_graph_colors_pallete_3_bar_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_3_bar_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+                self.pg_2_graph_colors_pallete_1_bar_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_1_bar_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+
+    def box_palette_custom_pg2(self):
+        for count in range(self.pg_2_graph_boxplot_pallete_style_combobox.count()):
+            if count != 0:
+                self.pg_2_graph_colors_pallete_2_box_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_2_box_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+                self.pg_2_graph_colors_pallete_1_box_plot.setText('Pallet')
+                self.pg_2_graph_colors_pallete_1_box_plot.setStyleSheet(
+                    "background-color: #4c4c4c;")
+
+    def Bar_save_variables(self):
+        """
+        Here We Get the value from the plot instances and put them in the ui.
+        This is done to reflect the value in the instance, its
+        
+        """
+        text = self.pg2_graphs_view.currentItem().text()
+        plot_instance = self.MyVisualPlotHandler.WidgetDictionary[text]
+
+        palette_index = self.pg_2_graph_barplot_pallete_style_combobox.findText(plot_instance.palette)
+        self.pg_2_graph_barplot_pallete_style_combobox.setCurrentIndex(palette_index)
+
+        self.pg_2_graph_colors_pallete_2_bar_plot.setStyleSheet("background-color: " + str(plot_instance.Color))
+
+        self.pg_2_graph_colors_pallete_1_bar_plot.setStyleSheet("background-color: " + str(plot_instance.EdgeColor))
+
+        self.pg2_graph_saturation_spinBox_box_plot.setValue(plot_instance.Saturation)
+
+        # orientation = self.pg2_graph_orientaitno_combobox_barplot.findText(plot_instance.Orientation)
+        # print('orientation')
+        # print(orientation)
+        # self.pg2_graph_orientaitno_combobox_barplot.setText(orientation)
+        #
+        # condition = self.pg2_graph_index_combobox_barplot.findText(plot_instance.Condition)
+        # print('condition')
+        # print(condition)
+        # self.pg2_graph_index_combobox_barplot.setText(condition)
+        #
+        # errorcolor = self.pg_2_graph_colors_pallete_3_bar_plot.palette().button().color().name()
+        # print('errorcolor')
+        # print(errorcolor)
+        # self.pg_2_graph_colors_pallete_3_bar_plot.setStyleSheet("background-color: " + str(errorcolor))
+        #
+        # errorwidth = self.pg2_graph_bar_errwidth_spinBox_box_plot.value(plot_instance.eWidth)
+        # print('errorwidth')
+        # print(errorwidth)
+        # self.pg2_graph_bar_errwidth_spinBox_box_plot.setValue(errorwidth)
+        #
+        # opacity = self.pg2_graph_bar_ci_spinBox_box_plot.value(plot_instance.Opacity)
+        # print('opacity')
+        # print(opacity)
+        # self.pg2_graph_bar_ci_spinBox_box_plot.setValue(opacity)
+        #
+        # capsize = self.pg2_graph_flier_size_spinBox_box_plot.value(plot_instance.eCapSize)
+        # print('capsize')
+        # print(capsize)
+        # self.pg2_graph_flier_size_spinBox_box_plot.setValue(capsize)
+
+    def ExecNewFile(self):
+        """
+        Opens New widnow for new analysis
+        """
+        from celer_sight_ai.NewAnalysisSetUp import NewAnalysis
+        del self.new_analysis_object
+        QtWidgets.QApplication.processEvents()
+        self.new_analysis_object = NewAnalysis()
+        self.new_analysis_object.CreateNewVButton.clicked.connect(lambda: self.CreateProject())
+
+        self.new_analysis_object.AnalysisWidgetForm.exec()
+        self.new_analysis_object.AnalysisWidgetForm.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+        self.new_analysis_object.AnalysisWidgetForm.raise_()
+
+    def show_only_active_plot_settings(self):
+        """
+        function that shows only plot of interest
+        """
+        from celer_sight_ai.QtAssets.DockEssentialComponents.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Bar.hide()
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Dot.hide()
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Box.hide()
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Violin.hide()
+        self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Swarm.hide()
+
+        # Get the RNAi_list
+        items = []
+        for x in range(self.RNAi_list.count()):
+            items.append(self.RNAi_list.item(x).text())
+
+        if self.pg2_graphs_view.count() != 0:
+
+            text = self.pg2_graphs_view.currentItem().text()
+            plot_instance = self.MyVisualPlotHandler.WidgetDictionary[text]
+
+            if plot_instance.type == 'Bar Plot':
+                print("Bar Plot shown")
+                self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Bar.show()
+                # Add index in combobox
+                self.pg2_graph_index_combobox_barplot.clear()
+                self.pg2_graph_index_combobox_barplot.addItem('All')
+                for index in items:
+                    self.pg2_graph_index_combobox_barplot.addItem(str(index))
+
+                self.pg2_graphs_view.itemSelectionChanged.connect(lambda: self.Bar_save_variables())
+                return
+            elif plot_instance.type == "Dot Plot":
+                print("Dot Plot shown")
+                self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Dot.show()
+                return
+            if plot_instance.type == "Box Plot":
+                print("Box Plot shown")
+                self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Box.show()
+                # Add index in combobox
+                self.pg2_graph_index_combobox_boxplot.clear()
+                self.pg2_graph_index_combobox_boxplot.addItem('All')
+                for index in items:
+                    self.pg2_graph_index_combobox_boxplot.addItem(str(index))
+                return
+            if plot_instance.type == "Violin Plot":
+                print("Violin Plot shown")
+                self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Violin.show()
+                # Add index in combobox
+                self.pg2_graph_index_combobox_violinplot.clear()
+                self.pg2_graph_index_combobox_violinplot.addItem('All')
+                for index in items:
+                    self.pg2_graph_index_combobox_violinplot.addItem(str(index))
+                return
+            if plot_instance.type == "Swarm Plot":
+                print("Swarm Plot shown")
+                self.pg_2_REPLACE_WITH_SPECIFIC_WIDGET_Swarm.show()
+                # Add index in combobox
+                self.pg2_graph_index_combobox_swarmplot.clear()
+                self.pg2_graph_index_combobox_swarmplot.addItem('All')
+                for index in items:
+                    self.pg2_graph_index_combobox_swarmplot.addItem(str(index))
+                return
+
+    def ApplyUiSelectionBtn(self, button=None):
+        self.viewer.ui_tool_selection.selected_button = button
+
+    def check_mainwindow_tabs_and_update(self, MainWindow):
+        current_index = self.mainwindow_tabs.currentIndex()
+        print(current_index)
+        if current_index == 1:
+            self.unparent_from_ui(self.MainWindow, 0)
+            self.reparent_from_ui(self.MainWindow, 1)
+        elif current_index == 0:
+            self.unparent_from_ui(self.MainWindow, 1)
+            self.reparent_from_ui(self.MainWindow, 0)
+
+    def unparent_from_ui(self, MainWindow, ui_tab_number):
+        if ui_tab_number == 0:
+            # swithcing to analysis table
+            self.dock_for_group_pg1_left.setParent(None)
+            self.Dock_mask_contrast_brightness_btn.setParent(None)
+            self.Dock_overview_tabs.setParent(None)
+            self.viewer.setParent(None)
+            # self.viewer.deleteLater()
+            self.dock_for_group_pg1_left.hide()
+            self.Dock_mask_contrast_brightness_btn.hide()  # old dock_for_mask_toolbox
+            self.Dock_overview_tabs.hide()
+
+        if ui_tab_number == 1:
+            self.results_inspector_dock.setParent(None)
+            self.plot_dock.setParent(None)
+            self.plot_dools_dock.setParent(None)
+            self.results_inspector_dock.hide()
+            self.plot_dock.hide()
+            self.plot_dools_dock.hide()
+
+    def SetUpButtons(self):
+        """
+        This is a fucntion taht converts all of the qpushbuttons to animationbuttons
+        
+        """
+        import os
+        from celer_sight_ai.QtAssets.animate_qpushbutton import RepeatTimer, Animation_Button
+
+        # ItemsToBeConverted = [self.add_images_btn,self.initialize_analysis_button,self.get_roi_ai_button ]
+
+        # for i in range(len(ItemsToBeConverted)):
+        #     ItemsToBeConverted[i] = self.ReplaceWidget(ItemsToBeConverted[i] , Animation_Button)
+
+        # replce add_images_btn and add icons
+        self.add_images_btn = self.ReplaceWidget(self.add_images_btn, Animation_Button)
+        self.initialize_analysis_button = self.ReplaceWidget(self.initialize_analysis_button, Animation_Button)
+        self.get_roi_ai_button = self.ReplaceWidget(self.get_roi_ai_button, Animation_Button)
+        self.up_button_list = self.ReplaceWidget(self.up_button_list, Animation_Button)
+        self.down_button_list = self.ReplaceWidget(self.down_button_list, Animation_Button)
+        self.delete_button_list = self.ReplaceWidget(self.delete_button_list, Animation_Button)
+
+        icon_RNAi = QtGui.QIcon()
+        icon_RNAi.addPixmap(QtGui.QPixmap('data/icons/add_rnai_V1/cross_v100.png'))
+        self.add_images_btn.setIcon(icon_RNAi)
+        baseP = "data/icons/add_rnai_V2"
+        frames = os.listdir(baseP)
+        self.add_images_btn.setFrames(baseP, frames)
+        self.add_images_btn.setIconSize(QtCore.QSize(200, 200))
+        self.add_images_btn.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
+
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap('data/icons/analyze_V1.png'))
+        self.initialize_analysis_button.setIcon(icon3)
+        self.initialize_analysis_button.setIconSize(QtCore.QSize(100, 100))
+        self.initialize_analysis_button.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
+        self.initialize_analysis_button.setMinimumSize(QtCore.QSize(0, 50))
+        self.initialize_analysis_button.setMaximumSize(QtCore.QSize(150, 150))
+
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap('data/icons/brain_btn_v1/brain_v200.png'))
+        self.get_roi_ai_button.setIcon(icon2)
+        baseP = "data/icons/brain_btn_v1"
+        frames = os.listdir(baseP)
+        self.get_roi_ai_button.setFrames(baseP, frames)
+        self.get_roi_ai_button.setIconSize(QtCore.QSize(200, 200))
+        self.get_roi_ai_button.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
+        self.get_roi_ai_button.installEventFilter(self)
+
+        # RNAi list tabs icons:
+        RNAiUpButtonListIcon = QtGui.QIcon()
+        RNAiUpButtonListIcon.addPixmap(QtGui.QPixmap('data\\icons\\down_arrow.png'))
+        self.up_button_list.setIcon(RNAiUpButtonListIcon)
+
+        RNAiDownButtonListIcon = QtGui.QIcon()
+        RNAiDownButtonListIcon.addPixmap(QtGui.QPixmap('data\\icons\\up_arrow.png'))
+        self.down_button_list.setIcon(RNAiDownButtonListIcon)
+
+        RNAiTrashButtonListIcon = QtGui.QIcon()
+        RNAiTrashButtonListIcon.addPixmap(QtGui.QPixmap('data\\icons\\trashcan.png'))
+        self.delete_button_list.setIcon(RNAiTrashButtonListIcon)
+
+        #
+        # Set Up animatin cursor class
+        #
+        # from celer_sight_ai.QtAssets.animate_qpushbutton import AnimationCursor
+        # self.CustomCursor = AnimationCursor(self)
+        from celer_sight_ai import config
+
+
+        config.global_signals.StopCursorAnimationSignal.connect(lambda: self.StopCursorAnimation())
+        config.global_signals.RestoreCursor.connect(lambda: self.RestoreCursorViewerAndMain())
+
+    def StopCursorAnimation(self):
+        """
+        When the timer is finished it returns the cursor to the normal state
+        """
+        self.CustomCursor._timer.force_stop()
+        # QtWidgets.QApplication.processEvents()
+        # print("settings default cursor")
+        self.CustomCursor._setFrame(0)
+        # self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.ArrowCursor))
+        # self.viewer.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.ArrowCursor))
+
+    def RestoreCursorViewerAndMain(self):
+        self.CustomCursor.RestoreCursor()
+
+    def EnhanceQGroupBox(self, InstanceToEnhance):
+        """
+        We are updating the out-of-the-box groupbox with an improved versiont hat allows animations
+        InstanceToEnhance = Instance to add the extrafeatures
+        """
+        #
+        # AddShadow
+        #
+        self.AddShadowToWidget(InstanceToEnhance)
+
+        AnimationDuration = 250
+        InstanceToEnhance.setCheckable(True)
+        InstanceToEnhance.setChecked(False)
+        InstanceToEnhance.ParAnimation = QtCore.QParallelAnimationGroup()
+        # Get Initial Variables
+        BegginPosX = InstanceToEnhance.pos().x()
+        BegginPosY = InstanceToEnhance.pos().y()
+        BegginWidth = InstanceToEnhance.width()
+        BegginHeight = InstanceToEnhance.height()
+        GeometryAnimation = QtCore.QPropertyAnimation(InstanceToEnhance, b"geometry")
+        GeometryAnimation.setDuration(AnimationDuration)
+        GeometryAnimation.setStartValue(QtCore.QRect(AnimstartPosX, AnimstartPosY, initialWidth / 4, initialHeight / 4))
+        GeometryAnimation.setEndValue(QtCore.QRect(initialX, initialY, initialWidth, initialHeight))
+
+    def ReplaceWidget(self, WidgetToReplace, WidgetToBeReplacedWith):
+        """
+        This function gets a widget and replaces it with the widget 
+        of interest while mainteing geomtery and position in the frame
+        """
+        ParentWidget = WidgetToReplace.parentWidget()
+        width = WidgetToReplace.frameGeometry().width()
+        height = WidgetToReplace.frameGeometry().height()
+        print(ParentWidget.layout())
+        if type(ParentWidget.layout()) == QtWidgets.QGridLayout:
+            print(type(ParentWidget.layout()))
+            idx = ParentWidget.layout().indexOf(WidgetToReplace)
+            Location = ParentWidget.layout().getItemPosition(idx)
+        else:
+            print(type(ParentWidget.layout()))
+            for i in range(ParentWidget.layout().count()):
+                print(ParentWidget.layout().itemAt(i))
+                if ParentWidget.layout().itemAt(i).widget() == WidgetToReplace:
+                    print("OK")
+                    Location = 0
+        WidgetToReplace.setParent(None)
+        WidgetToReplace.deleteLater()
+        WidgetToReplace = None
+        NewWIdget = WidgetToBeReplacedWith(ParentWidget)
+        if type(ParentWidget.layout()) == QtWidgets.QGridLayout:
+            ParentWidget.layout().addWidget(NewWIdget, Location[0], Location[1], Location[2], Location[3])
+        else:
+            print("location is ", Location)
+            # ParentWidget.layout().addWidget(NewWIdget, 2)
+        NewWIdget.setMinimumSize(QtCore.QSize(width, height))
+        NewWIdget.setMaximumSize(QtCore.QSize(width, height))
+        return NewWIdget
+
+    def ApplyAttributesToAllImages(self):
+        """
+        This is a function that is connected to the Apply To All Images and changes all of the buttons attributes to the current ones
+        """
+        print("works!")
+        try:
+            for i in range(len(self.DH.AssetMaskDictionaryBool[self.DH.BLobj.get_current_condition()])):
+                for x in range(len(self.DH.AssetMaskDictionaryBool[self.DH.BLobj.get_current_condition()][i])):
+                    self.DH.AssetMaskDictionaryBool[self.DH.BLobj.get_current_condition()][i][
+                        x].RegionAttribute = self.MasterMaskLabelcomboBox.currentText()
+                    self.DH.AssetMaskDictionaryBool[self.DH.BLobj.get_current_condition()][i][
+                        x].BBWidget.MaskPropertiesWidgetLabelcomboBox \
+                        .setText(self.MasterMaskLabelcomboBox.currentText())
+            for i in range(len(self.DH.AssetMaskDictionaryPolygon[self.DH.BLobj.get_current_condition()])):
+                for x in range(len(self.DH.AssetMaskDictionaryPolygon[self.DH.BLobj.get_current_condition()][i])):
+                    self.DH.AssetMaskDictionaryPolygon[self.DH.BLobj.get_current_condition()][i][
+                        x].RegionAttribute = self.MasterMaskLabelcomboBox.currentText()
+                    self.DH.AssetMaskDictionaryPolygon[self.DH.BLobj.get_current_condition()][i][
+                        x].BBWidget.MaskPropertiesWidgetLabelcomboBox \
+                        .setText(self.MasterMaskLabelcomboBox.currentText())
+            self.load_main_scene(self.current_imagenumber)
+        except Exception as e:
+            print(e)
+
+    def reparent_from_ui(self, MainWindow, ui_tab_number):
+        if ui_tab_number == 0:
+            print("reconnected")
+            # swithcing to analysis table
+            self.gridLayout.addWidget(self.viewer)
+            self.dock_for_group_pg1_left.setParent(self.MainWindow)
+            self.Dock_overview_tabs.setParent(self.MainWindow)
+            self.dock_for_group_pg1_left.setMinimumSize(QtCore.QSize(130, 50))
+            self.dock_for_group_pg1_left.setMaximumSize(QtCore.QSize(170, 14500))
+            # for the toolbox preferences
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(self.Dock_mask_contrast_brightness_btn.sizePolicy().hasHeightForWidth())
+            self.Dock_mask_contrast_brightness_btn.setParent(self.MainWindow)
+            self.Dock_mask_contrast_brightness_btn.setSizePolicy(sizePolicy)
+            self.Dock_mask_contrast_brightness_btn.setMinimumSize(QtCore.QSize(201, 250))
+            self.Dock_mask_contrast_brightness_btn.setMaximumSize(QtCore.QSize(400, 300))
+            self.Dock_mask_contrast_brightness_btn.setFeatures(
+                QtWidgets.QDockWidget.DockWidgetFloatable | QtWidgets.QDockWidget.DockWidgetMovable)
+            self.Dock_mask_contrast_brightness_btn.setAllowedAreas(
+                QtCore.Qt.BottomDockWidgetArea | QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
+            self.Dock_mask_contrast_brightness_btn.setObjectName("Dock_mask_contrast_brightness_btn")
+            # mask image context
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(self.dock_for_group_pg1_left.sizePolicy().hasHeightForWidth())
+            self.Dock_overview_tabs.setSizePolicy(sizePolicy)
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(self.Dock_overview_tabs.sizePolicy().hasHeightForWidth())
+            self.Dock_overview_tabs.setSizePolicy(sizePolicy)
+            self.Dock_overview_tabs.setMinimumSize(QtCore.QSize(220, 200))
+            # self.Dock_overview_tabs.setMaximumSize(QtCore.QSize(2200,100000))
+            # self.Dock_overview_tabs.setGeometry(220,800)
+            self.Dock_overview_tabs.setFeatures(
+                QtWidgets.QDockWidget.DockWidgetFloatable | QtWidgets.QDockWidget.DockWidgetMovable)
+            self.Dock_overview_tabs.setAllowedAreas(
+                QtCore.Qt.BottomDockWidgetArea | QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
+            self.MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.dock_for_group_pg1_left)
+            self.MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.Dock_mask_contrast_brightness_btn)
+            self.MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.Dock_overview_tabs)
+            self.dock_for_group_pg1_left.show()
+            self.Dock_mask_contrast_brightness_btn.show()
+            self.Dock_overview_tabs.show()
+        if ui_tab_number == 1:
+            self.results_inspector_dock.setParent(self.MainWindow)
+            self.plot_dock.setParent(self.MainWindow)
+            self.plot_dools_dock.setParent(self.MainWindow)
+
+            MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.results_inspector_dock)
+            MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.plot_dock)
+            MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.plot_dools_dock)
+
+            # MainWindow.tabifyDockWidget(self.plot_dools_dock ,self.results_inspector_dock )
+            self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks | QtWidgets.QMainWindow.AllowTabbedDocks)
+            self.results_inspector_dock.show()
+            self.plot_dock.show()
+            self.plot_dools_dock.show()
+            self.plot_dools_dock.setWindowTitle("Plotting Tools")
+            self.results_inspector_dock.setWindowTitle("Spreadsheet")
+            self.plot_dock.setWindowTitle("Plot")
+            MainWindow.tabifyDockWidget(self.results_inspector_dock, self.plot_dools_dock)
+            MainWindow.setTabPosition(QtCore.Qt.LeftDockWidgetArea, QtWidgets.QTabWidget.TabPosition.North)
+
+            self.plot_dools_dock.raise_()
+            return
+
+    # def decide_mask_generation_off_on_line(self):
+    #     if self.comboBox_for_mask_generation.currentText == "Assisted":
+
+    #     if self.comboBox_for_mask_generation.currentText == "Standalone":
+
+
+if __name__ == "__main__":
+    import sys
+
+    app = QtWidgets.QApplication(sys.argv)
+    # TO make it work it just needs this:
+    ui = UiBlocksBuilder()
+    ui.SetupAll()
+    sys.exit(app.exec())
