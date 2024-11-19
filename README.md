@@ -51,7 +51,7 @@ Traditional image analysis tools often require extensive training or programming
 ### 3) Easily create new class / models && improve them
 ![Create new model](https://github.com/user-attachments/assets/7230a2eb-afad-4004-88dd-f5fb371070b3)
 
-### 3) High resolution / pyramidal image support
+### 4) High resolution / pyramidal image support
 ![Untitled](https://github.com/user-attachments/assets/78e72a4a-c659-4b4c-a2f8-99dc94f92724)
 
 
