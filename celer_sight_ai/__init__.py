@@ -4,7 +4,7 @@ import shutil
 import time
 import sys
 
-__version__ = "0.0.406"
+__version__ = "0.0.407"
 APP_NAME = "celer_sight_ai"
 
 # if not hasattr(sys, "frozen"):
