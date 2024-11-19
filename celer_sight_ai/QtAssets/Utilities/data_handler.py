@@ -445,7 +445,7 @@ class DataHandler(object):
         else:
             return None
 
-    def get_button_by_uuid(self, group_id, condition_uuid, image_uuid):
+    def get_button_by_uuid(self, group_id=None, condition_uuid=None, image_uuid=None):
         logger.debug(f"Getting button for {group_id}, {condition_uuid}, {image_uuid}")
         condition_object = self.BLobj.get_condition_by_uuid(condition_uuid)
         if condition_object:
@@ -1280,7 +1280,20 @@ class condObj:
         args = list(args)
         imID = args.pop(0)
         args = tuple([self.images[imID]] + args)
-        im = getImage(*args, **kwargs)
+        try:
+            im = getImage(*args, **kwargs)
+        except Exception as e:
+            # delete current image
+            image_object = self.images[imID]
+            button = image_object.myButton
+            if button:
+                object = {
+                    "group_name": image_object.group_uuid,
+                    "treatment_uuid": image_object.treatment_uuid,
+                    "image_uuid": image_object.unique_id,
+                }
+                config.global_signals.delete_image_with_button_signal.emit(object)
+
         return im  # only need the image (index 0) since we have already recorded the channels
 
     def __len__(self):

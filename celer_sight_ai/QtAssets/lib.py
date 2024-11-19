@@ -1168,9 +1168,12 @@ class FileClient:
             "audited_categories": class_names,
             "supercategory": config.supercategory,
         }
-        r = self.session.post(addr, json=data)
-        r.raise_for_status()
-        return r
+        try:
+            r = self.session.post(addr, json=data)
+            r.raise_for_status()
+        except Exception as e:
+            return False, str(r.text)
+        return True, ""
 
     @login_required
     def remote_image_batch_for_annotation(self):

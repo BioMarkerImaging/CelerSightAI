@@ -635,10 +635,12 @@ class Master_MainWindow(UiBlocksBuilder):
         all_image_uuids = [i.unique_id for i in all_images]
         # get all class names
         class_names = [i.text() for i in self.custom_class_list_widget.classes.values()]
-        config.client.set_remote_annotation_session_as_audited(
+        success, error_message = config.client.set_remote_annotation_session_as_audited(
             all_image_uuids, class_names
         )
-
+        if not success:
+            config.global_signals.errorSignal.emit(error_message)
+            return
         # confirm with dialog
         config.global_signals.successSignal.emit("Images marked as audited")
 
