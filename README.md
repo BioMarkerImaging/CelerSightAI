@@ -11,13 +11,13 @@ Celer Sight AI is a free high-throughput imaging analysis solution that leverage
 
 ## 🚀 Key Features
 
-- 🚀 **High-Throughput Analysis**: Process fluorescent images up to 95% faster than traditional methods
+- 🚀 **High-Throughput Analysis**: Process fluorescent images much faster than traditional methods
 - ⚡️ **Adaptive AI Models**: Community-driven model hub that continuously improves through collective usage
 - 🛠️ **Experiment Reproducibility**: Save and load sessions with `.bmics` files
 - 🖥️ **Cross-Platform**: Fully supported on macOS and Windows
 - 🤓 **User-Friendly Interface**: Pre-trained AI models and automated analysis - no coding required
 - 💾 **Optimized Performance**: Efficient handling of large TIF files with smart disk caching
-- 🔬 **WSI Compatible**: Full support for pyramidal whole slide images
+- 🔬 **WSI Compatible**: Support for pyramidal whole slide images
 - 🌐 **Open Source Models**: All models available through HuggingFace for community use
 - 🗂️ **Intuitive Data Import**: Simple drag-and-drop interface for batch processing
 
@@ -88,7 +88,27 @@ Traditional image analysis tools often require extensive training or programming
    `
 
 ## Model training / inference is expensive, how can this be free?
-Initially, all users will have access to cloud compute, however, within the next year this will change. For free users Celer Sight will download version of the requested models and they will run on the users laptop. This way of serving models allow us to handle ai model inference for free! If you still need cloud inference though, there will be a paid option available for those who can support it.
+Initially, all users will have access to cloud compute, however, within the next year this will change. For free users Celer Sight will download a version of the requested model automatically and run inference on users machine in the background. If you still need cloud inference, there will be a paid option available for those who can support it.
+
+### Current Model (Beta)
+
+* Cloud inference available to all users
+* Zero data retention policy
+* No image or metadata storage
+* Daily limit to all users, with an increased limit to patreon members
+
+## Upcoming Tiers (2025)
+###  Free Tier
+* Local inference by default
+* Potential cloud inference during low-traffic periods
+* Access to all community models
+* Community model contributions
+  
+### Premium Tier
+* Priority cloud inference
+* Private model development possible
+* Dedicated processing resources
+* Premium support access
 
 ## 💝 Support Celer Sight
 
@@ -106,6 +126,12 @@ If you find Celer Sight useful, consider supporting its development:
 - 🌟 Star us on GitHub
 
 Your support helps us maintain and improve Celer Sight for everyone!
+
+## Data Collection
+- Account information for registered users (email only)
+- When a user contributes images we retain Image (without metadata) and annotation data 
+- Zero retention policy during inference.
+- No data is shared with any other third parties.
 
 ## License
 
