@@ -23,13 +23,15 @@ from celer_sight_ai.config import (
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import TransparentGraphicsWidget
+from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import (
+    TransparentGraphicsWidget,
+)
 
 from celer_sight_ai.gui.custom_widgets.scene import readImage
 
 import uuid
 
-from celer_sight_ai.QtAssets.buttons.image_button import ImageButtonPlaceHolderClass
+from celer_sight_ai.gui.custom_widgets.image_button import ImageButtonPlaceHolderClass
 
 from typing import Generator, Any
 
@@ -1044,7 +1046,7 @@ class CelerSightObj:  # contains group obj
                 )
                 logger.debug(f"Spawning button at position: {position}")
 
-                from celer_sight_ai.QtAssets.buttons.image_button import (
+                from celer_sight_ai.gui.custom_widgets.image_button import (
                     ButtonAssetClass,
                 )
 

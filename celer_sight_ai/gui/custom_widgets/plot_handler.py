@@ -2,14 +2,15 @@
 This class will handle all the plot settings ranging
 with import functions to variables and multiplot handling
 """
+
 from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai.QtAssets.UiFiles.plotSpecificWidget import (
+from celer_sight_ai.gui.designer_widgets_py_files.plotSpecificWidget import (
     Ui_Form as specificPlotWidgetUi,
 )
 import seaborn as sns
 import matplotlib
 from matplotlib import pyplot as plt
-from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import myRichTextEdit
+from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import myRichTextEdit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -1143,9 +1144,9 @@ class plotStylesHandler:
                     listItemTmp, tmpWIdget.MyWidget
                 )
                 counter += 1
-            self.MainWindow.MyVisualPlotHandler.specificPlotWidgetRef[
-                value.name
-            ] = plotItemsList
+            self.MainWindow.MyVisualPlotHandler.specificPlotWidgetRef[value.name] = (
+                plotItemsList
+            )
         self.MainWindow.plot_seaborn()
         return
 
@@ -1436,7 +1437,7 @@ class specificPlotWidget(specificPlotWidgetUi):
         self.EdgeColor.setStyleSheet("background-color:" + Color + ";")
 
 
-from celer_sight_ai.QtAssets.UiFiles.plotsColorPalleteSetup import (
+from celer_sight_ai.gui.designer_widgets_py_files.plotsColorPalleteSetup import (
     Ui_Dialog as plotsColorPalleteSetupUi,
 )
 
@@ -1528,7 +1529,7 @@ class palleteColorPickerDialog(plotsColorPalleteSetupUi):
         # os.path.join
 
 
-from celer_sight_ai.QtAssets.UiFiles.simplePalleteWidgetSpecific import (
+from celer_sight_ai.gui.designer_widgets_py_files.simplePalleteWidgetSpecific import (
     Ui_Form as simplePalleteWidgetSpecificUi,
 )
 
@@ -1562,7 +1563,7 @@ def rgb2hex(r, g, b):
     return matplotlib.colors.to_hex((r, g, b))
 
 
-from celer_sight_ai.QtAssets.UiFiles.plotStylesDatabaseInspector import (
+from celer_sight_ai.gui.designer_widgets_py_files.plotStylesDatabaseInspector import (
     Ui_Dialog as autoLoaderPlotDialog,
 )
 
@@ -1696,7 +1697,7 @@ class plotStylesButton(QtWidgets.QPushButton):
         self.myImgCheckIcon.addPixmap(QtGui.QPixmap(self.myImgCheck))
 
 
-from celer_sight_ai.QtAssets.UiFiles.AnnotationLinksUI import (
+from celer_sight_ai.gui.designer_widgets_py_files.AnnotationLinksUI import (
     Ui_Form as AnnotationLinksUIForm,
 )
 
@@ -1737,7 +1738,7 @@ class AnnotationDialog(AnnotationLinksUIForm):
             self.listWidget_3.removeItemWidget(item)
 
 
-# from celer_sight_ai.QtAssets.UiFiles.VisualPlotPresetWidget import Ui_Form as VisualPlotPresetWidget_UI
+# from celer_sight_ai.gui.designer_widgets_py_files.VisualPlotPresetWidget import Ui_Form as VisualPlotPresetWidget_UI
 # class plotStyleViewButton(VisualPlotPresetWidget_UI):
 #     def __init__(self, MainWindow=None, myStyleImg = None ):
 #         super(plotStyleViewButton, self).__init__()

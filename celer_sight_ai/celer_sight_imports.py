@@ -55,8 +55,8 @@ import SplineTool
 import celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended as celer_sight_main_window_ui_extended
 import UpdaterMain
 from celer_sight_ai.QtAssets import *
-from celer_sight_ai.QtAssets.net import *
-from celer_sight_ai.QtAssets.Utilities import *
+from celer_sight_ai.gui.net import *
+from celer_sight_ai.gui.Utilities import *
 import scipy
 import scipy.stats as stats
 from scipy import ndimage

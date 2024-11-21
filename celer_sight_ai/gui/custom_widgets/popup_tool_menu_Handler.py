@@ -15,11 +15,11 @@ added the def to hadnle the enter event
 change button state with def state handler
 and finally change the stylesheet to handle enabled and disabled instad of normal and hover
 """
-from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import AnimationCursor
+from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import AnimationCursor
 from celer_sight_ai import config
 
 
-from celer_sight_ai.QtAssets.UiFiles.popup_tool_menu_v2 import (
+from celer_sight_ai.gui.designer_widgets_py_files.popup_tool_menu_v2 import (
     Ui_tool_selection_onscreen_menu as FormUISection,
 )
 import time

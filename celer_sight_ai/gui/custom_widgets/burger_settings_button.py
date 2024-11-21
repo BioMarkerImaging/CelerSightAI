@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class burger_settings_button(QtWidgets.QPushButton):
     def __init__(self, parent=None):
         QtWidgets.QPushButton.__init__(self, parent)

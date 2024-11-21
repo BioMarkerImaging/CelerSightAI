@@ -7,7 +7,7 @@ import json
 
 # from detectron2.structures import BoxMode
 from PyQt6 import QtGui, QtCore, QtWidgets
-from celer_sight_ai.QtAssets.UiFiles.ExportSettingsneural import (
+from celer_sight_ai.gui.designer_widgets_py_files.ExportSettingsneural import (
     Ui_ExportNeuralDialog as ExportNeuralDialog,
 )
 

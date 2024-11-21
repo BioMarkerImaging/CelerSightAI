@@ -14,7 +14,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import traceback
 
 print("Before importing draggable button")
-from celer_sight_ai.QtAssets.UiFiles.testDragableButton import (
+from celer_sight_ai.gui.designer_widgets.testDragableButton import (
     Ui_Dialog as DialogMultichannelImporter,
 )
 
@@ -467,7 +467,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
     def IndiImportMultiThreaded(self, my_files_list=None):
         # Animated Bar for progress on importing images to multichannel importer
 
-        from celer_sight_ai.QtAssets.UiFiles.LoadingAnimation1 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.LoadingAnimation1 import (
             Ui_Dialog as LoadingAnimationDialogForm,
         )
 
@@ -2324,7 +2324,7 @@ def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 
-from celer_sight_ai.QtAssets.UiFiles.ImportSettings import (
+from celer_sight_ai.gui.designer_widgets_py_files.ImportSettings import (
     Ui_Dialog as ImportDialogUi,
 )
 

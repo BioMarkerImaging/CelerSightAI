@@ -8,7 +8,7 @@ import os
 if "CELER_SIGHT_AI_HOME" in os.environ:
     os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
 
-from celer_sight_ai.QtAssets.UiFiles.aboutSection import (
+from celer_sight_ai.gui.designer_widgets_py_files.aboutSection import (
     Ui_Form as aboutSectionUiForm,
 )
 import sys
@@ -39,7 +39,7 @@ if os.name == "nt":
     # from PyQt6.QtWinExtras import QtWin
 
 # class StylesheetApplierClass(self):
-from celer_sight_ai.QtAssets.UiFiles.MainWindowUi import (
+from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.MainWindowUi import (
     Ui_MainWindow,
 )  # Mainwindow_pg1_v2 import Ui_MainWindow
 
@@ -56,7 +56,7 @@ logger.info("imported ColorPrefsPhotoViewer")
 import numpy as np
 
 logger.info("imported numpy")
-from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
     QuickToolButton,
     myRichTextEdit,
     mainButtonsLeftScreen,
@@ -413,7 +413,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Top right widget that allows the user to select a Pro or Lite model.
         # Pro models run on the cloud and have higher performace.
-        # from celer_sight_ai.QtAssets.pro_lite_model_toggle_component import AnimatedToggleButton
+        # from celer_sight_ai.gui.pro_lite_model_toggle_component import AnimatedToggleButton
         # self.model_pro_lite_toggle_button = AnimatedToggleButton(self.MainWinowFrame , ["Pro" , "Lite"])
         # TODO: add this back later when local models are supported
 
@@ -815,7 +815,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.bottom_menus.setContentsMargins(0, 0, 0, 0)
 
         # Set up Fillers for QuickTools to Hide to Side
-        from celer_sight_ai.QtAssets.UiFiles.quickToolStickAreaForm import (
+        from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.quickToolStickAreaForm import (
             Ui_Form as quickToolsUiFormHide,
         )
 
@@ -879,7 +879,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # self.setUpIconsQuickTools()
 
-        from celer_sight_ai.QtAssets.buttons.burger_settings_button import (
+        from celer_sight_ai.gui.custom_widgets.burger_settings_button import (
             burger_settings_button,
         )
 
@@ -2346,7 +2346,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
         # Plot Settings Widget
-        # from celer_sight_ai.QtAssets.UiFiles.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
+        # from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
         # plot_tools_widget_v4.setupUi(self, self.scrollArea_for_plot_tools)  # add the widgets
         # plot_tools_widget_v4.retranslateUi(self, self.scrollArea_for_plot_tools)  # translate properties
         self.pg2_graphs_view.itemSelectionChanged.connect(
@@ -2363,7 +2363,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # function to plce the settings for all the plots and hide them, then show_only_active_plot_settings whoces which settings to use
         self.setup_widgets()
 
-        # from celer_sight_ai.QtAssets.UiFiles.results_inspector_widgets import Ui_Form as results_inspector_widgets
+        # from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.results_inspector_widgets import Ui_Form as results_inspector_widgets
         # results_inspector_widgets.setupUi(self, self.ReviewAreaWidget)  # add the widgets
         # results_inspector_widgets.retranslateUi(self, self.ReviewAreaWidget)  # translate properties
 
@@ -2371,7 +2371,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Selected Mask DIalog set up>>>
         self.SelectedMaskDialog = QtWidgets.QDialog()
-        from celer_sight_ai.QtAssets.UiFiles.SelectedSettintgsDialog import (
+        from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.SelectedSettintgsDialog import (
             Ui_Dialog as SelectedSettintgsDialog,
         )
 
@@ -2560,10 +2560,12 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         function that sets up our widgets for plot and jitter, box bar etc...
         """
-        from celer_sight_ai.QtAssets.bar_plot_settings_widget_v2 import Bar_Ui_Form
-        from celer_sight_ai.QtAssets.bax_plot_settings_widget_v2 import Box_Ui_Form
-        from celer_sight_ai.gui.custom_widgets.swarm_plot_settings_widget_v2 import Swarm_Ui_Form
-        from celer_sight_ai.QtAssets.stripplot_settings_wdiget_v2 import (
+        from celer_sight_ai.gui.bar_plot_settings_widget_v2 import Bar_Ui_Form
+        from celer_sight_ai.gui.bax_plot_settings_widget_v2 import Box_Ui_Form
+        from celer_sight_ai.gui.custom_widgets.swarm_plot_settings_widget_v2 import (
+            Swarm_Ui_Form,
+        )
+        from celer_sight_ai.gui.stripplot_settings_wdiget_v2 import (
             strip_plot_settings_form,
         )
         from celer_sight_ai.gui.custom_widgets.violin_plot_settings_widget_v2 import (
@@ -3057,7 +3059,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         function that shows only plot of interest
         """
-        from celer_sight_ai.QtAssets.UiFiles.plot_tools_widget_v4 import (
+        from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.plot_tools_widget_v4 import (
             Ui_Plot_tools_widget as plot_tools_widget_v4,
         )
 
@@ -3163,7 +3165,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         TODO: change the name f the function, its named the sane ass in the Add btnClass.py
         """
         import os
-        from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+        from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
             RepeatTimer,
             Animation_Button,
         )
@@ -3255,7 +3257,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #
         # Set Up animatin cursor class
         #
-        # from celer_sight_ai.QtAssets.animate_qpushbutton import AnimationCursor
+        # from celer_sight_ai.gui.animate_qpushbutton import AnimationCursor
         # self.CustomCursor = AnimationCursor(self)
         from celer_sight_ai import config
 
@@ -3268,7 +3270,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setUpTabButtons(self):
         import os
-        from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+        from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
             RepeatTimer,
             TabAnimationButton,
         )
@@ -3279,7 +3281,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # tab animations buttons
 
-        # from celer_sight_ai.QtAssets.animate_qpushbutton import RepeatTimer, Animation_Button_TAB
+        # from celer_sight_ai.gui.animate_qpushbutton import RepeatTimer, Animation_Button_TAB
         self.tabImageBtn = None
         #  Animation_Button_TAB(myID = 0)
         # icon_RNAi = QtGui.QIcon()

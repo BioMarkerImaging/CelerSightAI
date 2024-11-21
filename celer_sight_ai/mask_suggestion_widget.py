@@ -341,7 +341,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
         MainWindow=None,
     ):
         super(AnnotationAssistantWidget, self).__init__(parent)
-        from celer_sight_ai.QtAssets.widget_spinner import WaitingSpinner
+        from celer_sight_ai.gui.custom_widgets.widget_spinner import WaitingSpinner
 
         # TranslucentBackground
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -842,7 +842,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
     #     """
     #     Convert all existing suggested masks to accepted masks in the scene
     #     """
-    #     from celer_sight_ai.QtAssets.Utilities.scene import PolygonAnnotation
+    #     from celer_sight_ai.gui.Utilities.scene import PolygonAnnotation
 
     def _on_roi_assistant_cancel_button_clicked(self) -> None:
         """

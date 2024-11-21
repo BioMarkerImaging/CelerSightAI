@@ -1,11 +1,11 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import pyqtSlot
-from celer_sight_ai.QtAssets.UiFiles.overview_tabs_widget import (
+from celer_sight_ai.gui.designer_widgets_py_files.overview_tabs_widget import (
     Ui_Form as overview_tabs_widget,
 )
 
 
-from celer_sight_ai.QtAssets.buttons.image_button import ButtonAssetClass
+from celer_sight_ai.gui.custom_widgets.image_button import ButtonAssetClass
 
 
 class WidgetOverviewTabs(QtWidgets.QWidget):

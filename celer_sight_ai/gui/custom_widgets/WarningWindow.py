@@ -1,6 +1,6 @@
 import os
 from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai.QtAssets.UiFiles.warningDialog import Ui_ErrorWindow
+from celer_sight_ai.gui.designer_widgets_py_files.warningDialog import Ui_ErrorWindow
 from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtCore import Qt
 from celer_sight_ai import config

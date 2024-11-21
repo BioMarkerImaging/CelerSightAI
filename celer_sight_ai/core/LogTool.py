@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 from cryptography.fernet import Fernet
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai.QtAssets.UiFiles.loginui1 import Ui_LogInDialog
-from celer_sight_ai.QtAssets.UiFiles.loginuiRegistration1 import (
+from celer_sight_ai.gui.designer_widgets_py_files.loginui1 import Ui_LogInDialog
+from celer_sight_ai.gui.designer_widgets_py_files.loginuiRegistration1 import (
     Ui_Dialog as ActivationDialog,
 )
 from celer_sight_ai.core.Workers import Worker
@@ -66,7 +66,7 @@ class LogInHandler(Ui_LogInDialog):
         from celer_sight_ai import config
         from celer_sight_ai.updater import launch_update
 
-        from celer_sight_ai.QtAssets.widget_spinner import WaitingSpinner
+        from celer_sight_ai.gui.custom_widgets.widget_spinner import WaitingSpinner
 
         # spinner that runs while we are logging in.
         self.spinner_log_in = WaitingSpinner(
@@ -224,7 +224,7 @@ class LogInHandler(Ui_LogInDialog):
 
     def show_login_dialog(self):
         if not hasattr(self, "LogInDialog"):
-            from celer_sight_ai.QtAssets.widget_spinner import WaitingSpinner
+            from celer_sight_ai.gui.custom_widgets.widget_spinner import WaitingSpinner
 
             self.LogInDialog = QtWidgets.QDialog()
             self.setupUi(self.LogInDialog)
@@ -497,7 +497,7 @@ class LogInHandler(Ui_LogInDialog):
         """
         self.during_log_in = True
         logger.info("Authenticating")
-        from celer_sight_ai.QtAssets.lib import FileClient
+        from celer_sight_ai.core.file_client import FileClient
 
         client = FileClient(configHandle.getServerLogAddress())
         result = client.login(
@@ -544,7 +544,7 @@ class LogInHandler(Ui_LogInDialog):
 
         :param result: The result of the login attempt
         """
-        from celer_sight_ai.QtAssets import lib
+        from celer_sight_ai.core import file_client
         import celer_sight_ai.configHandle as configHandle
         from celer_sight_ai import config
         from celer_sight_ai import __version__
@@ -574,7 +574,7 @@ class LogInHandler(Ui_LogInDialog):
         from celer_sight_ai import config
 
         # instantiate client on config
-        config.client = lib.FileClient(
+        config.client = file_client.FileClient(
             configHandle.getServerLogAddress(), MainWindow=self.gui_main
         )
         # set the jwt tokens from the login result

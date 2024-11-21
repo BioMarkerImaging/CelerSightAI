@@ -1,6 +1,6 @@
 from PyQt6 import QtGui, QtCore, QtWidgets
 import os
-from celer_sight_ai.QtAssets.UiFiles.AutoImportInstractions import (
+from celer_sight_ai.gui.designer_widgets_py_files.AutoImportInstractions import (
     Ui_Dialog as AutoImportDialog,
 )
 
@@ -33,7 +33,7 @@ class ExportNeuralSettingsDialog(AutoImportDialog):
         self.myDialog.hide()
         from celer_sight_ai import config
 
-        from celer_sight_ai.QtAssets.UiFiles.LoadingAnimation1 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.LoadingAnimation1 import (
             Ui_Dialog as LoadingAnimationDialogForm,
         )
 
@@ -59,7 +59,7 @@ class ExportNeuralSettingsDialog(AutoImportDialog):
         self.myDialog.hide()
         from celer_sight_ai import config
 
-        from celer_sight_ai.QtAssets.UiFiles.LoadingAnimation1 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.LoadingAnimation1 import (
             Ui_Dialog as LoadingAnimationDialogForm,
         )
 

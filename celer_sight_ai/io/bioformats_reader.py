@@ -6,7 +6,7 @@ import numpy as np
 import scyjava
 
 
-from celer_sight_ai.QtAssets.Utilities.java_handle import jimport
+from celer_sight_ai.gui.Utilities.java_handle import jimport
 
 from celer_sight_ai.io.image_formats import (
     MD_SIZE_S,
@@ -61,6 +61,7 @@ class Reader(ABC):
         otherwise it'll match the class name.
         """
         from celer_sight_ai import config
+
         self.file = image_file
         self.id = config.get_unique_id()
 

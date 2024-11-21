@@ -11,7 +11,7 @@ from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 
-# from celer_sight_ai.QtAssets.Utilities.bioformats_reader import BioformatsReader
+# from celer_sight_ai.gui.Utilities.bioformats_reader import BioformatsReader
 # from bioformats_reader import BioformatsReader
 import time
 import unittest
@@ -94,7 +94,7 @@ def getImage(
                 # ultra high resolution images need to be downloaded first, and then loaded
                 logger.debug(f"Still loading remote image {image_object.fileName}")
                 return None
-w            im, result_dict = readImage(
+            im, result_dict = readImage(
                 image_path,
                 for_interactive_zoom=for_interactive_zoom,
                 for_thumbnail=for_thumbnail,

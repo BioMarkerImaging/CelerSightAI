@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 logger.info("first part addbutton")
 
-from celer_sight_ai.QtAssets.UiFiles.MaskButtonWidgetSofia import (
+from celer_sight_ai.gui.designer_widgets_py_files.MaskButtonWidgetSofia import (
     Ui_Form as MaskWidget,
 )
 
@@ -288,7 +288,7 @@ class AddButtonHandler(QtWidgets.QWidget):
     #     """
     #     Loads the image to the preview button , buttons needs to have been loaded already
     #     """
-    #     from celer_sight_ai.QtAssets.Utilities.threader import Threader
+    #     from celer_sight_ai.gui.Utilities.threader import Threader
 
     #     if config.user_cfg["USER_WORKERS"]:
     #         t = Threader(

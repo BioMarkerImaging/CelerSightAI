@@ -9,7 +9,7 @@ if config.is_executable:
 from PyQt6 import QtWidgets, QtCore, QtGui
 import random
 
-# from celer_sight_ai.QtAssets.Utilities.scene import PolygonAnnotation
+# from celer_sight_ai.gui.Utilities.scene import PolygonAnnotation
 # import QtAssets.Utilities.scene as scene
 
 import logging

@@ -10,16 +10,19 @@ if config.is_executable:
 logger.info("Before numpy import")
 
 import numpy as np
+
 logger.info("skimage importer in AA")
 from PyQt6 import QtCore, QtGui, QtWidgets
 from skimage.draw import circle_perimeter as circle
+
 logger.info("3")
 from cv2 import resize
 
 from celer_sight_ai.core.magic_box_tools import get_largest_area
-from celer_sight_ai.QtAssets.UiFiles.ExitSaveDialog import (
+from celer_sight_ai.gui.designer_widgets_py_files.ExitSaveDialog import (
     Ui_Dialog as exitSaveDialog_UI,
 )
+
 
 class featureBuilder:
     def __init__(self):
@@ -124,6 +127,7 @@ class featureGabor:
 
     def run(self):
         import cv2
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -224,6 +228,7 @@ class featureGaussianGradientMagnitude:
     def run(self):
         import cv2
         from scipy import ndimage
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -279,6 +284,7 @@ class featureGaussianLaplace:
     def run(self):
         import cv2
         from scipy import ndimage
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -374,6 +380,7 @@ class featureVarianceFilter:
     def run(self):
         import skimage
         import cv2
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -403,6 +410,7 @@ class featureVarianceFilter:
         this filter is usefull for getting scratch features
         """
         from scipy import ndimage
+
         img = img.astype(np.float)
 
         rows, cols = img.shape[0], img.shape[1]
@@ -451,6 +459,7 @@ class featureDifferenceOfGaussians:
     def run(self):
         import skimage
         import cv2
+
         self.num = 0
         for i in range(len(self.channels)):
             if self.computeChannels[i]:
@@ -502,6 +511,7 @@ class featureGaussianSmoothing:
 
     def run(self):
         import skimage
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -551,6 +561,7 @@ class featureHessianMatrixEigvals:
     def run(self):
         import skimage
         import cv2
+
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
         origHeight = self.channels[0][0].shape[0]
@@ -701,6 +712,7 @@ class ML_RF(object):
 
     def updateSceneML_BitMap(self):
         import cv2
+
         # refreshes the green and red view
         import qimage2ndarray
 
@@ -1239,6 +1251,7 @@ class ML_RF(object):
     def inferenceUsingLastModel(self):
         import cv2
         import skimage
+
         # does inf on the current image using last model
         origImage = (
             self.MainWindow.DH.BLobj.groups["default"]
@@ -1465,10 +1478,10 @@ class ML_RF(object):
         #     , 'labels':}
         pickle.dump(modelContainer, open(locationToSave[0], "wb"))
 
-
     def getFeaturesWoundHeal(self, df, rbgImage, origImage):
         import time
         import cv2
+
         # Generate Gabor features
         num = 1  # To count numbers up in order to give Gabor features a lable in the data frame
         kernels = []
@@ -1712,6 +1725,7 @@ def variance_filter(img, VAR_FILTER_SIZE):
     this filter is usefull for getting scratch features
     """
     from scipy import ndimage
+
     img = img.astype(np.float)
 
     rows, cols = img.shape[0], img.shape[1]
@@ -1793,6 +1807,7 @@ class Grab_cut_tool(object):
         supplied_mask__bool=False,
     ):
         import cv2
+
         self.reduced_by = aa_tool.detail_value
 
         """"
@@ -2076,6 +2091,7 @@ class Grab_cut_tool(object):
     @staticmethod
     def resultSave(save_path, image_np):
         import cv2
+
         cv2.imwrite(save_path, image_np)
 
     @staticmethod
@@ -2106,10 +2122,10 @@ class Grab_cut_tool(object):
         return largest_cc
 
 
-
 def findPeaksOptimizer(image, mask, min_distance=6, num_peaks=5):
     from skimage.feature import peak_local_max
     import scipy
+
     COMPLETE = False
     xy = peak_local_max(
         image, min_distance=min_distance, num_peaks=num_peaks, labels=mask
@@ -2161,6 +2177,7 @@ def findPeaksOptimizer(image, mask, min_distance=6, num_peaks=5):
 
 def cropImageToProportions(image, xmin, xmax, ymin, ymax):
     import cv2
+
     if len(image.shape) == 3:
         image = image[ymin:ymax, xmin:xmax, :]
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -2193,6 +2210,7 @@ def GetPointsFromQPolygonF(polygonF):
 def CellsSplitterSearch(image, maskPOL, seedNum=4):
     import skimage
     import cv2
+
     maskPOL, boundingBox = np.asarray(GetPointsFromQPolygonF(maskPOL))
     resultF = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
 
@@ -2301,6 +2319,7 @@ def watershedWithSeeds(maskOrig, maskSeeds):
 def CellsSplitter(image, maskPOL, seeds=[]):
     import skimage
     import cv2
+
     maskPOL, boundingBox = np.asarray(GetPointsFromQPolygonF(maskPOL))
     resultF = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
 

@@ -446,7 +446,7 @@ class InferenceHandler:
         #     self.LoadingInferenceDialog.close()
         # except:
         #     pass
-        from celer_sight_ai.QtAssets.UiFiles.JobCompleteConfirmationDialog import (
+        from celer_sight_ai.gui.designer_widgets_py_files.JobCompleteConfirmationDialog import (
             Ui_JobComplete as JobCompleteForm_UI,
         )
 

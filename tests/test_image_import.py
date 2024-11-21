@@ -228,7 +228,7 @@ class MyTest(unittest.TestCase):
                 self.assertEqual(dict2[key], value)
 
     # def test_extract_tile_data_from_tiff(self):
-    #     from celer_sight_ai.QtAssets.Utilities.image_reader import (
+    #     from celer_sight_ai.gui.Utilities.image_reader import (
     #         extract_tile_data_from_tiff,
     #     )
 
@@ -353,7 +353,7 @@ class MyTest(unittest.TestCase):
             print("Testing image: " + img_path)
 
     # def test_crop_ultra_high_res(self):
-    #     from celer_sight_ai.QtAssets.Utilities.scene import readImage
+    #     from celer_sight_ai.gui.Utilities.scene import readImage
 
     #     img_path = "CMU-1.tiff"
     #     bbox = [17612, 21320, 17637, 21340]  # in x1 , y1 , x2 , y2
@@ -378,7 +378,7 @@ class MyTest(unittest.TestCase):
     # # tests/fixtures/pattern_single_channel_per_folder
 
     # def test_find_treatment_patterns_within_filepaths(self):
-    #     from celer_sight_ai.QtAssets.Utilities.scene import (
+    #     from celer_sight_ai.gui.Utilities.scene import (
     #         find_treatment_patterns_within_filepaths,
     #     )
 

@@ -8,7 +8,7 @@ import os
 if "CELER_SIGHT_AI_HOME" in os.environ:
     os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
 
-from celer_sight_ai.QtAssets.UiFiles.aboutSection import (
+from celer_sight_ai.gui.designer_widgets_py_files.aboutSection import (
     Ui_Form as aboutSectionUiForm,
 )
 import sys
@@ -39,7 +39,7 @@ if os.name == "nt":
     # from PyQt6.QtWinExtras import QtWin
 
 # class StylesheetApplierClass(self):
-from celer_sight_ai.QtAssets.UiFiles.MainWindowUi import (
+from celer_sight_ai.gui.designer_widgets_py_files.MainWindowUi import (
     Ui_MainWindow,
 )  # Mainwindow_pg1_v2 import Ui_MainWindow
 
@@ -56,7 +56,7 @@ logger.info("imported ColorPrefsPhotoViewer")
 import numpy as np
 
 logger.info("imported numpy")
-from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
     QuickToolButton,
     myRichTextEdit,
     mainButtonsLeftScreen,
@@ -413,7 +413,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Top right widget that allows the user to select a Pro or Lite model.
         # Pro models run on the cloud and have higher performace.
-        # from celer_sight_ai.QtAssets.pro_lite_model_toggle_component import AnimatedToggleButton
+        # from celer_sight_ai.gui.pro_lite_model_toggle_component import AnimatedToggleButton
         # self.model_pro_lite_toggle_button = AnimatedToggleButton(self.MainWinowFrame , ["Pro" , "Lite"])
         # TODO: add this back later when local models are supported
 
@@ -434,7 +434,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Set the plus icon directly on the QToolButton
         plus_icon = QtGui.QIcon(
-            "data/icons/plus_icon.png"
+            os.path.join(os.environ["CELER_SIGHT_AI_HOME"], "data/icons/plus_icon.png")
         )  # Make sure this icon exists
         self.new_category_button.setIcon(plus_icon)
         self.new_category_button.setIconSize(QtCore.QSize(9, 9))
@@ -815,7 +815,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.bottom_menus.setContentsMargins(0, 0, 0, 0)
 
         # Set up Fillers for QuickTools to Hide to Side
-        from celer_sight_ai.QtAssets.UiFiles.quickToolStickAreaForm import (
+        from celer_sight_ai.gui.designer_widgets_py_files.quickToolStickAreaForm import (
             Ui_Form as quickToolsUiFormHide,
         )
 
@@ -879,7 +879,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # self.setUpIconsQuickTools()
 
-        from celer_sight_ai.QtAssets.buttons.burger_settings_button import (
+        from celer_sight_ai.gui.custom_widgets.burger_settings_button import (
             burger_settings_button,
         )
 
@@ -994,11 +994,19 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tab_width_scale = 150
 
         icon3 = QtGui.QIcon()
-        pixmap_off = QtGui.QPixmap("data/icons/imageTabv2_off.png")
+        pixmap_off = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/imageTabv2_off.png"
+            )
+        )
         pixmap_off = pixmap_off.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
-        pixmap_on = QtGui.QPixmap("data/icons/imageTabv2_on.png")
+        pixmap_on = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/imageTabv2_on.png"
+            )
+        )
         pixmap_on = pixmap_on.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
@@ -1014,11 +1022,19 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         # scale icon
         self.MasterTabWidgets.setTabIcon(0, icon3)
-        pixmap_off = QtGui.QPixmap("data/icons/dataTabv2_off.png")
+        pixmap_off = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/dataTabv2_off.png"
+            )
+        )
         pixmap_off = pixmap_off.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
-        pixmap_on = QtGui.QPixmap("data/icons/dataTabv2_on.png")
+        pixmap_on = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/dataTabv2_on.png"
+            )
+        )
         pixmap_on = pixmap_on.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
@@ -1034,11 +1050,19 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtGui.QIcon.State.On,
         )
         self.MasterTabWidgets.setTabIcon(1, icon3)
-        pixmap_off = QtGui.QPixmap("data/icons/plotTabv2_off.png")
+        pixmap_off = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/plotTabv2_off.png"
+            )
+        )
         pixmap_off = pixmap_off.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
-        pixmap_on = QtGui.QPixmap("data/icons/plotTabv2_on.png")
+        pixmap_on = QtGui.QPixmap(
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/plotTabv2_on.png"
+            )
+        )
         pixmap_on = pixmap_on.scaledToWidth(
             tab_width_scale, QtCore.Qt.TransformationMode.SmoothTransformation
         )
@@ -1077,38 +1101,77 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         home_button_non_selection_non_hover = QtGui.QIcon(
             QtGui.QPixmap(
-                "data/icons/viewport/home_button_non_hover_non_selection_icon.png"
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/home_button_non_hover_non_selection_icon.png",
+                )
             )
         )
         home_button_non_selection = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/home_button_non_hover_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/home_button_non_hover_icon.png",
+                )
+            )
         )
         home_button_non_hover = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/home_button_non_selection_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/home_button_non_selection_icon.png",
+                )
+            )
         )
 
         info_button_non_selection_non_hover = QtGui.QIcon(
             QtGui.QPixmap(
-                "data/icons/viewport/info_button_non_hover_non_selection_icon.png"
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/info_button_non_hover_non_selection_icon.png",
+                )
             )
         )
         info_button_non_selection = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/info_button_hover_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/info_button_hover_icon.png",
+                )
+            )
         )
         info_button_non_hover = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/info_button_non_selection_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/info_button_non_selection_icon.png",
+                )
+            )
         )
 
         settings_button_non_selection_non_hover = QtGui.QIcon(
             QtGui.QPixmap(
-                "data/icons/viewport/settings_button_non_hover_non_selection_icon.png"
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/settings_button_non_hover_non_selection_icon.png",
+                )
             )
         )
         settings_button_non_selection = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/settings_button_hover_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/settings_button_hover_icon.png",
+                )
+            )
         )
         settings_button_non_hover = QtGui.QIcon(
-            QtGui.QPixmap("data/icons/viewport/settings_button_non_selection_icon.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/viewport/settings_button_non_selection_icon.png",
+                )
+            )
         )
 
         self.HomeButtonMain.setIcons(
@@ -2088,37 +2151,61 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # put all icons on the corresponding tool qpushbuttons
         self.viewer.QuickTools.pushButtonQuickToolsPolygonTool.setIconCustom(
-            "data/icons/viewport/polygon_tool_icon.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"],
+                "data/icons/viewport/polygon_tool_icon.png",
+            )
         )
         self.viewer.QuickTools.pushButtonQuickToolsAutoToolBox.setIconCustom(
-            "data/icons/viewport/magic_tool_icon.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"],
+                "data/icons/viewport/magic_tool_icon.png",
+            )
         )
         self.viewer.QuickTools.pushButtonQuickToolsSelectionTool.setIconCustom(
-            "data/icons/viewport/selection_icon.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"],
+                "data/icons/viewport/selection_icon.png",
+            )
         )
         self.viewer.QuickTools.pushButtonQuickToolsErraseTool.setIconCustom(
-            "data/icons/viewport/eraser_icon.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/viewport/eraser_icon.png"
+            )
         )
         self.viewer.QuickTools.pushButtonQuickToolsRemoveSelectionTool.setIconCustom(
-            "data/icons/CellSplitTool.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/CellSplitTool.png"
+            )
         )
 
         if config.supercategory == "cell" or config.supercategory == "flies":
             self.viewer.QuickTools.pushButtonQuickToolsAutoSpline.setIconCustom(
-                "data/icons/MagicClickTool.png"
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/MagicClickTool.png"
+                )
             )
         else:
             self.viewer.QuickTools.pushButtonQuickToolsAutoSpline.setIconCustom(
-                "data/icons/MagicLengthTool.png"
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/MagicLengthTool.png"
+                )
             )
         self.viewer.QuickTools.pushButtonQuickToolsMoveMagicBrush.setIconCustom(
-            "data/icons/viewport/magic_brush_move_icon.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"],
+                "data/icons/viewport/magic_brush_move_icon.png",
+            )
         )
         self.viewer.QuickTools.pushButtonQuickToolsAutoRF_MODE.setIconCustom(
-            "data/icons/MachineLearningTool.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/MachineLearningTool.png"
+            )
         )
         self.viewer.QuickTools.pushButtonQuickTools_BrushMask.setIconCustom(
-            "data/icons/paintbrush_ml.png"
+            os.path.join(
+                os.environ["CELER_SIGHT_AI_HOME"], "data/icons/paintbrush_ml.png"
+            )
         )
         # icon6 = QtGui.QIcon()
         # icon6.addPixmap(QtGui.QPixmap("data/NeedsAttribution/areaselection.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
@@ -2239,42 +2326,71 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         config.global_signals.tabChangedbtn.connect(self.setTabIndex)
         icon = QtGui.QIcon()
         icon.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/selection-box.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/NeedsAttribution/selection-box.png",
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
         self.PolygonTool.setIcon(icon)
         icon1 = QtGui.QIcon()
         icon1.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/magic-wand.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/NeedsAttribution/magic-wand.png",
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
         self.actionAutoTool.setIcon(icon1)
         icon2 = QtGui.QIcon()
         icon2.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/arrow.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/NeedsAttribution/arrow.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
         self.actionSelectionTool.setIcon(icon2)
         icon3 = QtGui.QIcon()
         icon3.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/move-selection-cursor.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/NeedsAttribution/move-selection-cursor.png",
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
         self.actionMoveTool.setIcon(icon3)
         icon4 = QtGui.QIcon()
         icon4.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/mouse-cursor.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/NeedsAttribution/mouse-cursor.png",
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
         self.actionRemoveSelectionTool.setIcon(icon4)
         icon5 = QtGui.QIcon()
         icon5.addPixmap(
-            QtGui.QPixmap("data/NeedsAttribution/crest-lower-curve.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/NeedsAttribution/crest-lower-curve.png",
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
@@ -2283,7 +2399,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/SubScirptIcon.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/SubScirptIcon.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
@@ -2291,7 +2411,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.Subscript_btnPlot.setIconSize(QtCore.QSize(15, 15))
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/SuperScriptIcon.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/SuperScriptIcon.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.On,
         )
@@ -2299,7 +2423,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SuperScript_btnPlot.setIconSize(QtCore.QSize(15, 15))
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/FontSizeDown.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/FontSizeDown.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.Off,
         )
@@ -2307,7 +2435,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fontSizeUp_btnPlot.setIconSize(QtCore.QSize(15, 15))
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/FontSizeUp.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/FontSizeUp.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.On,
         )
@@ -2316,7 +2448,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/PlotsSaveAs_icon.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/PlotsSaveAs_icon.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.On,
         )
@@ -2325,7 +2461,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         icon6 = QtGui.QIcon()
         icon6.addPixmap(
-            QtGui.QPixmap("data/icons/PlotsOpenAs_icon.png"),
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/PlotsOpenAs_icon.png"
+                )
+            ),
             QtGui.QIcon.Mode.Normal,
             QtGui.QIcon.State.On,
         )
@@ -2346,7 +2486,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
         # Plot Settings Widget
-        # from celer_sight_ai.QtAssets.UiFiles.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
+        # from celer_sight_ai.gui.designer_widgets_py_files.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
         # plot_tools_widget_v4.setupUi(self, self.scrollArea_for_plot_tools)  # add the widgets
         # plot_tools_widget_v4.retranslateUi(self, self.scrollArea_for_plot_tools)  # translate properties
         self.pg2_graphs_view.itemSelectionChanged.connect(
@@ -2363,7 +2503,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # function to plce the settings for all the plots and hide them, then show_only_active_plot_settings whoces which settings to use
         self.setup_widgets()
 
-        # from celer_sight_ai.QtAssets.UiFiles.results_inspector_widgets import Ui_Form as results_inspector_widgets
+        # from celer_sight_ai.gui.designer_widgets_py_files.results_inspector_widgets import Ui_Form as results_inspector_widgets
         # results_inspector_widgets.setupUi(self, self.ReviewAreaWidget)  # add the widgets
         # results_inspector_widgets.retranslateUi(self, self.ReviewAreaWidget)  # translate properties
 
@@ -2371,7 +2511,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Selected Mask DIalog set up>>>
         self.SelectedMaskDialog = QtWidgets.QDialog()
-        from celer_sight_ai.QtAssets.UiFiles.SelectedSettintgsDialog import (
+        from celer_sight_ai.gui.designer_widgets_py_files.SelectedSettintgsDialog import (
             Ui_Dialog as SelectedSettintgsDialog,
         )
 
@@ -2560,11 +2700,8 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         function that sets up our widgets for plot and jitter, box bar etc...
         """
-        from celer_sight_ai.QtAssets.bar_plot_settings_widget_v2 import Bar_Ui_Form
-        from celer_sight_ai.QtAssets.bax_plot_settings_widget_v2 import Box_Ui_Form
-        from celer_sight_ai.gui.custom_widgets.swarm_plot_settings_widget_v2 import Swarm_Ui_Form
-        from celer_sight_ai.QtAssets.stripplot_settings_wdiget_v2 import (
-            strip_plot_settings_form,
+        from celer_sight_ai.gui.custom_widgets.swarm_plot_settings_widget_v2 import (
+            Swarm_Ui_Form,
         )
         from celer_sight_ai.gui.custom_widgets.violin_plot_settings_widget_v2 import (
             Violin_Ui_Form,
@@ -3057,7 +3194,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         function that shows only plot of interest
         """
-        from celer_sight_ai.QtAssets.UiFiles.plot_tools_widget_v4 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.plot_tools_widget_v4 import (
             Ui_Plot_tools_widget as plot_tools_widget_v4,
         )
 
@@ -3163,7 +3300,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         TODO: change the name f the function, its named the sane ass in the Add btnClass.py
         """
         import os
-        from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+        from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
             RepeatTimer,
             Animation_Button,
         )
@@ -3221,28 +3358,48 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         RNAiUpButtonListIcon = QtGui.QIcon()
 
         RNAiUpButtonListIcon.addPixmap(
-            QtGui.QPixmap("data/icons/icons_aa_tool/up_rnai.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/icons_aa_tool/up_rnai.png",
+                )
+            )
         )
         self.up_button_list.setIcon(RNAiUpButtonListIcon)
         self.up_button_list.setIconSize(QtCore.QSize(40, 40))
 
         RNAiDownButtonListIcon = QtGui.QIcon()
         RNAiDownButtonListIcon.addPixmap(
-            QtGui.QPixmap("data/icons/icons_aa_tool/down_rnai.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/icons_aa_tool/down_rnai.png",
+                )
+            )
         )
         self.down_button_list.setIcon(RNAiDownButtonListIcon)
         self.down_button_list.setIconSize(QtCore.QSize(40, 40))
 
         RNAiTrashButtonListIcon = QtGui.QIcon()
         RNAiTrashButtonListIcon.addPixmap(
-            QtGui.QPixmap("data/icons/icons_aa_tool/minus_rnai.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/icons_aa_tool/minus_rnai.png",
+                )
+            )
         )
         self.delete_button_list.setIcon(RNAiTrashButtonListIcon)
         self.delete_button_list.setIconSize(QtCore.QSize(40, 40))
 
         RNAiTrashButtonListIcon = QtGui.QIcon()
         RNAiTrashButtonListIcon.addPixmap(
-            QtGui.QPixmap("data/icons/icons_aa_tool/plus_rnai.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/icons/icons_aa_tool/plus_rnai.png",
+                )
+            )
         )
         self.addRNAi_button_list.setIcon(RNAiTrashButtonListIcon)
         self.addRNAi_button_list.setIconSize(QtCore.QSize(40, 40))
@@ -3255,7 +3412,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #
         # Set Up animatin cursor class
         #
-        # from celer_sight_ai.QtAssets.animate_qpushbutton import AnimationCursor
+        # from celer_sight_ai.gui.animate_qpushbutton import AnimationCursor
         # self.CustomCursor = AnimationCursor(self)
         from celer_sight_ai import config
 
@@ -3268,7 +3425,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setUpTabButtons(self):
         import os
-        from celer_sight_ai.QtAssets.buttons.animate_qpushbutton import (
+        from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
             RepeatTimer,
             TabAnimationButton,
         )
@@ -3279,7 +3436,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # tab animations buttons
 
-        # from celer_sight_ai.QtAssets.animate_qpushbutton import RepeatTimer, Animation_Button_TAB
+        # from celer_sight_ai.gui.animate_qpushbutton import RepeatTimer, Animation_Button_TAB
         self.tabImageBtn = None
         #  Animation_Button_TAB(myID = 0)
         # icon_RNAi = QtGui.QIcon()

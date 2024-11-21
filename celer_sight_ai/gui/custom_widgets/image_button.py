@@ -2,7 +2,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from celer_sight_ai import config
 
 import numpy as np
-from celer_sight_ai.QtAssets.UiFiles.AssetButtonWidget import (
+from celer_sight_ai.gui.designer_widgets_py_files.AssetButtonWidget import (
     Ui_Form as AssetButtonWidgetUI,
 )
 

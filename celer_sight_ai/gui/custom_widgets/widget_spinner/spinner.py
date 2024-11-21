@@ -50,7 +50,7 @@ class WaitingSpinner(QWidget):
         line_width: int = 2,
         radius: int = 10,
         speed: float = math.pi / 2,
-        color = QColor(0, 0, 0),
+        color=QColor(0, 0, 0),
     ) -> None:
         super().__init__(parent)
 

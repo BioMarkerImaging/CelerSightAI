@@ -28,7 +28,7 @@ import logging
 # import logging
 logger = logging.getLogger(__name__)
 logger.info("this is the scene")
-from celer_sight_ai.QtAssets.UiFiles.ToolButtonsRightSceneWidget import (
+from celer_sight_ai.gui.designer_widgets_py_files.ToolButtonsRightSceneWidget import (
     Ui_WidgetSceneTools,
 )
 
@@ -63,8 +63,8 @@ except:
     from skimage.draw import circle
     from skimage.draw import circle_perimeter_aa
 
-# from celer_sight_ai.QtAssets.Utilities.shape import Shape
-# from celer_sight_ai.QtAssets.Utilities.lib import distance
+# from celer_sight_ai.gui.Utilities.shape import Shape
+# from celer_sight_ai.gui.Utilities.lib import distance
 from enum import IntEnum, auto
 from shapely.geometry import Polygon
 import mimetypes
@@ -3846,7 +3846,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     def switchToQuickTools_RF_MODE(self, mode=True):
         if mode == True:
-            from celer_sight_ai.QtAssets.transitionAnim import labelAnimation
+            from celer_sight_ai.gui.transitionAnim import labelAnimation
 
             # self.QuickTools.annotation_tool_frame.hide()
             self.QuickTools.toolsFrame.hide()
@@ -4813,7 +4813,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         import cv2
 
         print("def placeSkGbFinish")
-        from celer_sight_ai.QtAssets.Utilities.QitemTools import (
+        from celer_sight_ai.gui.Utilities.QitemTools import (
             drawThickLine,
             skeletonGrabCut,
         )

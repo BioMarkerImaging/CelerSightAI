@@ -17,7 +17,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 # import CelerSightModules # TODO: implement lost functions
-from celer_sight_ai.QtAssets.UiFiles.AnalysisDialogUI import Ui_Dialog
+from celer_sight_ai.gui.designer_widgets_py_files.AnalysisDialogUI import Ui_Dialog
 
 
 def add(a, b):

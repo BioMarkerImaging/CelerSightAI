@@ -2,7 +2,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import scipy
 import copy
 import numpy as np
-from celer_sight_ai.QtAssets.UiFiles.CurrentToolQuickSettings import (
+from celer_sight_ai.gui.designer_widgets_py_files.CurrentToolQuickSettings import (
     Ui_Form as QuickSettingsUI,
 )
 import math

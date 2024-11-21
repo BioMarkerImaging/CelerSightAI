@@ -31,7 +31,7 @@ from celer_sight_ai import config
 from pathlib import Path
 from celer_sight_ai.gui.custom_widgets.scene import readImage
 
-from celer_sight_ai.QtAssets.UiFiles.userSettings import (
+from celer_sight_ai.gui.designer_widgets_py_files.userSettings import (
     Ui_Dialog as settingsDialog1,
 )
 from celer_sight_ai.io.data_handler import (
@@ -141,7 +141,7 @@ class Master_MainWindow(CelerSightMainWindow):
         self.pg1_settings_all_masks_color_button.setStyleSheet(
             "background-color: rgb(0,0,255);"
         )
-        from celer_sight_ai.QtAssets.UiFiles.LoadingAnimation1 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.LoadingAnimation1 import (
             ProgressDialog,
         )
 
@@ -678,14 +678,13 @@ class Master_MainWindow(CelerSightMainWindow):
         uiDialog = settingsMainClass(self.MainWindow)
 
     def sendLogsToServer(self):
-        from celer_sight_ai.QtAssets import lib
         from celer_sight_ai import config
 
         import celer_sight_ai.configHandle as configHandle
 
         client = config.client
         client.crashLogsToServer()
-        from celer_sight_ai.QtAssets.UiFiles.JobCompleteConfirmationDialog import (
+        from celer_sight_ai.gui.designer_widgets_py_files.JobCompleteConfirmationDialog import (
             Ui_JobComplete as JobCompleteForm_UI,
         )
 
@@ -902,10 +901,8 @@ class Master_MainWindow(CelerSightMainWindow):
         At that point, all of the images that have altered the annotation after the generated annotations that where computed
         from cloud inference, then this meants that these images generated inprecize annotations and need to bre retrained.
         """
-        from celer_sight_ai.QtAssets import lib
         from celer_sight_ai import config
         from celer_sight_ai.core.threader import Threader
-        from celer_sight_ai.QtAssets import lib
 
         config.contribing_data = True
 
@@ -2883,7 +2880,7 @@ class Master_MainWindow(CelerSightMainWindow):
 
             config.global_signals.fatalErrorSignal.emit("Failed to read file.")
 
-    from celer_sight_ai.QtAssets.UiFiles.scaledDialog import (
+    from celer_sight_ai.gui.designer_widgets_py_files.scaledDialog import (
         Ui_ScaleDialog,
     )
 
@@ -6372,7 +6369,7 @@ class settingsMainClass(settingsDialog1):
         self.myDialog.show()
 
     def setupToggles(self):
-        from celer_sight_ai.QtAssets.toggle_cs import ButtonToggle
+        from celer_sight_ai.gui.toggle_cs import ButtonToggle
 
         self.placeholder_btn_anim = ButtonToggle()
         self.placeholder_btn_anim.setObjectName("placeholder_btn_anim")
