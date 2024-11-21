@@ -699,7 +699,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
             self.roi_assistant_generate_button.setText("Generate")
 
     def reset_suggestions(self):
-        from celer_sight_ai.QtAssets.Utilities.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
         import time
         from celer_sight_ai import config
 
@@ -848,7 +848,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
         """
         Delete all the suggested masks from the scene, leaves the orignal mask on
         """
-        from celer_sight_ai.QtAssets.Utilities.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
 
         # cancel the ROI assistant
         # get all masks from the scene that are suggested

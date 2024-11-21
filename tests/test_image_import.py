@@ -11,7 +11,7 @@ import time
 # from tests.csight_test_loader import tags
 import unittest
 
-from celer_sight_ai.QtAssets.Utilities.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import get_specialized_image
 import logging
 
 
@@ -287,8 +287,8 @@ class MyTest(unittest.TestCase):
 
     def test_ultra_high_res_preview(self):
         from celer_sight_ai import config
-        from celer_sight_ai.QtAssets.Utilities.scene import readImage
-        from celer_sight_ai.QtAssets.Utilities.image_reader import (
+        from celer_sight_ai.gui.custom_widgets.scene import readImage
+        from celer_sight_ai.io.image_reader import (
             open_preview_with_tiffslide_image_reader,
             open_preview_with_openslide_image_reader,
             get_deep_zoom_by_tiffslide,

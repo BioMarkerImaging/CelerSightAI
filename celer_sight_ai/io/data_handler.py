@@ -23,9 +23,7 @@ from celer_sight_ai.config import (
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import (
-    TransparentGraphicsWidget,
-)
+from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import TransparentGraphicsWidget
 
 from celer_sight_ai.gui.custom_widgets.scene import readImage
 
@@ -1152,7 +1150,7 @@ class CelerSightObj:  # contains group obj
                         image_uuid
                     ].myButton.button_instance.startInferenceAnimation()
 
-                if self.MainWindow.MyDt2Class.is_inference_running:
+                if self.MainWindow.MyInferenceHandler.is_inference_running:
                     # button
                     ButtonAssetClassInstance.startInferenceAnimation()
                 if self.MainWindow.no_image_displayed:
@@ -2715,8 +2713,10 @@ class ImageObject:
             inference_requests_remaining = len(
                 [
                     i
-                    for i in self.MainWindow.MyDt2Class.inference_uuids
-                    if self.MainWindow.MyDt2Class.inference_uuids[i].get("image_uuid")
+                    for i in self.MainWindow.MyInferenceHandler.inference_uuids
+                    if self.MainWindow.MyInferenceHandler.inference_uuids[i].get(
+                        "image_uuid"
+                    )
                     == image_uuid
                 ]
             )

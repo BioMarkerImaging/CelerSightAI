@@ -152,7 +152,7 @@ def start_celer_sight_main_part_login(app, splash_window=None):
     """
 
     os.environ["CELER_SIGHT_INSTANCE_STARTED"] = "true"
-    import celer_sight_ai.QtAssets.Utilities.LogTool as LogTool
+    import celer_sight_ai.core.LogTool as LogTool
 
     logger.debug(f"Creating Application instance")
 

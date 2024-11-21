@@ -398,7 +398,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.gridLayout_2.addWidget(self.graphicsView, 3, 1, 1, 1)
 
         self._scene = QtWidgets.QGraphicsScene(self.graphicsView)
-        from celer_sight_ai.QtAssets.Utilities.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
         self._photo = BackgroundGraphicsItem()
         self._photo.setZValue(-50)
@@ -506,7 +506,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
 
         # Set up multiprocess
         self.MyThreadPool = None
-        from celer_sight_ai.QtAssets.Utilities.Workers import Worker
+        from celer_sight_ai.core.Workers import Worker
 
         self.FillButtonsFromListThreaded = Worker(
             self.FIllButtonsfromListParallel, my_files_list
@@ -2380,6 +2380,6 @@ if __name__ == "__main__":
     sys.exit(app.exec())
 
     # app = QtWidgets.QApplication(sys.argv)
-    # ui =UiBlocksBuilder()
+    # ui =CelerSightMainWindow()
     # ui.SetupAll()
     # sys.exit(app.exec())

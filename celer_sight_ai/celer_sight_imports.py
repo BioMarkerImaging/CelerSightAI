@@ -23,10 +23,12 @@ from celer_sight_ai import config
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QCursor
 from PyQt6.QtCore import Qt
-from celer_sight_ai.QtAssets.Splash import loadingWindowAnimation
+from celer_sight_ai.gui.custom_widgets.splash_widget import loadingWindowAnimation
 from random import randint
 
-from celer_sight_ai.UiBlocks import UiBlocksBuilder
+from celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended import (
+    CelerSightMainWindow,
+)
 from threading import Thread
 import cv2
 import numpy as np
@@ -34,10 +36,10 @@ import copy
 from celer_sight_ai import config
 
 from pathlib import Path
-from celer_sight_ai import AA_cls
+from celer_sight_ai.core import ML_tools
 from celer_sight_ai import aa_toolbar_2
-import AddbtnClass
-import AiAA
+import celer_sight_ai.core.image_button_handler as image_button_handler
+import celer_sight_ai.inference_handler as inference_handler
 from celer_sight_ai import config
 
 import cs_updater_binary
@@ -47,10 +49,10 @@ import getSettings
 import historyStack
 import MultiChannellImports
 import NewAnalysisSetUp
-import pg1_widget_mask_settings
+import celer_sight_ai.gui.custom_widgets.pg1_widget_mask_settings as pg1_widget_mask_settings
 import selection_tool
 import SplineTool
-import UiBlocks
+import celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended as celer_sight_main_window_ui_extended
 import UpdaterMain
 from celer_sight_ai.QtAssets import *
 from celer_sight_ai.QtAssets.net import *

@@ -172,7 +172,7 @@ class importTesting(unittest.TestCase):
             print("onnxruntime")
             import onnxruntime
             from cv2 import resize
-            from celer_sight_ai.QtAssets.Utilities.sdknn import get_largest_area
+            from celer_sight_ai.core.magic_box_tools import get_largest_area
             from celer_sight_ai.QtAssets.UiFiles.ExitSaveDialog import (
                 Ui_Dialog as exitSaveDialog_UI,
             )

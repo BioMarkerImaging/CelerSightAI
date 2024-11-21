@@ -15,10 +15,12 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import time
 import sys
 import os
-from celer_sight_ai.QtAssets.Utilities.scene import CropItem
+from celer_sight_ai.gui.custom_widgets.scene import CropItem
 import traceback
 
-from celer_sight_ai.UiBlocks import UiBlocksBuilder
+from celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended import (
+    CelerSightMainWindow,
+)
 from threading import Thread
 import cv2
 import numpy as np
@@ -27,22 +29,22 @@ from celer_sight_ai import config
 
 
 from pathlib import Path
-from celer_sight_ai.QtAssets.Utilities.scene import readImage
+from celer_sight_ai.gui.custom_widgets.scene import readImage
 
 from celer_sight_ai.QtAssets.UiFiles.userSettings import (
     Ui_Dialog as settingsDialog1,
 )
-from celer_sight_ai.QtAssets.Utilities.data_handler import (
+from celer_sight_ai.io.data_handler import (
     DataHandler,
 )
-from celer_sight_ai.QtAssets.Utilities.scene import (
+from celer_sight_ai.gui.custom_widgets.scene import (
     create_pyramidal_tiff_for_image_object,
 )
 
 
-class Master_MainWindow(UiBlocksBuilder):
+class Master_MainWindow(CelerSightMainWindow):
     """
-    The Main Window that we use, inherits from UiBlocksBuilder and has the majority of the functions
+    The Main Window that we use, inherits from CelerSightMainWindow and has the majority of the functions
     responsible for handling the data.
     """
 
@@ -335,12 +337,12 @@ class Master_MainWindow(UiBlocksBuilder):
 
         # self.auto_aa_tool_gui.signal_add_FG.connect(lambda: self.viewer.aa_signal_handler(add_fg = True, add_bg = False) )
         # self.auto_aa_tool_gui.signal_add_BG.connect(lambda: self.viewer.aa_signal_handler(add_fg = False, add_bg = True))
-        from celer_sight_ai.AiAA import Dt2Class
-        from celer_sight_ai.QtAssets.AnalysisDialog1 import Ui_AnalysisDialog
+        from celer_sight_ai.inference_handler import InferenceHandler
+        from celer_sight_ai.gui.custom_widgets.analysis_handler import Ui_AnalysisDialog
 
         self.AnalysisSettings = Ui_AnalysisDialog(self)
 
-        self.MyDt2Class = Dt2Class(MainWindowRef=self)
+        self.MyInferenceHandler = InferenceHandler(MainWindowRef=self)
         if config.user_cfg.ALLOW_PLOTTING_TOOLS == False:
             # self.MasterTabWidgets.setTabEnabled(2, False)
             self.fillerPlotWidget = QtWidgets.QWidget()
@@ -356,7 +358,7 @@ class Master_MainWindow(UiBlocksBuilder):
             lambda: QtWidgets.QApplication.processEvents()
         )
         self.get_roi_ai_button.clicked.connect(
-            lambda: self.MyDt2Class.DoInferenceAllImagesOnlineThreaded()
+            lambda: self.MyInferenceHandler.DoInferenceAllImagesOnlineThreaded()
         )
 
         self.initialize_analysis_button.clicked.connect(
@@ -430,7 +432,7 @@ class Master_MainWindow(UiBlocksBuilder):
         Plot tools and all plot connections and settings:
         """
 
-        from celer_sight_ai.QtAssets.plot_handler import (
+        from celer_sight_ai.gui.custom_widgets.plot_handler import (
             PlotViewerHandler,
             plotStylesHandler,
         )
@@ -515,34 +517,34 @@ class Master_MainWindow(UiBlocksBuilder):
         self.actionSign_Out.triggered.connect(lambda: self.sign_out())
 
         # Add BYUttons adds the buttonds assets
-        # TODO: TEstint addbuttons class REMOVE:
-        from celer_sight_ai.AddbtnClass import AddButtons
+        # TODO: TEstint AddButtonHandler class REMOVE:
+        from celer_sight_ai.core.image_button_handler import AddButtonHandler
 
-        self.myButtonHandler = AddButtons(self)
+        self.myButtonHandler = AddButtonHandler(self)
 
         config.global_signals.download_remote_image_signal.connect(
             self.download_remote_image
         )
 
         config.global_signals.create_annotation_object_signal.connect(
-            self.MyDt2Class.create_annotation_object
+            self.MyInferenceHandler.create_annotation_object
         )
         config.global_signals.create_annotations_objects_signal.connect(
-            self.MyDt2Class.create_annotations_objects
+            self.MyInferenceHandler.create_annotations_objects
         )
 
         config.global_signals.deleteMaskFromMainWindow.connect(
-            self.MyDt2Class.deleteMaskaFromImage
+            self.MyInferenceHandler.deleteMaskaFromImage
         )
 
         config.global_signals.deleteTrackFromMainWindow.connect(
-            self.MyDt2Class.deleteTrackFromMainWindow
+            self.MyInferenceHandler.deleteTrackFromMainWindow
         )
 
         config.global_signals.delete_hole_from_mask_signal.connect(
-            self.MyDt2Class.delete_hole_from_mask
+            self.MyInferenceHandler.delete_hole_from_mask
         )
-        from celer_sight_ai.QtAssets.Utilities.image_reader import create_pyramidal_tiff
+        from celer_sight_ai.io.image_reader import create_pyramidal_tiff
 
         config.global_signals.create_pyramidal_tiff_for_image_object_signal.connect(
             create_pyramidal_tiff_for_image_object
@@ -562,7 +564,9 @@ class Master_MainWindow(UiBlocksBuilder):
             self.DH.BLobj.delete_all_masks_with_class
         )
 
-        from celer_sight_ai.QtAssets.loadingDialog import LoadingDialog
+        from celer_sight_ai.gui.custom_widgets.loading_dialog_widget import (
+            LoadingDialog,
+        )
 
         self.FrameRegionInfo.hide()
 
@@ -578,7 +582,7 @@ class Master_MainWindow(UiBlocksBuilder):
         self.setMouseTracking(True)
 
         # add model selection / ROI part selection
-        from celer_sight_ai.QtAssets.grid_button_image_selector import (
+        from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
             FilterableIconTable,
             gather_cfgs,
         )
@@ -598,7 +602,7 @@ class Master_MainWindow(UiBlocksBuilder):
     def toggle_mask_class_visibility(self, show=False, class_uuid=None):
         # hide all of the annotation on screen with that class_uuid
         # get all items in the scene
-        from celer_sight_ai.QtAssets.Utilities.scene import (
+        from celer_sight_ai.gui.custom_widgets.scene import (
             PolygonAnnotation,
             BitMapAnnotation,
         )
@@ -614,7 +618,7 @@ class Master_MainWindow(UiBlocksBuilder):
                         item.setVisible(show)
 
     def spawn_patreon_widget(self):
-        from celer_sight_ai.QtAssets.Utilities.patreon_widget import PatreonWidget
+        from celer_sight_ai.gui.custom_widgets.patreon_widget import PatreonWidget
 
         if config.user_cfg["OFFLINE_MODE"] == True:
             config.global_signals.errorSignal.emit(
@@ -650,7 +654,7 @@ class Master_MainWindow(UiBlocksBuilder):
         raise NotImplementedError
 
     def spawn_add_class_dialog(self):
-        from celer_sight_ai.QtAssets.grid_button_image_selector import (
+        from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
             FilterableClassList,
             gather_cfgs,
         )
@@ -900,7 +904,7 @@ class Master_MainWindow(UiBlocksBuilder):
         """
         from celer_sight_ai.QtAssets import lib
         from celer_sight_ai import config
-        from celer_sight_ai.QtAssets.Utilities.threader import Threader
+        from celer_sight_ai.core.threader import Threader
         from celer_sight_ai.QtAssets import lib
 
         config.contribing_data = True
@@ -962,9 +966,7 @@ class Master_MainWindow(UiBlocksBuilder):
                                 )
                             )
                             if not success:
-                                logger.error(
-                                    f"Failed to send image {imageID} to server at group {group} and condition {cond}"
-                                )
+                                logger.error(f"Error : {error_message}")
                                 config.global_signals.loading_dialog_signal_close.emit()
                                 config.global_signals.errorSignal.emit(
                                     f"Error : {error_message}"
@@ -976,9 +978,7 @@ class Master_MainWindow(UiBlocksBuilder):
                         except Exception as e:
                             import traceback
 
-                            logger.error(
-                                f"Failed to send image {imageID} to server at group {group} and condition {cond}"
-                            )
+                            logger.error(f"Error : {error_message}")
                             logger.error(traceback.format_exc())
                             config.global_signals.errorSignal.emit(
                                 "Failed to send data."
@@ -1215,7 +1215,7 @@ class Master_MainWindow(UiBlocksBuilder):
         In addition all of the associated containers of arrays are updated, focus goes
         to the new condition list item
         """
-        from celer_sight_ai.QtAssets.plot_handler import PlotViewerHandler
+        from celer_sight_ai.gui.custom_widgets.plot_handler import PlotViewerHandler
 
         logger.debug("add_new_treatment_item")
         if not condition_name:
@@ -1575,7 +1575,7 @@ class Master_MainWindow(UiBlocksBuilder):
         Launch window  to propt user for spefics regarding sending the images to the server for training
         The user is prompted to select if the images are partly or fully annotated.
         """
-        from celer_sight_ai.QtAssets.contribute_images_widget import (
+        from celer_sight_ai.gui.custom_widgets.contribute_images_widget import (
             ContributeImagesWidget,
         )
 
@@ -2092,7 +2092,7 @@ class Master_MainWindow(UiBlocksBuilder):
                 )
 
             self.load_main_scene(0)
-        self.MyDt2Class.onJobComplete("Finished importing tree!")
+        self.MyInferenceHandler.onJobComplete("Finished importing tree!")
         return
 
     def excludeExactSameImages(
@@ -2614,7 +2614,7 @@ class Master_MainWindow(UiBlocksBuilder):
         if not file_location:
             return
         # get all data
-        self.MyDt2Class.track_all_masks_by_treatment(file_location)
+        self.MyInferenceHandler.track_all_masks_by_treatment(file_location)
         return
 
     def load_celer_sight_file(self, file_location=None):
@@ -2933,18 +2933,18 @@ class Master_MainWindow(UiBlocksBuilder):
         return dilated_mask
 
     def spawnAutoImportInstractions(self):
-        from celer_sight_ai.QtAssets.instractionDialogues import (
-            ExportNeiralSettingsDialog,
+        from celer_sight_ai.gui.custom_widgets.instractionDialogues import (
+            ExportNeuralSettingsDialog,
         )
 
-        self.myAutoInportInstractions = ExportNeiralSettingsDialog(self)
+        self.myAutoInportInstractions = ExportNeuralSettingsDialog(self)
 
     def spawnAutoAnalysisInstractions(self):
-        from celer_sight_ai.QtAssets.instractionDialogues import (
-            ExportNeiralSettingsDialog,
+        from celer_sight_ai.gui.custom_widgets.instractionDialogues import (
+            ExportNeuralSettingsDialog,
         )
 
-        self.myAutoInportInstractions = ExportNeiralSettingsDialog(
+        self.myAutoInportInstractions = ExportNeuralSettingsDialog(
             self, MODE="ANALYSIS"
         )
 
@@ -2986,7 +2986,7 @@ class Master_MainWindow(UiBlocksBuilder):
         return
 
     def autoPlotSeaborn_generic(self):
-        from celer_sight_ai.QtAssets.plot_handler import plotStylesButton
+        from celer_sight_ai.gui.custom_widgets.plot_handler import plotStylesButton
 
         buttonForPlot = self.pg_2_plot_parameteres_scrollAreaWidgetContents.findChild(
             plotStylesButton, "pink_box_swarm_fade_simple1_NORMAL.png"
@@ -3000,7 +3000,7 @@ class Master_MainWindow(UiBlocksBuilder):
         """
         # TODO: add broken axis package: https://github.com/bendichter/brokenaxes
         import seaborn as sns
-        from celer_sight_ai.QtAssets.plot_handler import MyPlotHandler
+        from celer_sight_ai.gui.custom_widgets.plot_handler import MyPlotHandler
 
         return
 
@@ -3101,7 +3101,7 @@ class Master_MainWindow(UiBlocksBuilder):
         import pandas as pd
         import itertools
         import copy
-        from celer_sight_ai.QtAssets.AnalysisDialog1 import (
+        from celer_sight_ai.gui.custom_widgets.analysis_handler import (
             add,
             subtract,
             divide,
@@ -3288,7 +3288,7 @@ class Master_MainWindow(UiBlocksBuilder):
                 )
 
         self.DH.plot_dataframe = df_roi
-        from celer_sight_ai.QtAssets.Utilities.PDModel import pandasModel
+        from celer_sight_ai.gui.custom_widgets.PDModel import pandasModel
 
         self.AnalysisSettings.update_channel_combobox_label(
             self.channel_analysis_metrics_combobox.currentIndex()
@@ -3473,7 +3473,7 @@ class Master_MainWindow(UiBlocksBuilder):
         #     vizible_df_list.append(vizible_df)
         # self.DH.plot_dataframe = dataframe
 
-        from celer_sight_ai.QtAssets.Utilities.PDModel import pandasModel
+        from celer_sight_ai.gui.custom_widgets.PDModel import pandasModel
 
         # Convert list to DataFrame
         vizible_df = pd.DataFrame(DictionaryOfUse)
@@ -3932,7 +3932,7 @@ class Master_MainWindow(UiBlocksBuilder):
         self.images_preview_graphicsview.clear_out_visible_buttons()
 
     def delete_RNAi_list_item(self):
-        from celer_sight_ai.QtAssets.Utilities.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
         logger.debug("delete_RNAi_list_item")
         if self.RNAi_list.count() == 0:
@@ -4590,7 +4590,7 @@ class Master_MainWindow(UiBlocksBuilder):
         Args:
             object_dict (dict): _description_
         """
-        from celer_sight_ai.QtAssets.Utilities.scene import (
+        from celer_sight_ai.gui.custom_widgets.scene import (
             PolygonAnnotation,
             BitMapAnnotation,
         )
@@ -4647,7 +4647,7 @@ class Master_MainWindow(UiBlocksBuilder):
         Returns:
           None
         """
-        from celer_sight_ai.QtAssets.Utilities.scene import (
+        from celer_sight_ai.gui.custom_widgets.scene import (
             BitMapAnnotation,
             BackgroundGraphicsItem,
         )
@@ -4741,7 +4741,7 @@ class Master_MainWindow(UiBlocksBuilder):
         image_object.myButton.button_instance.deleteCurrentImage(reload_image=True)
 
     def load_all_current_image_annotations(self, img_uuid):
-        from celer_sight_ai.QtAssets.Utilities.scene import (
+        from celer_sight_ai.gui.custom_widgets.scene import (
             PolygonAnnotation,
             BitMapAnnotation,
         )
@@ -4959,7 +4959,7 @@ class Master_MainWindow(UiBlocksBuilder):
     def load_main_scene_gather_image(self, signal_object={}):
         # create a thread with threader
 
-        from celer_sight_ai.QtAssets.Utilities.threader import RacerThread
+        from celer_sight_ai.core.threader import RacerThread
         from celer_sight_ai import config
 
         logger.info("Reading image for scene progressively (threaded)")
@@ -5763,7 +5763,7 @@ class Master_MainWindow(UiBlocksBuilder):
                 ]
                 # del self.DH.AssetMaskDictionaryPolygonSettings[self.previous_item_name_RNAi_list]
                 self.DH.BLobj.set_current_condition(self.new_item_name)
-                # AddButtons classes also need to be updated...
+                # AddButtonHandler classes also need to be updated...
                 self.myButtonHandler.UpdateDicts(
                     self.previous_item_name_RNAi_list, self.new_item_name
                 )
@@ -6372,9 +6372,9 @@ class settingsMainClass(settingsDialog1):
         self.myDialog.show()
 
     def setupToggles(self):
-        from celer_sight_ai.QtAssets.toggle_cs import PyToggle
+        from celer_sight_ai.QtAssets.toggle_cs import ButtonToggle
 
-        self.placeholder_btn_anim = PyToggle()
+        self.placeholder_btn_anim = ButtonToggle()
         self.placeholder_btn_anim.setObjectName("placeholder_btn_anim")
         self.placeholder_btn_anim.stateChanged.connect(
             lambda: self.onBtnStateChecked(
@@ -6386,7 +6386,7 @@ class settingsMainClass(settingsDialog1):
         )
         self.placeholder_btn.hide()
 
-        self.placeholder_btn_2_anim = PyToggle()
+        self.placeholder_btn_2_anim = ButtonToggle()
         self.placeholder_btn_2_anim.setObjectName("placeholder_btn_2_anim")
         self.placeholder_btn_2_anim.stateChanged.connect(
             lambda: self.onBtnStateChecked(

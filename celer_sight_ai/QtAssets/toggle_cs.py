@@ -13,7 +13,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 
-class PyToggle(QtWidgets.QCheckBox):
+class ButtonToggle(QtWidgets.QCheckBox):
     def __init__(
         self,
         width=60,

@@ -9,9 +9,9 @@ import time
 import unittest
 
 sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
-from celer_sight_ai.QtAssets.Utilities.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import get_specialized_image
 import logging
-from celer_sight_ai.QtAssets.grid_button_image_selector import (
+from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
     gather_cfgs,
     process_cfg_for_grid_button_image_selector,
     validate_cfg,
@@ -30,7 +30,6 @@ class TestCategoryConfigs(unittest.TestCase):
     def test_validate_cfg(self):
         for i, p in enumerate(self.cfgs_paths):
             assert validate_cfg(self.cfgs[i]), f"Could not validate config {p}"
-
 
 
 if __name__ == "__main__":

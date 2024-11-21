@@ -19,7 +19,7 @@ class PhotoViewer_test(QtWidgets.QGraphicsView):
 
     def __init__(self, parent, Ui_MainWindow):
         super(PhotoViewer_test, self).__init__(parent)
-        from celer_sight_ai.QtAssets.Utilities.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
         self.Ui_MainWindow = Ui_MainWindow
 

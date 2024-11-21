@@ -25,7 +25,7 @@ start = time.time()
 import os
 import sys
 import argparse
-from celer_sight_ai.QtAssets.Splash import CustomSplashScreenWithText
+from celer_sight_ai.gui.custom_widgets.splash_widget import CustomSplashScreenWithText
 
 print("Importing Splash")
 from PyQt6.QtWidgets import QApplication, QWidget

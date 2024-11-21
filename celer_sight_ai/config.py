@@ -542,7 +542,7 @@ def worker_for_register(register_name):
 
 def threaded(func):
     from functools import wraps
-    from celer_sight_ai.QtAssets.Utilities.threader import Threader
+    from celer_sight_ai.core.threader import Threader
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -556,7 +556,7 @@ def threaded(func):
 
 
 def q_threaded(func):
-    from celer_sight_ai.QtAssets.Utilities.threader import Threader
+    from celer_sight_ai.core.threader import Threader
 
     @wraps(func)
     def wrapper(*args, **kwargs):

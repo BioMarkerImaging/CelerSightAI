@@ -6,7 +6,7 @@ import os
 from celer_sight_ai import config
 
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.QtAssets.Utilities.LogTool import LogInHandler
+from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
 from celer_sight_ai.QtAssets.lib import FileClient
 
@@ -17,6 +17,7 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 # load env
 from dotenv import load_dotenv
+
 load_dotenv("../.env")
 logger = logging.getLogger(__name__)
 
@@ -25,32 +26,39 @@ import pytest
 from unittest.mock import patch
 from requests.exceptions import RequestException
 from parameterized import parameterized
+
+
 class MyTest(unittest.TestCase):
     def setUp(self):
         self.mock_credentials = []
         if os.environ.get("USERNAME_USER") and os.environ.get("PASSWORD_USER"):
-            self.mock_credentials.append((os.environ.get("USERNAME_USER"), os.environ.get("PASSWORD_USER")))
+            self.mock_credentials.append(
+                (os.environ.get("USERNAME_USER"), os.environ.get("PASSWORD_USER"))
+            )
         # log user
         self.client = FileClient(getServerAddress())
         self.client.login(*self.mock_credentials[0])
 
-    @parameterized.expand([
-        ("58f00d07-caa7-4bec-8a66-39432f2e1086", {"min": 0.12, "max": 0.20}),
-        ("0888765f-f214-4e24-8cc6-c92735d03e68", None),
-    ])
+    @parameterized.expand(
+        [
+            ("58f00d07-caa7-4bec-8a66-39432f2e1086", {"min": 0.12, "max": 0.20}),
+            ("0888765f-f214-4e24-8cc6-c92735d03e68", None),
+        ]
+    )
     def test_get_optimal_annotation_range(self, category, expected_result):
-        result = self.client.get_optimal_annotation_range(category).get("optimal_annotation_range" , None)
+        result = self.client.get_optimal_annotation_range(category).get(
+            "optimal_annotation_range", None
+        )
 
         if expected_result is None:
             self.assertIsNone(result)
         else:
             self.assertIsNotNone(result)
             self.assertIsInstance(result, dict)
-            self.assertIn('max', result)
-            self.assertIn('min', result)
-            self.assertAlmostEqual(result['min'], expected_result['min'], places=2)
-            self.assertAlmostEqual(result['max'], expected_result['max'], places=2)
-
+            self.assertIn("max", result)
+            self.assertIn("min", result)
+            self.assertAlmostEqual(result["min"], expected_result["min"], places=2)
+            self.assertAlmostEqual(result["max"], expected_result["max"], places=2)
 
     # @pytest.mark.parametrize("status_code, expected_result", [
     #     (200, True),
@@ -61,7 +69,7 @@ class MyTest(unittest.TestCase):
     #     with patch('requests.get') as mock_get:
     #         mock_response = mock_get.return_value
     #         mock_response.status_code = status_code
-            
+
     #         result = requests.get(get_optimal_annotation_range_address())
 
     #         assert (result.status_code == 200) == expected_result
@@ -81,7 +89,7 @@ class MyTest(unittest.TestCase):
     #     with patch('requests.get', side_effect=exception):
     #         with pytest.raises(exception):
     #             requests.get(get_optimal_annotation_range_address())
-            
+
     #         print(f"Connection to {get_optimal_annotation_range_address()} failed with {exception.__name__}")
     #         logging.error(f"Connection to {get_optimal_annotation_range_address()} failed with {exception.__name__}")
 
@@ -130,6 +138,7 @@ class MyTest(unittest.TestCase):
     def test_authenticateMain(self):
         import celer_sight_ai.configHandle as configHandle
         from celer_sight_ai.QtAssets.lib import FileClient
+
         self.test_hello_connection()
 
         for email, password in self.mock_credentials:
@@ -143,6 +152,7 @@ class MyTest(unittest.TestCase):
                 # case of wrong credentials
                 sc_json = return_val.json()
                 self.assertEqual(sc_json["OK"], True)
+
 
 if __name__ == "__main__":
     unittest.main()

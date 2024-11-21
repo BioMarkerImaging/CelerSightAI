@@ -6,7 +6,7 @@ import os
 from celer_sight_ai import config
 
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.QtAssets.Utilities.LogTool import LogInHandler
+from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
 from celer_sight_ai.QtAssets.lib import FileClient
 

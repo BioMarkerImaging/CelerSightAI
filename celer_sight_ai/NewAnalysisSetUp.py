@@ -694,7 +694,7 @@ class NewAnalysis(NewMenuForm):
         self.MainWindow.custom_class_list_widget.setCurrentRow(0)
 
         # spawn initial dialog
-        from celer_sight_ai.QtAssets.particle_analysis_ui import (
+        from celer_sight_ai.gui.custom_widgets.particle_analysis_ui import (
             ParticleAnalysisSettingsWidgetUi,
         )
 

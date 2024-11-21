@@ -10,7 +10,7 @@ import time
 
 import unittest
 
-from celer_sight_ai.QtAssets.Utilities.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import get_specialized_image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -252,7 +252,7 @@ class MyTest(unittest.TestCase):
 
         import tempfile
         import time
-        from celer_sight_ai.QtAssets.Utilities.image_reader import (
+        from celer_sight_ai.io.image_reader import (
             create_large_compressed_image_from_ultra_high_res_tiled_image,
         )
 

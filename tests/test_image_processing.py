@@ -9,7 +9,7 @@ import scipy
 from scipy import stats
 import cv2
 
-from celer_sight_ai.QtAssets.Utilities.scene import get_jpeg_memory_size
+from celer_sight_ai.gui.custom_widgets.scene import get_jpeg_memory_size
 
 
 class ImageProcessingTest(unittest.TestCase):
