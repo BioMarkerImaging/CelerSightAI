@@ -11,7 +11,7 @@ import time
 # from tests.csight_test_loader import tags
 import unittest
 
-from celer_sight_ai.QtAssets.Utilities.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import get_specialized_image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class MyTest(unittest.TestCase):
 
 
     def test_ultra_high_res_image_crop(self):
-        from celer_sight_ai.QtAssets.Utilities.image_reader import crop_ultra_high_res
+        from celer_sight_ai.io.image_reader import crop_ultra_high_res
         image_path = os.path.join(self.ultra_high_res_root_path, "tiff_slide_test.tiff")
         # tile = [6500, 6200, 14200, 13300]
         tile_xywh = [6500, 6200, 19700, 15100]

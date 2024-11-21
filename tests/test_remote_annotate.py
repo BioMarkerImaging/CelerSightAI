@@ -6,9 +6,9 @@ import os
 from celer_sight_ai import config
 
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.QtAssets.Utilities.LogTool import LogInHandler
+from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
-from celer_sight_ai.QtAssets.lib import FileClient
+from celer_sight_ai.gui.lib import FileClient
 
 # from tests.csight_test_loader import tags
 from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
@@ -16,12 +16,14 @@ import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 import json
 from parameterized import parameterized
+
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import dotenv
 from PyQt6.QtTest import QTest
+
 # load env vars
 dotenv.load_dotenv(os.path.join(p, ".env"))
-# from celer_sight_ai.QtAssets.net.errors import AuthenticationError
+# from celer_sight_ai.gui.net.errors import AuthenticationError
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +38,6 @@ use the interface to submit these as autited, close and reopen the app, retrieve
 make adjustments, validate the adjustments, delete the annotations, validate the deletion
 delete the image, validate the deletion and erase any mock images created in this test.
 """
-
-
 
 
 # class MyTest(unittest.TestCase):
@@ -68,7 +68,7 @@ delete the image, validate the deletion and erase any mock images created in thi
 #     )
 #     def test_remote_image_batch_for_annotation(self, data, expected_response):
 #         from celer_sight_ai.configHandle import get_remote_image_batch_for_annotation
-#         from celer_sight_ai.QtAssets.net.lib import FileClient
+#         from celer_sight_ai.gui.net.lib import FileClient
 
 #         self.client.login(self.mock_credentials[0][0], self.mock_credentials[0][1])
 
@@ -97,7 +97,7 @@ delete the image, validate the deletion and erase any mock images created in thi
 #     )
 #     def test_remote_image_batch_for_annotation(self, data, expected_response):
 #         from celer_sight_ai.configHandle import get_remote_image_batch_for_annotation
-#         from celer_sight_ai.QtAssets.net.lib import FileClient
+#         from celer_sight_ai.gui.net.lib import FileClient
 
 #         self.client.login(self.mock_credentials[0][0], self.mock_credentials[0][1])
 

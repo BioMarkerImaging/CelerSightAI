@@ -1,6 +1,6 @@
 import unittest
 import os
-from celer_sight_ai.QtAssets.Utilities.sdknn import SamPredictorONNX, sdknn_tool
+from celer_sight_ai.core.magic_box_tools import SamPredictorONNX, sdknn_tool
 import cv2
 import numpy as np
 import logging as logger

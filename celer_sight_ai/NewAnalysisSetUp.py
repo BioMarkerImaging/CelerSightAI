@@ -5,9 +5,9 @@ from celer_sight_ai import config
 
 
 if config.is_executable:
-    sys.path.append([str(os.environ["CELER_SIGHT_AI_HOME"])])
+    sys.path.append(str(os.environ["CELER_SIGHT_AI_HOME"]))
 from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai.QtAssets.UiFiles.NewMenu2 import (
+from celer_sight_ai.gui.designer_widgets_py_files.NewMenu2 import (
     Ui_Dialog as NewMenuForm,
 )
 from PyQt6.QtCore import pyqtSlot
@@ -26,7 +26,7 @@ class AnalysisWidget(QtWidgets.QDialog):
         pass
 
 
-from celer_sight_ai.QtAssets.UiFiles.ExitSaveDialog import (
+from celer_sight_ai.gui.designer_widgets_py_files.ExitSaveDialog import (
     Ui_Dialog as exitSaveDialog_UI,
 )
 
@@ -58,7 +58,7 @@ class exitSaveDialog(exitSaveDialog_UI):
         )
 
 
-from celer_sight_ai.QtAssets.UiFiles.OrganismSelectrionDiaolog import (
+from celer_sight_ai.gui.designer_widgets_py_files.OrganismSelectrionDiaolog import (
     Ui_DialogMainSelection as OrgSelDialog,
 )
 
@@ -151,11 +151,15 @@ class organismSelectionClass(OrgSelDialog):
         # Helper function to set up button images
         def setup_button_images(button, off_image, on_image):
             # make sure tha path exists
-            assert os.path.exists(os.path.join("data/icons/", off_image))
-            assert os.path.exists(os.path.join("data/icons/", on_image))
             # Create icons for normal and hover states
-            normal_icon = QtGui.QIcon(os.path.join("data/icons/", off_image))
-            hover_icon = QtGui.QIcon(os.path.join("data/icons/", on_image))
+            normal_icon = QtGui.QIcon(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"], "data/icons/", off_image
+                )
+            )
+            hover_icon = QtGui.QIcon(
+                os.path.join(os.environ["CELER_SIGHT_AI_HOME"], "data/icons/", on_image)
+            )
 
             # Set the normal icon
             button.setIcon(normal_icon)
@@ -226,7 +230,7 @@ class organismSelectionClass(OrgSelDialog):
             """
         )
 
-        # from celer_sight_ai.QtAssets.Utilities.tutorialStuff import organismSelectionTutorial
+        # from celer_sight_ai.gui.Utilities.tutorialStuff import organismSelectionTutorial
         # self.myTutorialUi = organismSelectionTutorial(self)
 
     def closeEvent(self, event):
@@ -543,10 +547,6 @@ class NewAnalysis(NewMenuForm):
             self.AnalysisDialog_RGB_RatioFrame.hide()
 
     def DisplayNetworkInfo(self):
-        from celer_sight_ai.QtAssets import lib
-        from celer_sight_ai import config
-
-        import celer_sight_ai.configHandle as configHandle
 
         logger.info("init_user_params STARTED")
         return ""
@@ -694,7 +694,7 @@ class NewAnalysis(NewMenuForm):
         self.MainWindow.custom_class_list_widget.setCurrentRow(0)
 
         # spawn initial dialog
-        from celer_sight_ai.QtAssets.particle_analysis_ui import (
+        from celer_sight_ai.gui.custom_widgets.particle_analysis_ui import (
             ParticleAnalysisSettingsWidgetUi,
         )
 
@@ -727,7 +727,7 @@ class NewAnalysis(NewMenuForm):
             return self.analysis_map["colocalization"]
 
 
-from celer_sight_ai.QtAssets.UiFiles.NN_settings_hover import (
+from celer_sight_ai.gui.designer_widgets_py_files.NN_settings_hover import (
     Ui_Form as NN_settings_hover_form,
 )
 

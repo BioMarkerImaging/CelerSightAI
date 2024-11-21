@@ -4,7 +4,7 @@ import numpy as np
 from shapely.geometry import Polygon
 
 # Import the necessary classes and functions
-from celer_sight_ai.QtAssets.Utilities.data_handler import ImageObject, maskObj
+from celer_sight_ai.io.data_handler import ImageObject, maskObj
 
 
 class TestFindSuitableParents(unittest.TestCase):

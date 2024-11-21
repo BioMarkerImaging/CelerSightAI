@@ -14,7 +14,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import traceback
 
 print("Before importing draggable button")
-from celer_sight_ai.QtAssets.UiFiles.testDragableButton import (
+from celer_sight_ai.gui.designer_widgets.testDragableButton import (
     Ui_Dialog as DialogMultichannelImporter,
 )
 
@@ -398,7 +398,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.gridLayout_2.addWidget(self.graphicsView, 3, 1, 1, 1)
 
         self._scene = QtWidgets.QGraphicsScene(self.graphicsView)
-        from celer_sight_ai.QtAssets.Utilities.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
         self._photo = BackgroundGraphicsItem()
         self._photo.setZValue(-50)
@@ -467,7 +467,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
     def IndiImportMultiThreaded(self, my_files_list=None):
         # Animated Bar for progress on importing images to multichannel importer
 
-        from celer_sight_ai.QtAssets.UiFiles.LoadingAnimation1 import (
+        from celer_sight_ai.gui.designer_widgets_py_files.LoadingAnimation1 import (
             Ui_Dialog as LoadingAnimationDialogForm,
         )
 
@@ -506,7 +506,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
 
         # Set up multiprocess
         self.MyThreadPool = None
-        from celer_sight_ai.QtAssets.Utilities.Workers import Worker
+        from celer_sight_ai.core.Workers import Worker
 
         self.FillButtonsFromListThreaded = Worker(
             self.FIllButtonsfromListParallel, my_files_list
@@ -2324,7 +2324,7 @@ def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 
-from celer_sight_ai.QtAssets.UiFiles.ImportSettings import (
+from celer_sight_ai.gui.designer_widgets_py_files.ImportSettings import (
     Ui_Dialog as ImportDialogUi,
 )
 
@@ -2380,6 +2380,6 @@ if __name__ == "__main__":
     sys.exit(app.exec())
 
     # app = QtWidgets.QApplication(sys.argv)
-    # ui =UiBlocksBuilder()
+    # ui =CelerSightMainWindow()
     # ui.SetupAll()
     # sys.exit(app.exec())

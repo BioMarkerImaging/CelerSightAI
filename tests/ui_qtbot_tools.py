@@ -18,7 +18,7 @@ from celer_sight_ai.configHandle import (
 )
 from celer_sight_ai import config
 from pytestqt.qtbot import QtBot
-from celer_sight_ai.QtAssets.Splash import CustomSplashScreenWithText
+from celer_sight_ai.gui.custom_widgets.splash_widget import CustomSplashScreenWithText
 from typing import Literal
 
 pyautogui.FAILSAFE = True
@@ -707,7 +707,7 @@ def get_ROI_AI(
     # manully click the button because it doesnt work with qtbot
     # accept_partial = partial(accept_warning_dialog, gui_main)
     # QtCore.QTimer.singleShot(timeout, lambda: accept_warning_dialog(gui_main))
-    while gui_main.MyDt2Class.is_inference_running:
+    while gui_main.MyInferenceHandler.is_inference_running:
         if (time.time() - start_time) > timeout:
             print("AI is taking too long to run")
             return False

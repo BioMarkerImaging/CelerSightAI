@@ -133,7 +133,7 @@ def check_for_updates(just_version=None, channel=None):
             return False
         data = r.json()
         if data["message"].lower() == "update available":
-            from celer_sight_ai.QtAssets.Utilities.threader import Threader
+            from celer_sight_ai.gui.Utilities.threader import Threader
 
             t = Threader(download_updates, [data])
             t.start()
@@ -153,9 +153,7 @@ def download_updates(data):
 
     # Create a folder to download the update to
     local_folder = getLocal()
-    tmp_dest_dir = os.path.join(
-        local_folder, "update"
-    )
+    tmp_dest_dir = os.path.join(local_folder, "update")
 
     try:
         if os.path.exists(tmp_dest_dir):

@@ -1,5 +1,5 @@
 import unittest
-from celer_sight_ai.QtAssets.Utilities.image_reader import (
+from celer_sight_ai.io.image_reader import (
     generate_complete_spiral_tiles,
     get_optimal_crop_bbox,
 )
@@ -37,7 +37,7 @@ class TestImageReader(unittest.TestCase):
     #     # generate_complete_spiral_tiles(img_width, img_height, initial_bbox, overlap)
 
     def test_generate_complete_spiral_tiles_2(self):
-        from celer_sight_ai.QtAssets.Utilities.image_reader import (
+        from celer_sight_ai.io.image_reader import (
             generate_complete_spiral_tiles,
             crop_and_pad_image,
         )

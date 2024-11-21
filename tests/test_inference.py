@@ -8,9 +8,9 @@ from celer_sight_ai import config
 
 from celer_sight_ai import configHandle
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.QtAssets.Utilities.LogTool import LogInHandler
+from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
-from celer_sight_ai.QtAssets.lib import FileClient
+from celer_sight_ai.gui.lib import FileClient
 
 # from tests.csight_test_loader import tags
 from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
@@ -26,7 +26,7 @@ import time
 
 # load env vars
 dotenv.load_dotenv(os.path.join(p, ".env"))
-# from celer_sight_ai.QtAssets.net.errors import AuthenticationError
+# from celer_sight_ai.gui.net.errors import AuthenticationError
 from parameterized import parameterized
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ class MyTest(unittest.TestCase):
         ]
         # dont test categories if there are no model for them
         categories = [i for i in categories if i["classes"] is not None]
-        # categories 
+        # categories
         print(categories)
 
         def process_single_request(test_case):
