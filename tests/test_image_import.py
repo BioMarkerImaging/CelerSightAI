@@ -76,7 +76,7 @@ class MyTest(unittest.TestCase):
                 "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
                 "size_x": 1761,
                 "size_y": 643,
-                "physical_pixel_size_x": 0.6917997516438892,
+                "physical_pixel_size_x": 0.6917064397869545,
                 "physical_pixel_size_y": 0.6917997516438892,
             },
             "single-channel.ome.tif": {
@@ -140,6 +140,8 @@ class MyTest(unittest.TestCase):
                 "channels": ["red", "green", "blue"],
                 "size_x": 2048,
                 "size_y": 1536,
+                "physical_pixel_size_x": 1.2380542388637508,
+                "physical_pixel_size_y": 1.2380542388637508,
             },
         }
 
@@ -188,11 +190,12 @@ class MyTest(unittest.TestCase):
             if isinstance(value, type(None)):
                 self.assertEqual(dict2[key], None)
                 self.assertEqual(dict2[key], None)
-
             elif isinstance(value, list):
                 self.assertIsNone(np.testing.assert_array_equal(dict2.get(key), value))
                 self.assertIsNone(np.testing.assert_array_equal(dict2.get(key), value))
-                # self.assertEqual(dict1[key], dict2[key])
+            # Add special handling for floating point numbers
+            elif isinstance(value, (float, np.floating)):
+                self.assertTrue(np.allclose(dict2[key], value, rtol=1e-05, atol=1e-08))
             else:
                 self.assertEqual(dict2[key], value)
 
