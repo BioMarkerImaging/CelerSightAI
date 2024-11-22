@@ -5,7 +5,7 @@ import unittest
 import logging
 import qttest_utils
 from unittest.mock import patch
-from celer_sight_ai.gui.lib import FileClient
+from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)

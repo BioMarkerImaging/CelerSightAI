@@ -69,14 +69,6 @@ def getImage(
         return image
     else:
         if not fast_load_ram:
-            # if (
-            #     image_object._is_ultra_high_res
-            #     and image_object._during_pyramidal_conversion
-            # ):
-            #     logger.debug(f"During pyramidal conversion for {image_object.fileName}")
-            #     # wait for the conversion to finish
-            #     while image_object._during_pyramidal_conversion:
-            #         time.sleep(0.1)
             logger.debug(f"Loading {image_object.fileName} from disk.")
             # load normal
             from celer_sight_ai.gui.custom_widgets.scene import readImage
@@ -1083,6 +1075,46 @@ def extract_ome_metadata(tif, dict_out):
     return dict_out
 
 
+def get_resolution_in_mm(tif):
+    """
+    Get the resolution in pixels per millimeter from a TIFF file.
+
+    Args:
+        tif: TiffFile object
+
+    Returns:
+        tuple: (x_resolution, y_resolution) in pixels per millimeter
+    """
+    tags = get_tiff_tags(tif.pages[0].tags)
+
+    # Get resolution values
+    x_resolution = tags.get("XResolution", None)
+    y_resolution = tags.get("YResolution", None)
+    resolution_unit = tags.get("ResolutionUnit", 2)  # Default is inches (RESUNIT_INCH)
+
+    if x_resolution is None or y_resolution is None:
+        return None, None
+
+    # Convert fraction tuples to float values
+    if isinstance(x_resolution, tuple):
+        x_resolution = x_resolution[0] / x_resolution[1]
+    if isinstance(y_resolution, tuple):
+        y_resolution = y_resolution[0] / y_resolution[1]
+
+    # Convert based on resolution unit
+    # ResolutionUnit values: 1: none, 2: inches, 3: centimeters
+    if resolution_unit == 2:  # inches
+        # Convert from pixels per inch to pixels per mm
+        x_resolution = x_resolution / 25.4  # 25.4 mm per inch
+        y_resolution = y_resolution / 25.4
+    elif resolution_unit == 3:  # cm
+        # Convert from pixels per cm to pixels per mm
+        x_resolution = x_resolution / 10
+        y_resolution = y_resolution / 10
+
+    return x_resolution, y_resolution
+
+
 def get_specialized_image(
     tif_path,
     avoid_loading_ultra_high_res_arrays_normaly=False,
@@ -1191,6 +1223,13 @@ def get_specialized_image(
         if hasattr(img, "channel_names"):
             dict_out["channels"] = img.channel_names
             # get the channe
+        if hasattr(img, "physical_pixel_sizes"):
+            dict_out["physical_pixel_size_x"] = getattr(
+                img.physical_pixel_sizes, "X", None
+            )
+            dict_out["physical_pixel_size_y"] = getattr(
+                img.physical_pixel_sizes, "Y", None
+            )
         dims_order = img.dims.order
         dims_shape = img.dims.shape
 
@@ -1309,6 +1348,7 @@ def get_specialized_image(
                 import json
 
                 val = tif.pages[0].tags["ImageDescription"].value
+                resolution_x, resolution_y = get_resolution_in_mm(tif)
                 if not "<?xml" in val:
                     val = json.loads(val)
                     if "cs_channels" in val:

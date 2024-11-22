@@ -5,7 +5,7 @@ from celer_sight_ai import config
 from celer_sight_ai.configHandle import *
 from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
-from celer_sight_ai.gui.lib import FileClient
+from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
