@@ -8,7 +8,7 @@ from celer_sight_ai import config
 from celer_sight_ai.configHandle import *
 from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
-from celer_sight_ai.gui.lib import FileClient
+from celer_sight_ai.core.file_client import FileClient
 
 # from tests.csight_test_loader import tags
 from celer_sight_ai.configHandle import getServerAddress

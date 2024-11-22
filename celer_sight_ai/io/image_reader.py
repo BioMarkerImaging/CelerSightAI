@@ -69,14 +69,6 @@ def getImage(
         return image
     else:
         if not fast_load_ram:
-            # if (
-            #     image_object._is_ultra_high_res
-            #     and image_object._during_pyramidal_conversion
-            # ):
-            #     logger.debug(f"During pyramidal conversion for {image_object.fileName}")
-            #     # wait for the conversion to finish
-            #     while image_object._during_pyramidal_conversion:
-            #         time.sleep(0.1)
             logger.debug(f"Loading {image_object.fileName} from disk.")
             # load normal
             from celer_sight_ai.gui.custom_widgets.scene import readImage
@@ -1191,6 +1183,13 @@ def get_specialized_image(
         if hasattr(img, "channel_names"):
             dict_out["channels"] = img.channel_names
             # get the channe
+        if hasattr(img, "physical_pixel_sizes"):
+            dict_out["physical_pixel_size_x"] = getattr(
+                img.physical_pixel_sizes, "X", None
+            )
+            dict_out["physical_pixel_size_y"] = getattr(
+                img.physical_pixel_sizes, "Y", None
+            )
         dims_order = img.dims.order
         dims_shape = img.dims.shape
 

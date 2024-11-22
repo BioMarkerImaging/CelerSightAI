@@ -4,7 +4,7 @@ import sys
 from celer_sight_ai.configHandle import (
     get_send_large_zipped_image_annotated_address,
 )
-from celer_sight_ai.gui.lib import FileClient
+from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
 
 import json
