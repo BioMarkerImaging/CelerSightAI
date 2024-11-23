@@ -1,16 +1,7 @@
-# from aicsimageio import AICSImage
-# import sys
-# import os
-
-# append CelerSight home to system
-# from celer_sight_ai import config
-
 import unittest
 import logging
 
 logger = logging.getLogger(__name__)
-# import pytest
-# from . from celer_sight_ai import config
 
 
 class importTesting(unittest.TestCase):
@@ -20,10 +11,8 @@ class importTesting(unittest.TestCase):
             # import dask.array as da
             import time
 
-            print("aicsimageio")
-            from aicsimageio import AICSImage
-
             print("tufup")
+            from bioio import BioImage
             import tufup
             from celer_sight_ai import config
 

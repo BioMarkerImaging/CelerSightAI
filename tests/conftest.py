@@ -1,5 +1,4 @@
 # required not to crash as a first import
-import aicsimageio
 import os
 import sys
 
@@ -17,10 +16,12 @@ from ui_qtbot_tools import get_gui_main
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 try:
     import dotenv
+
     # load env vars
     dotenv.load_dotenv(os.path.join(p, ".env"))
 except Exception as e:
     print(f"Error loading env vars {e}")
+
 
 def mock_password_fail() -> str:
     return "ASojnaAJO"

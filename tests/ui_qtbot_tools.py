@@ -1,4 +1,3 @@
-import aicsimageio
 import sys
 import os
 from glob import glob

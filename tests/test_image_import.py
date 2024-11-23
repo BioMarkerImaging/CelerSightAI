@@ -1,4 +1,3 @@
-from aicsimageio import AICSImage
 import tifffile
 import xmltodict
 from glob import glob
@@ -56,6 +55,8 @@ class MyTest(unittest.TestCase):
                 "channels": ["red", "green", "blue"],
                 "size_x": 696,
                 "size_y": 520,
+                "physical_pixel_size_x": 352.77778048831453,
+                "physical_pixel_size_y": 352.77778048831453,
             },
             "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_22.tif": {
                 "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
@@ -132,7 +133,7 @@ class MyTest(unittest.TestCase):
                 "size_y": 1992,
             },
             "pl con_Top Slide_R_p01_0_A01f00d1.TIF": {
-                "channels": ["gray"],
+                "channels": ["red", "green", "blue"],
                 "size_x": 2048,
                 "size_y": 1536,
             },
@@ -237,6 +238,8 @@ class MyTest(unittest.TestCase):
             if not os.path.basename(img_path) in self.mock_image_data.keys():
                 logger.info("Skipping image: " + img_path)
                 continue
+            # if not "f-2_D2_aup-1i.tif" in img_path:
+            #     continue
             logger.info("Testing image: " + img_path)
             try:
                 result, arr_metadata = get_specialized_image(

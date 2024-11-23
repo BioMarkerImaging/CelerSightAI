@@ -1,4 +1,3 @@
-from aicsimageio import AICSImage
 import tifffile
 import xmltodict
 from glob import glob
