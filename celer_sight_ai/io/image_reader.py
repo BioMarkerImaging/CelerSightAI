@@ -389,8 +389,16 @@ def extract_YXC(array, dim_order):
         array.shape[dim_indices[dim]] if dim in dim_indices else 1 for dim in "XYZTC"
     ]
 
-    if Z not in [0, 1] or T not in [0, 1]:
-        raise ValueError("Z and T dimensions must have a shape of 0 or 1.")
+    # Auto-project Z-stack if there's no time dimension and Z > 1
+    if T == 1 and Z > 1 and "Z" in dim_indices:
+        # Perform max projection along Z axis
+        array = np.max(array, axis=dim_indices["Z"])
+        # Remove Z from dimension order
+        dim_order = dim_order.replace("Z", "")
+        dim_indices = {dim: i for i, dim in enumerate(dim_order)}
+        config.global_signals.notificationSignal.emit(
+            "Z-stack auto-projected, max projection along Z axis"
+        )
     if "C" not in dim_indices:
         ordered_array = np.moveaxis(array, [dim_indices["Y"], dim_indices["X"]], [0, 1])
         ordered_array = np.squeeze(ordered_array)
@@ -399,7 +407,13 @@ def extract_YXC(array, dim_order):
         ordered_array = np.moveaxis(
             array, [dim_indices["Y"], dim_indices["X"], dim_indices["C"]], [0, 1, 2]
         )
-        ordered_array = ordered_array.reshape(Y, X, C)
+        # Only attempt reshape if the total size matches
+        total_size = Y * X * C
+        if ordered_array.size == total_size:
+            ordered_array = ordered_array.reshape(Y, X, C)
+        else:
+            return None
+            logger.warning(f"Cannot reshape array of size {ordered_array.size} into shape ({Y},{X},{C})")
     return ordered_array
 
 
@@ -1038,40 +1052,122 @@ def is_tif_ultra_high_res(tif_path):
     return False
 
 
-def extract_ome_metadata(tif, dict_out):
-    m_ome = remove_at_symbol(xmltodict.parse(tif.ome_metadata))
+def extract_more_metadata_if_available(tif_path, dict_out):
+    tif = tifffile.TiffFile(tif_path)
+    if dict_out.get("channels") and any(
+        [isinstance(c, str) and "channel:" in c.lower() for c in dict_out["channels"]]
+    ):
+        if hasattr(tif, "ome_metadata") and tif.ome_metadata is not None:
+            dict_out = extract_ome_metadata(tif_path, dict_out)
+        # case of imagej metadata, override any channels found in ome metadata
+        if hasattr(tif, "imagej_metadata") and tif.imagej_metadata is not None:
+            dict_out = extract_channels_from_imagej_metadata(
+                dict_out, tif.imagej_metadata
+            )
 
-    if "OME" in m_ome.keys():
-        m_ome = m_ome["OME"]
-    if "OME:Image" in m_ome.keys():
-        image_key = "OME:Image"
-        pixels_key = "OME:Pixels"
-        channel_key = "OME:Channel"
-    else:
-        image_key = "Image"
-        pixels_key = "Pixels"
-        channel_key = "Channel"
-    if channel_key in m_ome[image_key][pixels_key]:
-        channels = m_ome[image_key][pixels_key][channel_key]
-        channels = remove_at_symbol(channels)
-        if isinstance(channels, list):
-            for ii in range(len(channels)):
-                if "Name" in channels[ii].keys():
-                    dict_out["channels"].append(channels[ii]["Name"])
-            dict_out["channels"] = [
-                channel["ID"] for channel in remove_at_symbol(channels)
-            ]
         else:
-            if "Name" in channels.keys():
-                dict_out["channels"] = channels["Name"]
-            elif channels["ID"] == "Channel:0:2":  # --> rgb
-                dict_out["channels"] = ["red", "green", "blue"]
+            # manual extraction of metadata
+            dict_out = extract_metadata_from_tiff_tags(tif, dict_out)
+    return dict_out
+
+
+def extract_ome_metadata(tif_path, dict_out):
+    from pyometiff import OMETIFFReader
+
+    reader = OMETIFFReader(fpath=tif_path)
+    with tifffile.TiffFile(tif_path) as tif:
+        if not hasattr(tif, "ome_metadata") or tif.ome_metadata is None:
+            return dict_out
+        try:
+            parsed_metadata = reader.parse_metadata(tif.ome_metadata)
+            if parsed_metadata is None:
+                raise Exception("No parsed metadata found")
             if (
-                channels["ID"] == "Channel:0:0" or channels["ID"] == "Channel:d1"
-            ):  # --> grayscale
-                dict_out["channels"] = ["gray"]
+                parsed_metadata.get("Channels")
+                and len(parsed_metadata["Channels"].keys()) == parsed_metadata["SizeC"]
+            ):
+                if not list(parsed_metadata["Channels"].keys()) == [None]:
+                    all_channels = list(parsed_metadata["Channels"].keys())
+
+                    dict_out["channels"] = [
+                        parsed_metadata["Channels"][i]["Name"]
+                        for i in all_channels
+                        if i is not None
+                    ]
+        except Exception as e:
+            m_ome = remove_at_symbol(xmltodict.parse(tif.ome_metadata))
+
+            if "OME" in m_ome.keys():
+                m_ome = m_ome["OME"]
+            if "OME:Image" in m_ome.keys():
+                image_key = "OME:Image"
+                pixels_key = "OME:Pixels"
+                channel_key = "OME:Channel"
             else:
-                logger.error(f"No channel found for {tif.filename}")
+                image_key = "Image"
+                pixels_key = "Pixels"
+                channel_key = "Channel"
+            if channel_key in m_ome[image_key][pixels_key]:
+                channels = m_ome[image_key][pixels_key][channel_key]
+                channels = remove_at_symbol(channels)
+                if isinstance(channels, list):
+                    for ii in range(len(channels)):
+                        if "Name" in channels[ii].keys():
+                            dict_out["channels"].append(channels[ii]["Name"])
+                    dict_out["channels"] = [
+                        channel["ID"] for channel in remove_at_symbol(channels)
+                    ]
+                else:
+                    if "Name" in channels.keys():
+                        dict_out["channels"] = channels["Name"]
+                    elif channels["ID"] == "Channel:0:2":  # --> rgb
+                        dict_out["channels"] = ["red", "green", "blue"]
+                    if (
+                        channels["ID"] == "Channel:0:0"
+                        or channels["ID"] == "Channel:d1"
+                    ):  # --> grayscale
+                        dict_out["channels"] = ["gray"]
+                    else:
+                        logger.error(f"No channel found for {tif.filename}")
+    return dict_out
+
+
+def extract_metadata_from_tiff_tags(tif, dict_out):
+    """
+    Extract metadata from TIFF tags, specifically looking for channel information
+    in ImageDescription tag.
+
+    Args:
+        tif: TiffFile object
+        dict_out: Dictionary to store the extracted metadata
+
+    Returns:
+        dict: Updated dictionary with extracted metadata
+    """
+    if (
+        hasattr(tif.pages[0], "tags")
+        and ("ImageDescription" in tif.pages[0].tags)
+        and hasattr(tif.pages[0].tags["ImageDescription"], "value")
+    ):
+        import json
+
+        val = tif.pages[0].tags["ImageDescription"].value
+        resolution_x, resolution_y = get_resolution_in_mm(tif)
+
+        if not "<?xml" in val:
+            val = json.loads(val)
+            if "cs_channels" in val:
+                dict_out["channels"] = val["cs_channels"]
+        else:
+            metadata = remove_at_symbol(
+                xmltodict.parse(tif.pages[0].tags["ImageDescription"].value)
+            )
+            if "BTIImageMetaData" in metadata:
+                metadata = metadata["BTIImageMetaData"]
+                dict_out["channels"] = [
+                    metadata["ImageAcquisition"]["Channel"]["Color"]
+                ]
+
     return dict_out
 
 
@@ -1115,6 +1211,77 @@ def get_resolution_in_mm(tif):
     return x_resolution, y_resolution
 
 
+def standardize_channels(arr, current_channels):
+    """
+    Detect and normalize channel information based on array shape and current channel settings.
+
+    Args:
+        arr (numpy.ndarray): Image array
+        current_channels (list|str|None): Current channel information
+
+    Returns:
+        list: Normalized list of channel names
+        numpy.ndarray: Potentially modified image array (e.g., if alpha channel removed)
+    """
+    # Handle single channel cases like ['Channel:0:0']
+    if current_channels == ["Channel:0:0"]:
+        if len(arr.shape) == 3 and arr.shape[2] == 3:
+            return ["red", "green", "blue"], arr
+        elif len(arr.squeeze().shape) == 2:
+            return ["gray"], arr
+
+    # Handle cases where channels are None or follow Channel:X:Y pattern
+    if current_channels is None or (
+        isinstance(current_channels, list)
+        and all(
+            isinstance(c, str) and c.startswith("Channel:") for c in current_channels
+        )
+    ):
+        if len(arr.shape) == 3:
+            if arr.shape[2] == 3:
+                return ["red", "green", "blue"], arr
+            elif arr.shape[2] == 4:
+                logger.info("Found image with alpha channel, throwing out alpha.")
+                return ["red", "green", "blue"], arr[:, :, :3]
+        elif len(arr.squeeze().shape) == 2:
+            return ["gray"], arr
+
+    # Handle specific cases of Channel:0 or gray with RGB array
+    if (
+        current_channels in (["Channel:0"], ["gray"])
+        and len(arr.shape) == 3
+        and arr.shape[2] == 3
+    ):
+        return ["red", "green", "blue"], arr
+
+    # Normalize string channels to list
+    if isinstance(current_channels, str):
+        return [current_channels], arr
+
+    return current_channels, arr
+
+
+def extract_channels_from_imagej_metadata(dict_out, metadata):
+    """
+    Extract channel information from ImageJ metadata LUTs.
+
+    Args:
+        metadata (dict): ImageJ metadata dictionary containing LUTs information
+
+    Returns:
+        list: List of RGB channel values extracted from LUTs, or None if no valid LUTs found
+    """
+    if metadata is None or "LUTs" not in metadata:
+        return dict_out
+
+    try:
+        # Convert LUT to color rgb max value for each channel
+        dict_out["channels"] = [np.max(lut, axis=1) for lut in metadata["LUTs"]]
+    except Exception as e:
+        logger.error(f"Error extracting channels from ImageJ LUTs: {e}")
+    return dict_out
+
+
 def get_specialized_image(
     tif_path,
     avoid_loading_ultra_high_res_arrays_normaly=False,
@@ -1129,7 +1296,7 @@ def get_specialized_image(
     In case of a ultra high res array, get a thumbnail array, and mark the object as ultra high res
     """
     import time
-    from aicsimageio import AICSImage
+    from bioio import BioImage
     from celer_sight_ai.config import ULTRA_HIGH_RES_THRESHOLD
 
     IS_ULTRA_HIGH_RES = False
@@ -1160,6 +1327,29 @@ def get_specialized_image(
     IS_PYRAMIDAL = False
     IS_ULTRA_HIGH_RES = None
 
+    # # try first to get everything with bioio, if that fails try other methods
+    try:
+        img = run_with_timeout(BioImage, tif_path, timeout=10)
+    except Exception as e:
+        logger.error(f"Error loading tiff file with bioio: {e}")
+    if not isinstance(img, type(None)):
+        # extract yxc
+        arr = extract_YXC(img.data, img.dims.order)
+        # if there is a mismatch, extract_YXC will return None
+        if not isinstance(arr, type(None)):
+            # get the channels
+            dict_out["channels"] = img.channel_names
+            # get the physical pixel sizes in mm
+            dict_out["physical_pixel_size_x"] = getattr(img.physical_pixel_sizes, "X", None)
+            dict_out["physical_pixel_size_y"] = getattr(img.physical_pixel_sizes, "Y", None)
+            dict_out["size_x"] = getattr(img.dims, "X", None)
+            dict_out["size_y"] = getattr(img.dims, "Y", None)
+            # if channels are found, return the image
+            if dict_out["channels"]:
+                dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+                dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
+                return arr, dict_out
+
     try:
         with tifffile.TiffFile(tif_path) as tif:
             # get dimenions of the first image
@@ -1187,7 +1377,7 @@ def get_specialized_image(
 
     except Exception as e:
         # There is an edge case that the tiff file wont load due to out of bounds error on tiff.series
-        # in that case, we will load the image with AICSImage
+        # in that case, we will load the image with bioio
         logger.error(f"Error loading tiff file with tifffile: {e}")
         logger.error(
             f"Attempting to load with asarray(0) and manually extract metadata"
@@ -1209,7 +1399,7 @@ def get_specialized_image(
             dict_out["size_y"] = arr.shape[0]
             return arr, dict_out
     if not avoid_loading_ultra_high_res_arrays_normaly or not IS_ULTRA_HIGH_RES:
-        img = run_with_timeout(AICSImage, tif_path, timeout=10)
+        img = run_with_timeout(BioImage, tif_path, timeout=10)
         if isinstance(img, type(None)):
             # load it with alternative method as it failed
             # if its a tifffile, attempt to laod it with tifffile, thats because
@@ -1301,95 +1491,8 @@ def get_specialized_image(
             # get the exact tile
             arr, metadata = extract_tile_data_from_tiff(tif_path, tile_bbox=bbox)
 
-    if dict_out.get("channels") and any(
-        ["channel:" in c.lower() for c in dict_out["channels"]]
-    ):
-        # look for additional metadata through imageJ
-        with tifffile.TiffFile(tif_path) as tif:
-            try:
-                if hasattr(tif, "ome_metadata") and tif.ome_metadata is not None:
-                    from pyometiff import OMETIFFReader
-
-                    reader = OMETIFFReader(fpath=tif_path)
-                    parsed_metadata = reader.parse_metadata(tif.ome_metadata)
-                    if (
-                        parsed_metadata.get("Channels")
-                        and len(parsed_metadata["Channels"].keys())
-                        == parsed_metadata["SizeC"]
-                    ):
-                        if not list(parsed_metadata["Channels"].keys()) == [None]:
-                            all_channels = list(parsed_metadata["Channels"].keys())
-
-                            dict_out["channels"] = [
-                                parsed_metadata["Channels"][i]["Name"]
-                                for i in all_channels
-                                if i is not None
-                            ]
-            except Exception as e:
-                import traceback
-
-                logger.error(f"Error extracting OME metadata from {tif_path} , {e}")
-                logger.error(traceback.format_exc())
-                logger.info("Trying raw ome read")
-                dict_out = extract_ome_metadata(tif, dict_out)
-        # case of imagej metadata
-        if hasattr(tif, "imagej_metadata") and tif.imagej_metadata is not None:
-            meta = tif.imagej_metadata
-            if "LUTs" in meta:
-                # convert LUT to color rgb max value:
-                dict_out["channels"] = [np.max(i, axis=1) for i in meta["LUTs"]]
-
-        else:
-            if (
-                hasattr(tif.pages[0], "tags")
-                and ("ImageDescription" in tif.pages[0].tags)
-                and hasattr(tif.pages[0].tags["ImageDescription"], "value")
-            ):
-                import json
-
-                val = tif.pages[0].tags["ImageDescription"].value
-                resolution_x, resolution_y = get_resolution_in_mm(tif)
-                if not "<?xml" in val:
-                    val = json.loads(val)
-                    if "cs_channels" in val:
-                        dict_out["channels"] = val["cs_channels"]
-                else:
-                    metadata = remove_at_symbol(
-                        xmltodict.parse(tif.pages[0].tags["ImageDescription"].value)
-                    )
-                    # check if BTIImageMetaData in keys
-                    if "BTIImageMetaData" in metadata:
-                        # extract channel
-                        metadata = metadata["BTIImageMetaData"]
-                        dict_out["channels"] = [
-                            metadata["ImageAcquisition"]["Channel"]["Color"]
-                        ]
-    if (
-        dict_out["channels"] == None
-        or dict_out["channels"]
-        == [
-            "Channel:0:0",
-            "Channel:0:1",
-            "Channel:0:2",
-        ]
-        or dict_out["channels"] == ["Channel:0:0"]
-    ):
-        if len(arr.shape) == 3:
-            if arr.shape[2] == 3:
-                dict_out["channels"] = ["red", "green", "blue"]
-            elif arr.shape[2] == 4:
-                logger.info("Found image with alpha channel, throwing out alpha.")
-                # case of rgba --> For now through the alpha channel out.
-                dict_out["channels"] = ["red", "green", "blue"]
-                arr = arr[:, :, :3]
-        elif len(arr.squeeze().shape) == 2:
-            dict_out["channels"] = ["gray"]
-    if (
-        (dict_out["channels"] == ["Channel:0"] or dict_out["channels"] == ["gray"])
-        and len(arr.shape) == 3
-        and arr.shape[2] == 3
-    ):
-        dict_out["channels"] = ["red", "green", "blue"]
+    dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+    dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
 
     if isinstance(dict_out["channels"], str):
         dict_out["channels"] = [dict_out["channels"]]
@@ -1534,33 +1637,42 @@ def extract_tile_data_from_tiff(tiff_path, tile_bbox=None, forced_resolution=Non
     try:
         with tifffile.TiffFile(tiff_path) as tif:
             position1_series = tif.series[0]
-
-            # Convert to Zarr array for efficient processing
             position1_zarr = zarr.open(position1_series.aszarr(), mode="r")
+
             if not forced_resolution:
                 target_size = config.IMAGE_THUMBNAIL_MAX_SIZE
             else:
                 target_size = forced_resolution
+
             x_size = position1_series.sizes["width"]
             y_size = position1_series.sizes["height"]
             metadata["size_x"] = x_size
             metadata["size_y"] = y_size
-            # Calculate the coordinates for the cropped region
+
             if isinstance(tile_bbox, type(None)):
                 tile_bbox = (0, 0, x_size, y_size)
+
             y1 = max(0, int(tile_bbox[1]))
             y2 = min(y_size, int(tile_bbox[1]) + int(tile_bbox[3]))
             x1 = max(0, int(tile_bbox[0]))
             x2 = min(x_size, int(tile_bbox[0]) + int(tile_bbox[2]))
 
-            # Calculate the downsampling factor
-            downsample_factor_y = max(1, (y2 - y1) // target_size)
-            downsample_factor_x = max(1, (x2 - x1) // target_size)
+            # Calculate and limit downsample factors
+            downsample_factor_y = max(1, min((y2 - y1) // target_size, y2 - y1))
+            downsample_factor_x = max(1, min((x2 - x1) // target_size, x2 - x1))
 
-            # Load and return the zoomed and dynamically downsampled portion of the image
-            downsampled_image = position1_zarr[
-                y1:y2:downsample_factor_y, x1:x2:downsample_factor_x
-            ]
+            try:
+                # Attempt to read with calculated downsample factors
+                downsampled_image = position1_zarr[
+                    y1:y2:downsample_factor_y, x1:x2:downsample_factor_x
+                ]
+            except KeyError:
+                # Fallback: read full region and downsample manually
+                full_region = position1_zarr[y1:y2, x1:x2]
+                downsampled_image = full_region[
+                    ::downsample_factor_y, ::downsample_factor_x
+                ]
+
     except Exception as e:
         logger.error(f"Error extracting tile data from {tiff_path}: {e}")
         from tifffile import TiffFile

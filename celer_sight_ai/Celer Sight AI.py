@@ -7,16 +7,6 @@ from azure.storage.blob import BlobServiceClient, BlobClient
 import tufup
 import networkx
 
-try:
-    from dask.sizeof import sizeof
-    from xsdata.formats.dataclass.compat import (
-        class_types,
-    )  # this needs pip install "pydantic<2"
-    from ome_zarr.io import parse_url
-except:
-    print("Failed to quick import aicsimageio, will try slow import")
-    import aicsimageio  # very slow, skip if possible
-# import aicsimageio
 import imagecodecs
 import sys
 import os

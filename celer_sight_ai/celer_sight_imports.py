@@ -1,7 +1,5 @@
 import os
 from celer_sight_ai.configHandle import getLocal
-from aicsimageio import AICSImage
-
 import numpy as np
 
 import sys
@@ -66,7 +64,7 @@ import pandas
 import sklearn
 import matplotlib
 import glob
-import aicsimageio
+import bioio
 import statistics
 import PIL
 

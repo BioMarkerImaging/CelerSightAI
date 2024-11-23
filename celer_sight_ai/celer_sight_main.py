@@ -1,14 +1,4 @@
-#  required for aicsimageio to be imported here, 0.3 seconds import time
 print("Importing celer_sight_main")
-try:
-    from dask.sizeof import sizeof
-    from xsdata.formats.dataclass.compat import (
-        class_types,
-    )  # this needs pip install "pydantic<2"
-except:
-    print("Failed to quick import aicsimageio, will try slow import")
-    import aicsimageio  # very slow, skip if possible
-# from xsdata.plugins import class_types
 import os
 import sys
 

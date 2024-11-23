@@ -1,4 +1,3 @@
-from aicsimageio import AICSImage
 import tifffile
 import xmltodict
 from glob import glob
@@ -21,9 +20,9 @@ class MyTest(unittest.TestCase):
     def setUp(self):
         self.ultra_high_res_root_path = "tests/fixtures/import_images_high_res"
 
-
     def test_ultra_high_res_image_crop(self):
         from celer_sight_ai.io.image_reader import crop_ultra_high_res
+
         image_path = os.path.join(self.ultra_high_res_root_path, "tiff_slide_test.tiff")
         # tile = [6500, 6200, 14200, 13300]
         tile_xywh = [6500, 6200, 19700, 15100]
