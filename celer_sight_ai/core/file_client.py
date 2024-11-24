@@ -1569,7 +1569,10 @@ class FileClient:
             image_dict["height"] = image_object.SizeY
             image_dict["image_uuid"] = str(image_object.unique_id)
             image_dict["supercategory"] = config.supercategory
-
+            image_dict["physical_pixel_size_x"] = image_object.PhysicalSizeX
+            image_dict["physical_pixel_size_y"] = image_object.PhysicalSizeY
+            image_dict["physical_pixel_size_x_unit"] = image_object.PhysicalSizeXUnit
+            image_dict["physical_pixel_size_y_unit"] = image_object.PhysicalSizeYUnit
             # if the state is fully_annotated, mark all categories as audited
             if state == "fully_annotated":
                 image_dict["audited_categories"] = list(

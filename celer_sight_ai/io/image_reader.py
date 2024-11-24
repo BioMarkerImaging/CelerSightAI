@@ -149,6 +149,22 @@ def getImage(
                     image_object.SizeX = result_dict["size_x"]
                 if image_object.SizeY is None:
                     image_object.SizeY = result_dict["size_y"]
+                if image_object.PhysicalSizeX is None:
+                    image_object.PhysicalSizeX = result_dict.get(
+                        "physical_pixel_size_x", None
+                    )
+                if image_object.PhysicalSizeY is None:
+                    image_object.PhysicalSizeY = result_dict.get(
+                        "physical_pixel_size_y", None
+                    )
+                if image_object.PhysicalSizeXUnit is None:
+                    image_object.PhysicalSizeXUnit = result_dict.get(
+                        "physical_pixel_size_x_unit", "μm"
+                    )
+                if image_object.PhysicalSizeYUnit is None:
+                    image_object.PhysicalSizeYUnit = result_dict.get(
+                        "physical_pixel_size_y_unit", "μm"
+                    )
 
                 if channels:
                     image_object.channel_list = channels
@@ -413,7 +429,9 @@ def extract_YXC(array, dim_order):
             ordered_array = ordered_array.reshape(Y, X, C)
         else:
             return None
-            logger.warning(f"Cannot reshape array of size {ordered_array.size} into shape ({Y},{X},{C})")
+            logger.warning(
+                f"Cannot reshape array of size {ordered_array.size} into shape ({Y},{X},{C})"
+            )
     return ordered_array
 
 
@@ -1340,14 +1358,20 @@ def get_specialized_image(
             # get the channels
             dict_out["channels"] = img.channel_names
             # get the physical pixel sizes in mm
-            dict_out["physical_pixel_size_x"] = getattr(img.physical_pixel_sizes, "X", None)
-            dict_out["physical_pixel_size_y"] = getattr(img.physical_pixel_sizes, "Y", None)
+            dict_out["physical_pixel_size_x"] = getattr(
+                img.physical_pixel_sizes, "X", None
+            )
+            dict_out["physical_pixel_size_y"] = getattr(
+                img.physical_pixel_sizes, "Y", None
+            )
             dict_out["size_x"] = getattr(img.dims, "X", None)
             dict_out["size_y"] = getattr(img.dims, "Y", None)
             # if channels are found, return the image
             if dict_out["channels"]:
                 dict_out = extract_more_metadata_if_available(tif_path, dict_out)
-                dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
+                dict_out["channels"], arr = standardize_channels(
+                    arr, dict_out["channels"]
+                )
                 return arr, dict_out
 
     try:
