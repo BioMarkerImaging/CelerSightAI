@@ -3244,7 +3244,12 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         RNAiTrashButtonListIcon = QtGui.QIcon()
         RNAiTrashButtonListIcon.addPixmap(
-            QtGui.QPixmap("data/icons/icons_aa_tool/plus_rnai.png")
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ.get("CELER_SIGHT_AI_HOME"),
+                    "data/icons/icons_aa_tool/plus_rnai.png",
+                )
+            )
         )
         self.addRNAi_button_list.setIcon(RNAiTrashButtonListIcon)
         self.addRNAi_button_list.setIconSize(QtCore.QSize(40, 40))

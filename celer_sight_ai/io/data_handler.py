@@ -426,11 +426,11 @@ class DataHandler(object):
         self.BLobj = CelerSightObj(self.MainWindow)
         self.BLobj.newAnalysis(self)
 
-    def get_all_buttons(self, group_id: str, condition_id: str) -> list:
-        if condition_id:
+    def get_all_buttons(self, group_id: str, condition_name: str) -> list:
+        if condition_name:
             return [
                 i.myButton
-                for i in self.BLobj.groups[group_id].conds[condition_id].images
+                for i in self.BLobj.groups[group_id].conds[condition_name].images
             ]
         else:
             return []
@@ -604,8 +604,13 @@ class CelerSightObj:  # contains group obj
             if not all_treatments:
                 return None
             self.current_condition = list(all_treatments.keys())[0]
+            clicked_treatment_widget = self.MainWindow.get_treatment_widget_by_name(
+                self.current_condition
+            )
             # make sure that its available in the ui
-            self.MainWindow.switch_treatment_onchange(condition=self.current_condition)
+            self.MainWindow.switch_treatment_onchange(
+                clicked_treatment_widget=clicked_treatment_widget
+            )
             return self.current_condition
 
     def get_current_condition_uuid(self):
@@ -614,6 +619,9 @@ class CelerSightObj:  # contains group obj
             .conds[self.get_current_condition()]
             .unique_id
         )
+
+    def get_all_treatment_names(self):
+        return [i for i in self.groups[self.get_current_group()].conds.keys()]
 
     def get_treatment_name_by_uuid(self, uuid_num):
         for group in self.groups:

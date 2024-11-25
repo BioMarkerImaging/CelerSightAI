@@ -79,7 +79,7 @@ class Master_MainWindow(CelerSightMainWindow):
             False  # Indicates if we are currently drawing a mask (for the event filter)
         )
         # wether we are adding forground or background in the auto tool review mode
-        self.previous_clicked_item = None
+        self.previous_clicked_treatment_item = None
         self.i_am_drawing_state_bbox = (
             False  # Indicates weather we are in the process of auto tool
         )
@@ -298,7 +298,7 @@ class Master_MainWindow(CelerSightMainWindow):
             self.updateDictionariesWithNewKeys
         )  # triger this by RNAi_list_widget_update_signal signals
         self.RNAi_list.itemClicked.connect(
-            lambda: self.switch_treatment_onchange()  #  can be internal in the custom list widget
+            self.switch_treatment_onchange  #  can be internal in the custom list widget
         )  # removes mask asset/image buttons from the overview tabs
 
         self.addRNAi_button_list.clicked.connect(
@@ -1206,6 +1206,24 @@ class Master_MainWindow(CelerSightMainWindow):
             allImages[i] = cv2.cvtColor(allImages[i], cv2.COLOR_BGR2RGB)
         return allImages, resizedImages, sappliedNames
 
+    def get_current_treatment_widget(self):
+        """
+        Gets the currently selected treatment widget from the RNAi list.
+
+        Returns:
+            QListWidgetItem: The currently selected treatment widget item, or None if no item is selected.
+
+        This method iterates through all items in the RNAi list and returns the first selected item.
+        The RNAi list contains treatment widgets that represent different experimental conditions.
+        """
+        return self.RNAi_list.currentItem()
+
+    def get_treatment_widget_by_name(self, treatment_name):
+        for i in range(self.RNAi_list.count()):
+            if self.RNAi_list.item(i).text() == treatment_name:
+                return self.RNAi_list.item(i)
+        return None
+
     def add_new_treatment_item(self, condition_name=None, condition_uuid=None):
         """
         Function to add a new Condition on the top right list.
@@ -1226,6 +1244,18 @@ class Master_MainWindow(CelerSightMainWindow):
             ConditionAdded = PlotViewerHandler.CheckDictionaryName(
                 "Treatment", self.DH.BLobj.groups["default"].conds
             )
+        # if the item is already in the list with exactly the same name, do not add it
+        if (
+            ConditionAdded
+            in self.RNAi_list.findItems(
+                ConditionAdded, QtCore.Qt.MatchFlag.MatchExactly
+            )
+            or ConditionAdded in self.DH.BLobj.get_all_treatment_names()
+        ):
+            config.global_signals.notificationSignal(
+                f"Treatment {ConditionAdded} already exists, skipping."
+            )
+            return ConditionAdded
         self.RNAi_list.setEnabled(False)
         # Clear any previous related variables
         if self.RNAi_list.count() != 0:
@@ -1233,7 +1263,9 @@ class Master_MainWindow(CelerSightMainWindow):
                 self.RNAi_list.currentItem().text()
                 == self.DH.BLobj.get_current_condition()
             ):
-                self.previous_clicked_item = self.DH.BLobj.get_current_condition()
+                self.previous_clicked_treatment_item = (
+                    self.DH.BLobj.get_current_condition()
+                )
             # self.previous_item_name_RNAi_list = self.RNAi_list.currentItem().text()
             # initializw everything again....
             self.temp_mask_to_use_Test_x = []
@@ -1279,15 +1311,23 @@ class Master_MainWindow(CelerSightMainWindow):
             self.DH.AssetMaskListPolygonSettings = []
 
         self.name_of_added_listwidget = ConditionAdded
-
+        # check again
+        if (
+            ConditionAdded
+            in self.RNAi_list.findItems(
+                ConditionAdded, QtCore.Qt.MatchFlag.MatchExactly
+            )
+            or ConditionAdded in self.DH.BLobj.get_all_treatment_names()
+        ):
+            config.global_signals.notificationSignal(
+                f"Treatment {ConditionAdded} already exists, skipping."
+            )
+            self.RNAi_list.setEnabled(True)
+            return ConditionAdded
         self.RNAi_list.addItem(self.name_of_added_listwidget)
         items = self.RNAi_list.findItems(
             self.name_of_added_listwidget, QtCore.Qt.MatchFlag.MatchExactly
         )  # get that particular item
-        if self.previous_clicked_item != None:
-            self.switch_treatment_onchange(
-                condition=self.previous_clicked_item
-            )  # UNparent imges and masks
 
         #
         # Update Dictionaries with new keys
@@ -1368,6 +1408,14 @@ class Master_MainWindow(CelerSightMainWindow):
             self.DH.BLobj.groups["default"].conds[
                 self.name_of_added_listwidget
             ].condition_name_set = True
+
+        clicked_treatment_widget = self.get_treatment_widget_by_name(
+            self.name_of_added_listwidget
+        )
+        self.switch_treatment_onchange(
+            clicked_treatment_widget=clicked_treatment_widget
+        )
+
         self.RNAi_list.setEnabled(True)
         # return treatment name
         return self.name_of_added_listwidget
@@ -3941,21 +3989,21 @@ class Master_MainWindow(CelerSightMainWindow):
             return
         currentItem = self.RNAi_list.currentItem().text()
         self.DH.BLobj.set_current_condition(currentItem)
-        QtWidgets.QApplication.processEvents()
 
         self.delete_image_preview_buttons()
 
-        del self.DH.BLobj.groups["default"].conds[
-            currentItem
-        ]  # Dictionary for pixon_list_opencv lists
+        if currentItem in self.DH.BLobj.groups["default"].conds:
+            del self.DH.BLobj.groups["default"].conds[
+                currentItem
+            ]  # Dictionary for pixon_list_opencv lists
 
         self.reset_all_values()
 
         self.RNAi_list.takeItem(self.RNAi_list.currentRow())
-        self.previous_clicked_item = currentItem
-        QtWidgets.QApplication.processEvents()
-        if self.RNAi_list.currentItem():
-            self.DH.BLobj.set_current_condition(self.RNAi_list.currentItem().text())
+        current_treatment_widget = self.get_treatment_widget_by_name(currentItem)
+        self.previous_clicked_treatment_item = current_treatment_widget
+        if current_treatment_widget:
+            self.DH.BLobj.set_current_condition(current_treatment_widget.text())
         else:
             self.DH.BLobj.set_current_condition(None)
 
@@ -4830,6 +4878,10 @@ class Master_MainWindow(CelerSightMainWindow):
 
         current_condition = self.DH.BLobj.get_current_condition()
         if not current_condition:
+            # set the _photo object to empty
+            self.viewer._photo.setPixmap(QtGui.QPixmap())
+            # update background
+            self.viewer.update()
             return
         current_condition_object = self.DH.BLobj.groups["default"].conds[
             current_condition
@@ -5767,42 +5819,39 @@ class Master_MainWindow(CelerSightMainWindow):
         else:
             return
 
-    def switch_treatment_onchange(self, condition=None):
+    def switch_treatment_onchange(self, clicked_treatment_widget=None):
         """
         When we change condition from The self.RNAi_list remove last condition
         """
         logger.debug("delete_both_tabs_onchange")
-
+        if not clicked_treatment_widget:
+            return
         self.double_clicked_item = None
         logger.debug("switch_treatment_onchange")
         reload_view = False
-        current_item = self.RNAi_list.currentItem()
-        if not current_item:
+        current_treatment_widget = self.get_current_treatment_widget()
+        new_treatment_name = clicked_treatment_widget.text()
+        if not new_treatment_name:
+            logger.error(f"Treatment {new_treatment_name} not found in RNAi list")
             return
-        if current_item:
-            self.DH.BLobj.set_current_condition(current_item.text())
+        if self.previous_clicked_treatment_item == clicked_treatment_widget:
+            logger.debug(
+                f"Treatment {new_treatment_name} is already the current treatment"
+            )
+            return
 
-        if (
-            current_item.text() != self.RNAi_list.previous_item
-            or self.RNAi_list.count() == 1
-        ):
-            self.myButtonHandler.ShowNewCondition(Mode="IMAGE")
-            reload_view = True
+        self.DH.BLobj.set_current_condition(new_treatment_name)
+
+        self.myButtonHandler.ShowNewCondition(Mode="IMAGE")
+        reload_view = True
         self.setCurrentImageNumber(0)
         self.previous_imagenumber = 0
 
-        if not (self.previous_clicked_item == condition):
-            self.DH.BLobj.set_current_condition(condition)
-            self.images_preview_graphicsview.update_visible_buttons(
-                condition, force_update=True
-            )
+        self.images_preview_graphicsview.update_visible_buttons(
+            clicked_treatment_widget, force_update=True
+        )
 
-            self.previous_clicked_item = condition
-            self.load_main_scene(self.current_imagenumber, fit_in_view=True)
-
-        else:
-            self.previous_clicked_item = condition
-        # reload image if we have switched treatments
+        self.previous_clicked_treatment_item = clicked_treatment_widget
         if reload_view:
             self.load_main_scene(self.current_imagenumber, fit_in_view=True)
 

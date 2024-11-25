@@ -790,7 +790,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
             p = self.MainWindow.DH.BLobj.get_box_position(b.image_number)
             b.button_instance_proxy.setPos(p[0], p[1])
 
-    def update_visible_buttons(self, condition=None, force_update=False):
+    def update_visible_buttons(self, current_condition_widget=None, force_update=False):
         """
         This method is progressivly spawning and despawning buttons as needed within the
         overview_tabs_image -> image_preview_graphicsview.
@@ -800,14 +800,21 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                 return
             self._is_updating_buttons = True
 
-            if condition is None:
-                condition = self.MainWindow.DH.BLobj.get_current_condition()
-            if condition is None:
+            if current_condition_widget is None:
+                # get the current self.MainWindow.RNAi_list widget
+                current_condition_widget = (
+                    self.MainWindow.get_current_treatment_widget()
+                )
+            all_conds = self.MainWindow.DH.BLobj.groups["default"].conds
+            if current_condition_widget.text() in all_conds:
+                current_condition_object = all_conds[current_condition_widget.text()]
+            else:
+                logger.warning(
+                    f"Condition {current_condition_widget.text()} not found in data handler"
+                )
                 return
-            condition_object = self.MainWindow.DH.BLobj.groups["default"].conds[
-                condition
-            ]
-            condition_uuid = condition_object.unique_id
+
+            condition_uuid = current_condition_object.unique_id
 
             visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
             # make it so that the rect has much less space for intersection
@@ -846,7 +853,6 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                         return
 
             self.previous_update_pos = center.y()
-            currentCondition = self.MainWindow.DH.BLobj.get_current_condition()
             currentGroup = self.MainWindow.DH.BLobj.get_current_group()
             # TODO: This needs to become faster, as it is currently blocking the UI
             # iterate over all existsing buttons and hide the ones that are not visible
@@ -870,7 +876,9 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
             # show buttons needed
             all_buttons_to_create_instance = []
             total_buttons_len = len(
-                self.MainWindow.DH.get_all_buttons(currentGroup, currentCondition)
+                self.MainWindow.DH.get_all_buttons(
+                    currentGroup, current_condition_widget.text()
+                )
             )
             for i in range(
                 max(self.start_button_i_to_show, 0), self.end_button_i_to_show
@@ -883,7 +891,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                     continue
                 all_buttons_to_create_instance.append(i)
                 button = self.MainWindow.DH.get_button(
-                    currentGroup, currentCondition, i
+                    currentGroup, current_condition_widget.text(), i
                 )
 
                 print(f"Adding button id {button.image_number}")
@@ -2884,6 +2892,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             else:
                 self._photo.setScale(1)
             self._photo.setPixmap(pixmap)
+            # update graphicsview
+            self.update()
         else:
             return
         if fit_in_view_state == True:
@@ -3501,6 +3511,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                     .conds[self.MainWindow.DH.BLobj.get_current_condition()]
                     .images[self.MainWindow.DH.BLobj.get_current_image_number()]
                 )
+                if isinstance(io, type(None)):
+                    return
                 mask_len = len([i for i in io.masks if not i.mask_type == "bitmap"])
                 if io._is_ultra_high_res:
                     # make sure viewer only updates whats needed

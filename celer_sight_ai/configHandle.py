@@ -136,7 +136,7 @@ def getServerLogAddress():
         str: ip address
     """
     if os.environ.get("CELER_SIGHT_API_IP"):
-        return f"https://{os.environ.get('CELER_SIGHT_API_IP')}"
+        return f"{os.environ.get('CELER_SIGHT_API_IP')}"
     else:
         return "https://s1.biomarkerimaging.com"
 

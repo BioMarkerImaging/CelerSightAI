@@ -438,6 +438,7 @@ class ButtonAssetClass(QtWidgets.QPushButton):
         self.ResizedImageQPixMapOff = QtGui.QPixmap.fromImage(
             ResizedImageQImageOff
         )  # Contrstated Image
+        self.update()
 
     def contextMenuEvent(self, event):
         if self.allowContexMenu:
