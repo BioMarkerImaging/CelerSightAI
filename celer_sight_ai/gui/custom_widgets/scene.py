@@ -2142,7 +2142,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         # TODO: adjust for pyramidal????
                         img, result_dict = readImage(image_channel_list_arr[i][ii][j])
                         chn = result_dict.get("channels", None)
-                        if len(chn) != 1 or len(img.shape) != 2:
+                        if len(chn) != 1 or (len(img.shape) != 2 and img.shape[2] > 1):
                             config.global_signal.errorSignal(
                                 "The images to be combined are not grayscale, please provide grayscale images"
                             )
@@ -2268,7 +2268,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         # TODO: adjusts for pyramidal??
                         img, result_dict = readImage(image_channel_list_arr[i][j][ii])
                         chn = result_dict.get("channels", None)
-                        if len(chn) != 1 or len(img.shape) != 2:
+                        if len(chn) != 1 or (len(img.shape) != 2 and img.shape[2] > 1):
                             config.global_signals.errorSignal.emit(
                                 "The images to be combined are not grayscale, please provide grayscale images"
                             )
