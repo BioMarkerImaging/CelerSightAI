@@ -126,7 +126,11 @@ def getLocal():
         )
     else:
         # else is mac os
-        local_dir = os.path.join(os.path.expanduser("~/Library/Application Support"),  "BioMarkerImaging" , "CelerSight")
+        local_dir = os.path.join(
+            os.path.expanduser("~/Library/Application Support"),
+            "BioMarkerImaging",
+            "CelerSight",
+        )
     if not os.path.exists(os.path.join(local_dir)):
         os.makedirs(os.path.join(local_dir))
     return os.path.join(local_dir)
@@ -138,7 +142,10 @@ def getServerLogAddress():
     Returns:
         str: ip address
     """
-    return "https://s1.biomarkerimaging.com"
+    if os.environ.get("CELER_SIGHT_API_IP"):
+        return f"https://{os.environ.get('CELER_SIGHT_API_IP')}"
+    else:
+        return "https://s1.biomarkerimaging.com"
 
 
 def retrieve_inference_data_address():
@@ -463,7 +470,6 @@ def get_app_settings() -> QtCore.QSettings:
         settings = QtCore.QSettings("BioMarkerImaging", "CelerSight")
         config.qsettings = settings
     return config.qsettings
-
 
 
 if __name__ == "__main__":

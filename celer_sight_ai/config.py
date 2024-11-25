@@ -1123,7 +1123,10 @@ def get_update_client():
 
                 try:
                     # Download the root.json file from the server
-                    root_json_url = f"https://s1.biomarkerimaging.com/api/v1/update/get_root_json/{platform_version}"
+                    root_json_url = (
+                        configHandle.getServerAddress()
+                        + f"/api/v1/update/get_root_json/{platform_version}"
+                    )
                     root_json_file_path = os.path.join(METADATA_DIR, "root.json")
                     resp = requests.get(root_json_url)
                     if resp.status_code == 200:
