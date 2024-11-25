@@ -105,13 +105,6 @@ def delete_user_credentials(username):
         logger.error(f"Error deleting user credentials: {e}")
 
 
-def getServerAddress():
-    from celer_sight_ai import config
-
-    ip = config.user_cfg.CELER_SIGHT_API_IP
-    return f"https://{ip}"
-
-
 def getLocal():
     """gets the local path to save relevant files
 
@@ -150,17 +143,17 @@ def getServerLogAddress():
 
 def retrieve_inference_data_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/infer/retrieve_inference_data"
+        ad = getServerLogAddress() + "/api/v1/infer/retrieve_inference_data"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/infer/retrieve_inference_data")
+        ad = os.path.join(getServerLogAddress(), "api/v1/infer/retrieve_inference_data")
     return ad
 
 
 def get_refresh_token_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/refresh_token"
+        ad = getServerLogAddress() + "/api/v1/auth/refresh_token"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/refresh_token")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/refresh_token")
     return ad
 
 
@@ -172,179 +165,186 @@ def getLogInAddress():
     """
     # if os is windows
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/login"
+        ad = getServerLogAddress() + "/api/v1/auth/login"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/login")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/login")
     logger.debug(f"Connecting to {ad}")
     return ad
 
 
 def get_cloud_classes_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/get_cloud_classes"
+        ad = getServerLogAddress() + "/api/v1/auth/get_cloud_classes"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/get_cloud_classes")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/get_cloud_classes")
     return ad
 
 
 def get_download_category_map_images_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/download_category_map_images"
+        ad = getServerLogAddress() + "/api/v1/auth/download_category_map_images"
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/auth/download_category_map_images"
+            getServerLogAddress(), "api/v1/auth/download_category_map_images"
         )
     return ad
 
 
 def get_download_asset_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/update/get_asset_url"
+        ad = getServerLogAddress() + "/api/v1/update/get_asset_url"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/update/get_asset_url")
+        ad = os.path.join(getServerLogAddress(), "api/v1/update/get_asset_url")
     return ad
 
 
 def get_available_models_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/get_available_categories"
+        ad = getServerLogAddress() + "/api/v1/auth/get_available_categories"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/get_available_categories")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/get_available_categories")
     return ad
 
 
 def get_create_new_category_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/create_new_category"
+        ad = getServerLogAddress() + "/api/v1/auth/create_new_category"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/create_new_category")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/create_new_category")
     return ad
 
 
 def get_optimal_annotation_range_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/infer/get_optimal_annotation_range"
+        ad = getServerLogAddress() + "/api/v1/infer/get_optimal_annotation_range"
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/infer/get_optimal_annotation_range"
+            getServerLogAddress(), "api/v1/infer/get_optimal_annotation_range"
         )
     return ad
 
 
 def get_remove_category_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/remove_category"
+        ad = getServerLogAddress() + "/api/v1/auth/remove_category"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/remove_category")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/remove_category")
     return ad
 
 
 def get_user_info_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/get_user_info"
+        ad = getServerLogAddress() + "/api/v1/auth/get_user_info"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/get_user_info")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/get_user_info")
     return ad
 
 
 def get_update_category_image_address() -> str:
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/update_category_image"
+        ad = getServerLogAddress() + "/api/v1/auth/update_category_image"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/update_category_image")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/update_category_image")
     return ad
 
 
 def get_connect_patreon_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/connect_patreon"
+        ad = getServerLogAddress() + "/api/v1/auth/connect_patreon"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/connect_patreon")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/connect_patreon")
     return ad
 
 
 def get_refresh_patreon_status_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/refresh_patreon_status"
+        ad = getServerLogAddress() + "/api/v1/auth/refresh_patreon_status"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/refresh_patreon_status")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/refresh_patreon_status")
     return ad
 
 
 def get_disconnect_patreon_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/disconnect_patreon"
+        ad = getServerLogAddress() + "/api/v1/auth/disconnect_patreon"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/disconnect_patreon")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/disconnect_patreon")
     return ad
 
 
 def get_patreon_status_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/auth/get_patreon_status"
+        ad = getServerLogAddress() + "/api/v1/auth/get_patreon_status"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/auth/get_patreon_status")
+        ad = os.path.join(getServerLogAddress(), "api/v1/auth/get_patreon_status")
     return ad
 
 
 def get_celer_sight_latest_full_version_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/update/get_celer_sight_latest_full_version"
+        ad = (
+            getServerLogAddress() + "/api/v1/update/get_celer_sight_latest_full_version"
+        )
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/update/get_celer_sight_latest_full_version"
+            getServerLogAddress(), "api/v1/update/get_celer_sight_latest_full_version"
         )
     return ad
 
 
 def get_files_hash_list_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/update/get_files_hash_list"
+        ad = getServerLogAddress() + "/api/v1/update/get_files_hash_list"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/update/get_files_hash_list")
+        ad = os.path.join(getServerLogAddress(), "api/v1/update/get_files_hash_list")
     return ad
 
 
 def get_update_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/update/get_update"
+        ad = getServerLogAddress() + "/api/v1/update/get_update"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/update/get_update")
+        ad = os.path.join(getServerLogAddress(), "api/v1/update/get_update")
     return ad
 
 
 def get_send_image_inference_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/infer/send_image_inference"
+        ad = getServerLogAddress() + "/api/v1/infer/send_image_inference"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/infer/send_image_inference")
+        ad = os.path.join(getServerLogAddress(), "api/v1/infer/send_image_inference")
     return ad
 
 
 def get_send_image_annotated_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/contribute/send_image_annotated"
+        ad = getServerLogAddress() + "/api/v1/contribute/send_image_annotated"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/contribute/send_image_annotated")
+        ad = os.path.join(
+            getServerLogAddress(), "api/v1/contribute/send_image_annotated"
+        )
     return ad
 
 
 def get_send_large_zipped_image_annotated_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/contribute/send_large_zipped_image_annotated"
+        ad = (
+            getServerLogAddress()
+            + "/api/v1/contribute/send_large_zipped_image_annotated"
+        )
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/contribute/send_large_zipped_image_annotated"
+            getServerLogAddress(), "api/v1/contribute/send_large_zipped_image_annotated"
         )
     return ad
 
 
 def get_send_crash_logs_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/logs_and_feedback/send_crash_logs"
+        ad = getServerLogAddress() + "/api/v1/logs_and_feedback/send_crash_logs"
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/logs_and_feedback/send_crash_logs"
+            getServerLogAddress(), "api/v1/logs_and_feedback/send_crash_logs"
         )
     return ad
 
@@ -352,12 +352,12 @@ def get_send_crash_logs_address():
 def get_set_remote_annotation_session_as_audited_address():
     if os.name == "nt":
         ad = (
-            getServerAddress()
+            getServerLogAddress()
             + "/api/v1/remote_annotation/set_remote_annotation_session_as_audited"
         )
     else:
         ad = os.path.join(
-            getServerAddress(),
+            getServerLogAddress(),
             "api/v1/remote_annotation/set_remote_annotation_session_as_audited",
         )
     return ad
@@ -365,18 +365,20 @@ def get_set_remote_annotation_session_as_audited_address():
 
 def get_initialize_inference_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/infer/initialize_inference"
+        ad = getServerLogAddress() + "/api/v1/infer/initialize_inference"
     else:
-        ad = os.path.join(getServerAddress(), "api/v1/infer/initialize_inference")
+        ad = os.path.join(getServerLogAddress(), "api/v1/infer/initialize_inference")
     return ad
 
 
 def get_delete_remote_annotation_address():
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/remote_annotation/delete_remote_annotation"
+        ad = (
+            getServerLogAddress() + "/api/v1/remote_annotation/delete_remote_annotation"
+        )
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/remote_annotation/delete_remote_annotation"
+            getServerLogAddress(), "api/v1/remote_annotation/delete_remote_annotation"
         )
     return ad
 
@@ -384,12 +386,12 @@ def get_delete_remote_annotation_address():
 def get_remote_annotations_for_image_address():
     if os.name == "nt":
         ad = (
-            getServerAddress()
+            getServerLogAddress()
             + "/api/v1/remote_annotation/get_remote_annotations_for_image"
         )
     else:
         ad = os.path.join(
-            getServerAddress(),
+            getServerLogAddress(),
             "api/v1/remote_annotation/get_remote_annotations_for_image",
         )
     return ad
@@ -397,20 +399,20 @@ def get_remote_annotations_for_image_address():
 
 def get_remote_image_low_address() -> str:
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/remote_annotation/get_remote_image_low"
+        ad = getServerLogAddress() + "/api/v1/remote_annotation/get_remote_image_low"
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/remote_annotation/get_remote_image_low"
+            getServerLogAddress(), "api/v1/remote_annotation/get_remote_image_low"
         )
     return ad
 
 
 def get_remote_image_high_address() -> str:
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/remote_annotation/get_remote_image_high"
+        ad = getServerLogAddress() + "/api/v1/remote_annotation/get_remote_image_high"
     else:
         ad = os.path.join(
-            getServerAddress(), "api/v1/remote_annotation/get_remote_image_high"
+            getServerLogAddress(), "api/v1/remote_annotation/get_remote_image_high"
         )
     return ad
 
@@ -419,12 +421,12 @@ def get_remote_image_batch_for_annotation():
     # for retrieving images that need annotations
     if os.name == "nt":
         ad = (
-            getServerAddress()
+            getServerLogAddress()
             + "/api/v1/remote_annotation/get_remote_image_batch_for_annotation"
         )
     else:
         ad = os.path.join(
-            getServerAddress(),
+            getServerLogAddress(),
             "api/v1/remote_annotation/get_remote_image_batch_for_annotation",
         )
     return ad
@@ -433,10 +435,10 @@ def get_remote_image_batch_for_annotation():
 def get_insert_remote_annotation():
     # for retrieving images that need annotations
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/remote_annotation/insert_annotation"
+        ad = getServerLogAddress() + "/api/v1/remote_annotation/insert_annotation"
     else:
         ad = os.path.join(
-            getServerAddress(),
+            getServerLogAddress(),
             "api/v1/remote_annotation/insert_annotation",
         )
     return ad
@@ -444,10 +446,12 @@ def get_insert_remote_annotation():
 
 def get_update_remote_annotation_address() -> str:
     if os.name == "nt":
-        ad = getServerAddress() + "/api/v1/remote_annotation/update_remote_annotation"
+        ad = (
+            getServerLogAddress() + "/api/v1/remote_annotation/update_remote_annotation"
+        )
     else:
         ad = os.path.join(
-            getServerAddress(),
+            getServerLogAddress(),
             "api/v1/remote_annotation/update_remote_annotation",
         )
     return ad

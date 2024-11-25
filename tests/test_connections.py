@@ -11,7 +11,7 @@ import unittest
 from celer_sight_ai.core.file_client import FileClient
 
 # from tests.csight_test_loader import tags
-from celer_sight_ai.configHandle import getServerAddress
+from celer_sight_ai.configHandle import getServerLogAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
@@ -36,7 +36,7 @@ class MyTest(unittest.TestCase):
                 (os.environ.get("USERNAME_USER"), os.environ.get("PASSWORD_USER"))
             )
         # log user
-        self.client = FileClient(getServerAddress())
+        self.client = FileClient(getServerLogAddress())
         self.client.login(*self.mock_credentials[0])
 
     @parameterized.expand(
@@ -142,7 +142,7 @@ class MyTest(unittest.TestCase):
         self.test_hello_connection()
 
         for email, password in self.mock_credentials:
-            client = FileClient(configHandle.getServerAddress())
+            client = FileClient(configHandle.getServerLogAddress())
 
             return_val, exc = client.login_request(email, password)
             if not return_val:

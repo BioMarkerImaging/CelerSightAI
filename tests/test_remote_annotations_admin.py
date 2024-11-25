@@ -9,10 +9,12 @@ from celer_sight_ai import config
 import logging
 from tests import qttest_utils
 from unittest.mock import patch
-import numpy as np 
+import numpy as np
+
 # import shapely
 from shapely.geometry import Polygon
 from parameterized import parameterized
+
 logger = logging.getLogger(__name__)
 
 os.environ["CELER_SIGHT_TESTING"] = "true"
@@ -26,15 +28,16 @@ bb_points_for_ultra_high_res = [
     [[7260, 10189], [7287, 10152]],
 ]
 
-def polygons_almost_equal(polygon1: np.ndarray, polygon2:np.ndarray, tolerance):
+
+def polygons_almost_equal(polygon1: np.ndarray, polygon2: np.ndarray, tolerance):
     """
     Check if two polygons are almost equal within a given tolerance.
-    
+
     Args:
     - polygon1: The first polygon (numpy object)
     - polygon2: The second polygon (numpy object)
     - tolerance: The allowed difference in area and centroid distance
-    
+
     Returns:
     - bool: True if polygons are almost equal, False otherwise
     """
@@ -46,19 +49,20 @@ def polygons_almost_equal(polygon1: np.ndarray, polygon2:np.ndarray, tolerance):
     area_diff = abs(polygon1.area - polygon2.area)
     if area_diff > tolerance:
         return False
-    
+
     # Check if centroids are almost at the same location
     centroid_diff = polygon1.centroid.distance(polygon2.centroid)
     if centroid_diff > tolerance:
         return False
-    
+
     # Optionally, check if polygons overlap significantly
     intersection_area = polygon1.intersection(polygon2).area
     if intersection_area < min(polygon1.area, polygon2.area) - tolerance:
         return False
-    
+
     return True
-    
+
+
 def get_remote_annotation_fixture():
     yml_path = os.path.exists(
         os.path.join(
@@ -73,7 +77,9 @@ def get_remote_annotation_fixture():
     with open(yml_path, "r") as f:
         return f.read()
 
+
 DELAY_TIME = 200
+
 
 def run_single_test_suite():
     loader = unittest.TestLoader()
@@ -82,6 +88,7 @@ def run_single_test_suite():
     runner = unittest.TextTestRunner()
     result = runner.run(suite)
     return result.wasSuccessful()
+
 
 # Function to run the test suite multiple times
 def run_tests_multiple_times(num_runs):
@@ -113,15 +120,18 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
 
     @parameterized.expand(
         [
-            (ultra_high_res_image,
-              bb_points_for_ultra_high_res,
-              17229, # width
-              17526, # height
-              56013527 # image_size
-              ),
+            (
+                ultra_high_res_image,
+                bb_points_for_ultra_high_res,
+                17229,  # width
+                17526,  # height
+                56013527,  # image_size
+            ),
         ]
-    )       
-    def test_remote_process_part_1(self, image_path, bb_points, width, height, image_size):
+    )
+    def test_remote_process_part_1(
+        self, image_path, bb_points, width, height, image_size
+    ):
         from celer_sight_ai import configHandle, config
         import time
 
@@ -132,9 +142,7 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
             app, organism="on_plate", model_button_names=["worm eggs"]
         )
         # load up an image
-        urls_to_be_added = [
-            os.path.join(config.APP_DATA_PATH, "fixtures", image_path)
-        ]
+        urls_to_be_added = [os.path.join(config.APP_DATA_PATH, "fixtures", image_path)]
         QTest.qWait(DELAY_TIME)
         app.viewer.load_files_by_drag_and_drop(urls_to_be_added, auto_accept=True)
         QTest.qWait(DELAY_TIME)
@@ -158,11 +166,11 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         ## Delete all mock obbjects from the server ##
 
         empty_mock_objects_address = (
-            configHandle.getServerAddress() + "/api/v1/admin/empty_mock_image_objects"
+            configHandle.getServerLogAddress()
+            + "/api/v1/admin/empty_mock_image_objects"
         )
         response = config.client.session.post(empty_mock_objects_address)
         assert response.status_code == 200
-
 
         # wait 10 seconds for the effects to take place on the
         # server side
@@ -170,7 +178,7 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         # TODO validate the images were contributed through the admin api
         # # get the current objects in the mock directory
         get_mock_objects_address = (
-            configHandle.getServerAddress() + "/api/v1/admin/get_mock_image_objects"
+            configHandle.getServerLogAddress() + "/api/v1/admin/get_mock_image_objects"
         )
         response = config.client.session.get(get_mock_objects_address)
         assert response.status_code == 200
@@ -183,14 +191,14 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         # # make sure that the image has been added to the server as mock
         assert len(image_objects_on_server) == 1
         # make sure that the image size matches the original image
-        assert image_objects_on_server[0]["width"] ==  width
+        assert image_objects_on_server[0]["width"] == width
         assert image_objects_on_server[0]["height"] == height
-        assert image_objects_on_server[0]['image_size'] == image_size
-
+        assert image_objects_on_server[0]["image_size"] == image_size
 
     def test_remote_process_part_2(self):
         # import celer_sight_ai
         from celer_sight_ai import configHandle, config
+
         # patch the .yml imported file so that we activate the remote annotation
         os.environ["CELER_SIGHT_ALTERNATIVE_SETTINGS"] = os.path.join(
             os.path.dirname(os.environ["CELER_SIGHT_AI_HOME"]),
@@ -198,7 +206,7 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         )
         config.USER_CONFIG_LOADED = False
         # start ui
-        app = self.app #qttest_utils.get_gui_main()
+        app = self.app  # qttest_utils.get_gui_main()
 
         # wait for app to start
         # qttest_utils.wait_until_shown(app.MainWindow)
@@ -212,7 +220,11 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         QTest.qWait(DELAY_TIME)
         qttest_utils.wait_until_current_remote_image_has_been_downloaded(app)
         # get all annotation in the current image
-        mask_object = next(app.DH.BLobj.get_all_mask_objects_for_image(group_name = "default" , condition_name = "images" , image_idx = 0))
+        mask_object = next(
+            app.DH.BLobj.get_all_mask_objects_for_image(
+                group_name="default", condition_name="images", image_idx=0
+            )
+        )
         mask_object_uuid = mask_object.unique_id
         image_uuid = app.DH.BLobj.groups["default"].conds["images"].images[0].unique_id
         # get the coordinates of the mask object (just the outer ones with [0])
@@ -225,18 +237,29 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         QTest.qWait(DELAY_TIME)
 
         #### verify that the cloud annotation is deleted ####
-        
+
         # draw cloud annotations
         get_mock_objects_address = (
-            configHandle.getServerAddress() + "/api/v1/admin/get_mock_image_objects"
+            configHandle.getServerLogAddress() + "/api/v1/admin/get_mock_image_objects"
         )
         response = config.client.session.get(get_mock_objects_address)
         assert response.status_code == 200
-        image_objects_on_server = [i for i in response.json()["image_objects"] if i["image_uuid"] == image_uuid]
+        image_objects_on_server = [
+            i for i in response.json()["image_objects"] if i["image_uuid"] == image_uuid
+        ]
         assert len(image_objects_on_server) == 1
         image_object_on_server = image_objects_on_server[0]
         # make sure annotation is deleted
-        assert len([anno for anno in image_object_on_server["annotations"] if anno["annotation_uuid"] == mask_object_uuid]) == 0
+        assert (
+            len(
+                [
+                    anno
+                    for anno in image_object_on_server["annotations"]
+                    if anno["annotation_uuid"] == mask_object_uuid
+                ]
+            )
+            == 0
+        )
 
         # create a new annotation and make sure that it is added to the server
         added_annotation_uuid = qttest_utils.draw_mask_by_array(app, mask_object_coords)
@@ -245,11 +268,21 @@ class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
         response = config.client.session.get(get_mock_objects_address)
         assert response.status_code == 200
         # get all annotation arrays
-        annotation_data = [[i["data"][0] for i in x["annotations"]] for x in response.json()["image_objects"]][0]
-        matched_annotations = [i for i in annotation_data if polygons_almost_equal(np.array(mask_object_coords.round() , dtype = np.uint32) , np.array(i , dtype = np.uint32) , 200)]
+        annotation_data = [
+            [i["data"][0] for i in x["annotations"]]
+            for x in response.json()["image_objects"]
+        ][0]
+        matched_annotations = [
+            i
+            for i in annotation_data
+            if polygons_almost_equal(
+                np.array(mask_object_coords.round(), dtype=np.uint32),
+                np.array(i, dtype=np.uint32),
+                200,
+            )
+        ]
         # make sure no matched annotation found, since we deleted the annotations
         assert len(matched_annotations) == 1
-        
 
 
 if __name__ == "__main__":

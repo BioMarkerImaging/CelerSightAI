@@ -23,7 +23,7 @@ import logging
 import shutil
 
 logger = logging.getLogger(__name__)
-from celer_sight_ai.configHandle import getServerAddress, getLogInAddress
+from celer_sight_ai.configHandle import getServerLogAddress, getLogInAddress
 import requests
 import json
 import asyncio

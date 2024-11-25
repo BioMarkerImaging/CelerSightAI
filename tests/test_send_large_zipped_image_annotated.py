@@ -5,7 +5,7 @@ from celer_sight_ai.configHandle import (
     get_send_large_zipped_image_annotated_address,
 )
 from celer_sight_ai.core.file_client import FileClient
-from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
+from celer_sight_ai.configHandle import getServerLogAddress, getServerLogAddress
 
 import json
 
@@ -44,7 +44,7 @@ class TestSendLargeZippedImageAnnotated(unittest.TestCase):
                 (os.environ.get("USERNAME_USER"), os.environ.get("PASSWORD_USER"))
             )
         # log user
-        self.client = FileClient(getServerAddress())
+        self.client = FileClient(getServerLogAddress())
         self.client.login(*self.mock_credentials[0])
 
     def test_send_large_zipped_image_annotated(self):

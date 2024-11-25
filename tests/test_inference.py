@@ -13,7 +13,7 @@ import unittest
 from celer_sight_ai.core.file_client import FileClient
 
 # from tests.csight_test_loader import tags
-from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
+from celer_sight_ai.configHandle import getServerLogAddress, getServerLogAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 import json
@@ -46,7 +46,7 @@ class MyTest(unittest.TestCase):
                 (os.environ.get("USERNAME_ADMIN"), os.environ.get("PASSWORD_ADMIN"))
             )
         # log user
-        self.client = FileClient(getServerAddress())
+        self.client = FileClient(getServerLogAddress())
         self.client.login(*self.mock_credentials[0])
 
     # @parameterized.expand(

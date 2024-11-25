@@ -10,7 +10,7 @@ from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
 from celer_sight_ai.core.file_client import FileClient
 
-from celer_sight_ai.configHandle import getServerAddress
+from celer_sight_ai.configHandle import getServerLogAddress
 
 import logging
 
@@ -21,7 +21,7 @@ unittest.TestLoader.sortTestMethodsUsing = None
 
 class MyTest(unittest.TestCase):
     def setUp(self):
-        self.currentlyUsedS1Address = getServerAddress()
+        self.currentlyUsedS1Address = getServerLogAddress()
         self.mock_credentials = []
         self.client = FileClient()
 

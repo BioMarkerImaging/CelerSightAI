@@ -6,7 +6,7 @@ from celer_sight_ai.configHandle import *
 from celer_sight_ai.core.LogTool import LogInHandler
 import unittest
 from celer_sight_ai.core.file_client import FileClient
-from celer_sight_ai.configHandle import getServerAddress
+from celer_sight_ai.configHandle import getServerLogAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
@@ -39,10 +39,10 @@ class MyTest(unittest.TestCase):
         ## Delete all mock category objects from the server ##
         from celer_sight_ai import configHandle
 
-        self.currentlyUsedS1Address = getServerAddress()
+        self.currentlyUsedS1Address = getServerLogAddress()
         self.client = FileClient()
         empty_mock_categtory_objects_address = (
-            configHandle.getServerAddress()
+            configHandle.getServerLogAddress()
             + "/api/v1/admin/empty_mock_category_objects"
         )
         if os.environ.get("USERNAME_ADMIN") and os.environ.get("PASSWORD_ADMIN"):
@@ -57,7 +57,7 @@ class MyTest(unittest.TestCase):
             )
 
     def setUp(self):
-        self.currentlyUsedS1Address = getServerAddress()
+        self.currentlyUsedS1Address = getServerLogAddress()
         self.client = FileClient()
 
         # data = {

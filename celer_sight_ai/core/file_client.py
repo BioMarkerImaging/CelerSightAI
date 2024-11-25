@@ -174,15 +174,11 @@ class FileClient:
             cls._instance.session = requests.Session()
         if MainWindow:
             cls._instance.MainWindow = MainWindow
-        cls._instance.mainAddr = address_override
+        cls._instance.mainAddr = configHandle.getServerLogAddress()
         return cls._instance
 
     def __init__(self, address_override=None, MainWindow=None) -> None:
         # get biomarkerimaging address
-        if not address_override:
-            self.mainAddr = configHandle.getServerAddress()
-        else:
-            self.mainAddr = address_override
         if MainWindow:
             self.MainWindow = MainWindow
         self.images_being_sent = 0  # images being sent for inference to the server

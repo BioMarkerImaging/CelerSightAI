@@ -11,7 +11,7 @@ import unittest
 from celer_sight_ai.core.file_client import FileClient
 
 # from tests.csight_test_loader import tags
-from celer_sight_ai.configHandle import getServerAddress, getServerLogAddress
+from celer_sight_ai.configHandle import getServerLogAddress, getServerLogAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 import json
@@ -42,11 +42,11 @@ delete the image, validate the deletion and erase any mock images created in thi
 
 # class MyTest(unittest.TestCase):
 #     def setUp(self):
-#         self.currentlyUsedS1Address = getServerAddress()
+#         self.currentlyUsedS1Address = getServerLogAddress()
 #         self.mock_credentials = [
 #             (os.environ.get("USERNAME_ADMIN"), os.environ.get("PASSWORD_ADMIN")),
 #         ]
-#         self.client = FileClient(getServerAddress())
+#         self.client = FileClient(getServerLogAddress())
 
 
 #     @parameterized.expand(
