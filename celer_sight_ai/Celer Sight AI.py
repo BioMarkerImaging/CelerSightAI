@@ -33,7 +33,9 @@ def start_celer_sight_ai():
     # check if any arguments provided
     # if is instance pytest, dont read arguments
     args = None  # no args for testing
+    from celer_sight_ai import config
 
+    config.start_jvm()
     if not os.environ.get("CELER_SIGHT_TESTING", False):
         parser = argparse.ArgumentParser()
         # Filter out macOS-specific arguments before parsing

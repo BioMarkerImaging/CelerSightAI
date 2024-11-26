@@ -11,10 +11,11 @@ import logging
 import javabridge
 import bioformats
 
-javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
-javabridge.activate_awt()
-jvm_lock = threading.RLock()
-print()
+def start_jvm():
+    javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
+    javabridge.activate_awt()
+    jvm_lock = threading.RLock()
+
 
 logger = logging.getLogger(__name__)
 is_executable = hasattr(sys, "frozen")
