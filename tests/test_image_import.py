@@ -18,6 +18,12 @@ import logging
 
 class MyTest(unittest.TestCase):
     def setUp(self):
+
+        import javabridge
+        import bioformats
+
+        javabridge.start_vm(class_path=bioformats.JARS)
+
         self.fixture_dir_abs_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
@@ -32,15 +38,26 @@ class MyTest(unittest.TestCase):
         }
 
         self.mock_image_data = {
-            "4D-series.ome.tif": None,
+            "4D-series.ome.tif": {
+                "channels": ["gray"],
+                "size_x": 439,
+                "size_y": 167,
+            },
             "Cell_2.tif": {
                 "channels": ["gray"],
                 "size_x": 251,
                 "size_y": 449,
             },
-            "multi-channel-4D-series.ome.tif": None,
-            "multi-channel-time-series.ome.tif": None,
-            "time-series.ome.tif": None,
+            "multi-channel-4D-series.ome.tif": {
+                "channels": ["red", "green", "blue"],
+                "size_x": 439,
+                "size_y": 167,
+            },
+            "multi-channel-time-series.ome.tif": {
+                "channels": ["red", "green", "blue"],
+                "size_x": 439,
+                "size_y": 167,
+            },
             "multi-channel-z-series.ome.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 439,
@@ -121,7 +138,16 @@ class MyTest(unittest.TestCase):
                 "size_x": 2740,
                 "size_y": 2740,
             },
-            "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": None,
+            "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": {
+                "size_x": 512,
+                "size_y": 512,
+                "channels": ["Ch1", "Ch2"],
+                "is_ultra_high_res": False,
+                "physical_pixel_size_x": 352.77777777777777,
+                "physical_pixel_size_y": 352.77777777777777,
+                "physical_pixel_unit_x": "µm",
+                "physical_pixel_unit_y": "µm",
+            },
             "Philips-1.tiff": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 45056,
@@ -133,7 +159,7 @@ class MyTest(unittest.TestCase):
                 "size_y": 1992,
             },
             "pl con_Top Slide_R_p01_0_A01f00d1.TIF": {
-                "channels": ["red", "green", "blue"],
+                "channels": ["gray"],
                 "size_x": 2048,
                 "size_y": 1536,
             },
@@ -232,13 +258,18 @@ class MyTest(unittest.TestCase):
                 print(e)
                 self.fail()
 
+    def tearDown(self):
+        import javabridge
+
+        javabridge.kill_vm()
+
     def test_tifffile_loader(self):
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
         for img_path in self.all_images_tif:
             if not os.path.basename(img_path) in self.mock_image_data.keys():
                 logger.info("Skipping image: " + img_path)
                 continue
-            # if not "f-2_D2_aup-1i.tif" in img_path:
+            # if not "z-series.ome.tif" in img_path:
             #     continue
             logger.info("Testing image: " + img_path)
             try:

@@ -14,7 +14,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import traceback
 
 print("Before importing draggable button")
-from celer_sight_ai.gui.designer_widgets.testDragableButton import (
+from celer_sight_ai.gui.designer_widgets_py_files.testDragableButton import (
     Ui_Dialog as DialogMultichannelImporter,
 )
 

@@ -2,6 +2,7 @@ from multiprocessing import freeze_support  # noqa
 
 freeze_support()  # noqa
 print("Running Celer Sight AI")
+import bioio
 import time
 from azure.storage.blob import BlobServiceClient, BlobClient
 import tufup
@@ -16,6 +17,9 @@ import os
 import sys
 import argparse
 from celer_sight_ai.gui.custom_widgets.splash_widget import CustomSplashScreenWithText
+
+import javabridge
+import bioformats
 
 print("Importing Splash")
 from PyQt6.QtWidgets import QApplication, QWidget

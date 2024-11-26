@@ -3941,7 +3941,9 @@ class Master_MainWindow(CelerSightMainWindow):
             self.delete_RNAi_list_item()
             return
         self.RNAi_list.takeItem(
-            self.RNAi_list.findItems(treatment, QtCore.Qt.MatchExactly)[0].row()
+            self.RNAi_list.findItems(treatment, QtCore.Qt.MatchFlag.MatchExactly)[
+                0
+            ].row()
         )
 
         # try and remove cache dirs
@@ -4986,25 +4988,6 @@ class Master_MainWindow(CelerSightMainWindow):
         return self.currentUsedPixmap
 
     @config.threaded
-    def load_main_scene_display_thumbnail(self, signal_object={}):
-        logger.info("Reading image for scene for thumbnail")
-        group_id = signal_object["group_id"]
-        cond_uuid = signal_object["cond_uuid"]
-        img_uuid = signal_object["img_uuid"]
-        fast_load_ram = signal_object["fast_load_ram"]
-        fit_in_view = signal_object["fit_in_view"]
-
-        config.global_signals.load_main_scene_display_image_signal.emit(
-            {
-                "group_id": group_id,
-                "cond_uuid": cond_uuid,
-                "img_uuid": img_uuid,
-                "fast_load_ram": fast_load_ram,
-                "fit_in_view": fit_in_view,
-            }
-        )
-
-    @config.threaded
     def load_main_scene_gather_image(self, signal_object={}):
         # create a thread with threader
 
@@ -5075,11 +5058,11 @@ class Master_MainWindow(CelerSightMainWindow):
 
                     return
                 logger.debug("Reloading with Ultra high res image's thumbnail.")
-                self.load_main_scene_display_thumbnail(signal_object)
+                self.load_main_scene_display_image(signal_object)
                 return
             logger.debug("Reading image through racing thread.")
             RacerThread(
-                func1=self.load_main_scene_display_thumbnail,
+                func1=self.load_main_scene_display_image,
                 func2=self.load_main_scene_read_image,
                 func1_kwargs={"signal_object": signal_object},
                 func2_kwargs={"signal_object": signal_object},
@@ -5195,7 +5178,6 @@ class Master_MainWindow(CelerSightMainWindow):
         try:
 
             # DisplaydeImage is the result of this block << Qt >>
-
             self.viewer.LabelNumberViewer.setText("Image: " + str(img_id + 1))
             self.viewer.updateMaskCountLabel()
             if self.viewer.i_am_drawing_state == True:
@@ -6032,7 +6014,16 @@ class Master_MainWindow(CelerSightMainWindow):
                 )
 
     def closeEvent(self, event):
-        # Terminate all threads forcefully
+
+        try:
+            # Terminate all threads forcefully
+            import javabridge
+
+            if javabridge.get_env() is not None:
+                javabridge.kill_vm()
+        except:
+            pass
+
         try:
             if hasattr(self, "onlineInfAll"):
                 self.onlineInfAll.stop()

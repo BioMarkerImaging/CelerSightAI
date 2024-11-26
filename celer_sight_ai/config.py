@@ -7,6 +7,15 @@ import logging
 import threading
 import queue
 
+import logging
+import javabridge
+import bioformats
+
+javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
+javabridge.activate_awt()
+jvm_lock = threading.RLock()
+print()
+
 logger = logging.getLogger(__name__)
 is_executable = hasattr(sys, "frozen")
 latest_magic_box_name = None
@@ -502,6 +511,7 @@ def threaded_with_registers(register_name):
                             t = threading.Thread(
                                 target=worker_for_register, args=(register_name,)
                             )
+                            t.daemon = True
                             t.start()
                             thread_pools[register_name].append(t)
 
@@ -549,6 +559,7 @@ def threaded(func):
     def wrapper(*args, **kwargs):
         if user_cfg["USER_WORKERS"]:
             t = Threader(target_function=func, args=args, kwargs=kwargs)
+            t.daemon = True
             t.start()
         else:
             return func(*args, **kwargs)
@@ -568,6 +579,7 @@ def q_threaded(func):
                     func(*args, **kwargs)
 
             t = Worker()
+            t.daemon = True
             t.start()
 
             # Store the QThread object in the function's __dict__ attribute

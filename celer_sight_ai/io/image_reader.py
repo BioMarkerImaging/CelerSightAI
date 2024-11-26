@@ -368,6 +368,8 @@ def get_tif_rgb_channe_imageJ_from_metadata(tif_metadata, channel):
 
 
 def max_projection(input_array, axis):
+    if not "z" in axis.lower():
+        return input_array, axis
     if not isinstance(input_array, np.ndarray):
         raise ValueError("Input must be a numpy array")
 
@@ -376,7 +378,7 @@ def max_projection(input_array, axis):
 
     if axis.lower().index("z") >= len(input_array.shape) or axis.lower().index("z") < 0:
         raise ValueError("Invalid Z axis index")
-
+    logger.debug(f"Max projection along axis {axis}")
     return np.max(input_array, axis=axis.lower().index("z")), axis.replace("Z", "")
 
 
@@ -1172,19 +1174,12 @@ def extract_metadata_from_tiff_tags(tif, dict_out):
         val = tif.pages[0].tags["ImageDescription"].value
         resolution_x, resolution_y = get_resolution_in_mm(tif)
 
-        if not "<?xml" in val:
-            val = json.loads(val)
-            if "cs_channels" in val:
-                dict_out["channels"] = val["cs_channels"]
-        else:
-            metadata = remove_at_symbol(
-                xmltodict.parse(tif.pages[0].tags["ImageDescription"].value)
-            )
-            if "BTIImageMetaData" in metadata:
-                metadata = metadata["BTIImageMetaData"]
-                dict_out["channels"] = [
-                    metadata["ImageAcquisition"]["Channel"]["Color"]
-                ]
+        metadata = remove_at_symbol(
+            xmltodict.parse(tif.pages[0].tags["ImageDescription"].value)
+        )
+        if "BTIImageMetaData" in metadata:
+            metadata = metadata["BTIImageMetaData"]
+            dict_out["channels"] = [metadata["ImageAcquisition"]["Channel"]["Color"]]
 
     return dict_out
 
@@ -1242,7 +1237,9 @@ def standardize_channels(arr, current_channels):
         numpy.ndarray: Potentially modified image array (e.g., if alpha channel removed)
     """
     # Handle single channel cases like ['Channel:0:0']
-    if current_channels == ["Channel:0:0"]:
+    if current_channels == ["Channel:0:0"] or current_channels == [
+        "Channel:0"
+    ]:  # both are gray
         if len(arr.shape) == 3 and arr.shape[2] == 3:
             return ["red", "green", "blue"], arr
         elif len(arr.squeeze().shape) == 2:
@@ -1300,6 +1297,17 @@ def extract_channels_from_imagej_metadata(dict_out, metadata):
     return dict_out
 
 
+def get_squeezed_bf_dimentions(pixel_data):
+    dims_order = pixel_data.DimensionOrder
+    shape_squeezed = []
+    axes_squeezed = ""
+    for ax in dims_order:
+        if getattr(pixel_data, f"Size{ax}", 0) > 1:
+            axes_squeezed += ax
+            shape_squeezed.append(getattr(pixel_data, f"Size{ax}"))
+    return axes_squeezed, shape_squeezed
+
+
 def get_specialized_image(
     tif_path,
     avoid_loading_ultra_high_res_arrays_normaly=False,
@@ -1313,8 +1321,8 @@ def get_specialized_image(
     In case of a normal file, get the original arrays and channels from the metadata
     In case of a ultra high res array, get a thumbnail array, and mark the object as ultra high res
     """
+    import javabridge
     import time
-    from bioio import BioImage
     from celer_sight_ai.config import ULTRA_HIGH_RES_THRESHOLD
 
     IS_ULTRA_HIGH_RES = False
@@ -1347,33 +1355,72 @@ def get_specialized_image(
 
     # # try first to get everything with bioio, if that fails try other methods
     try:
-        img = run_with_timeout(BioImage, tif_path, timeout=10)
-    except Exception as e:
-        logger.error(f"Error loading tiff file with bioio: {e}")
-    if not isinstance(img, type(None)):
+        # with config.jvm_lock:
+        print("attaching to jvm")
+        javabridge.attach()
+        metadata_xml = config.bioformats.get_omexml_metadata(path=tif_path)
+        metadata_dict = config.bioformats.omexml.OMEXML(metadata_xml)
         # extract yxc
-        arr = extract_YXC(img.data, img.dims.order)
-        # if there is a mismatch, extract_YXC will return None
-        if not isinstance(arr, type(None)):
-            # get the channels
-            dict_out["channels"] = img.channel_names
-            # get the physical pixel sizes in mm
-            dict_out["physical_pixel_size_x"] = getattr(
-                img.physical_pixel_sizes, "X", None
-            )
-            dict_out["physical_pixel_size_y"] = getattr(
-                img.physical_pixel_sizes, "Y", None
-            )
-            dict_out["size_x"] = getattr(img.dims, "X", None)
-            dict_out["size_y"] = getattr(img.dims, "Y", None)
-            # if channels are found, return the image
-            if dict_out["channels"]:
-                dict_out = extract_more_metadata_if_available(tif_path, dict_out)
-                dict_out["channels"], arr = standardize_channels(
-                    arr, dict_out["channels"]
-                )
-                return arr, dict_out
+        pixel_data = metadata_dict.image().Pixels
+        dims_order = pixel_data.DimensionOrder
+        # we only need to extract the image data and channels,
+        # 1 series and do max projection in the Z dimentions if needed
 
+        # Extract channels from metadata
+        channels = []
+        for i in range(pixel_data.channel_count):
+            channel = pixel_data.Channel(i)
+            if channel.Name:
+                channels.append(channel.Name)
+            else:
+                channels.append(f"Channel:{i}")
+
+        # Assign channels to output dict
+        dict_out["channels"] = channels
+
+        # get the physical pixel sizes in mm
+        dict_out["physical_pixel_size_x"] = pixel_data.PhysicalSizeX
+        dict_out["physical_pixel_size_y"] = pixel_data.PhysicalSizeY
+        dict_out["physical_pixel_unit_x"] = pixel_data.PhysicalSizeXUnit
+        dict_out["physical_pixel_unit_y"] = pixel_data.PhysicalSizeYUnit
+
+        dict_out["size_x"] = pixel_data.SizeX
+        dict_out["size_y"] = pixel_data.SizeY
+
+        image_file = config.bioformats.ImageReader(path=tif_path)
+
+        if pixel_data.SizeZ > 1:
+            z_data = np.empty(
+                (
+                    pixel_data.SizeZ,
+                    pixel_data.SizeY,
+                    pixel_data.SizeX,
+                    pixel_data.SizeC,
+                )
+            )
+            for z in range(pixel_data.SizeZ):
+                logger.debug(f"Max projection along axis Z: {z}")
+                img = image_file.read(series=0, z=z, rescale=False)
+                if len(img.shape) == 2:
+                    img = np.expand_dims(img, axis=2)
+                z_data[z, :, :, :] = img
+            # do max projection in the Z dimension
+            arr = np.max(z_data, axis=0)
+            dims_order = "YXC"
+        else:
+            dims_order, shape_squeezed = get_squeezed_bf_dimentions(pixel_data)
+            arr = image_file.read(series=0, rescale=False)
+
+        # if channels are found, return the image
+        if dict_out["channels"]:
+            dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+            dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
+            return arr, dict_out
+
+    except Exception as e:
+        logger.error(f"Error loading tiff file with bioformats: {e}")
+    finally:
+        javabridge.detach()
     try:
         with tifffile.TiffFile(tif_path) as tif:
             # get dimenions of the first image

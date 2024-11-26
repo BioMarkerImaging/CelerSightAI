@@ -2142,15 +2142,17 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 ):  # for every image group in the treatment
                     import cv2
 
-                    channel_images = []
-
+                    images_data = []
+                    all_channels_list = []
                     for j in range(
                         len(image_channel_list_arr[i][ii])
                     ):  # for every channel / sub-image
                         # TODO: adjust for pyramidal????
                         img, result_dict = readImage(image_channel_list_arr[i][ii][j])
-                        chn = result_dict.get("channels", None)
-                        if len(chn) != 1 or (len(img.shape) != 2 and img.shape[2] > 1):
+                        channels_list = result_dict.get("channels", None)
+                        if len(channels_list) != 1 or (
+                            len(img.shape) != 2 and img.shape[2] > 1
+                        ):
                             config.global_signal.errorSignal(
                                 "The images to be combined are not grayscale, please provide grayscale images"
                             )
@@ -2158,19 +2160,19 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                                 "Images provided are not grayscale, aborting"
                             )
                             return
+                        all_channels_list.extend(channels_list)
                         if len(img.shape) == 3:
                             img = img.squeeze()
                             if len(img.shape) == 3:
                                 config.global_signal.errorSignal(
                                     "The images to be combined are not grayscale, please provide grayscale images"
                                 )
-                        channel_images.append(img)  # raw image
+                        images_data.append(img)  # raw image
 
                     # Prepare ImageJ style metadata with channel names
                     # channel_names_arr[i] = list(channel_names_arr[i][j])
-                    metadata = {"cs_channels": channel_names_arr[i][ii], "axes": "YXC"}
 
-                    combined_image = np.stack(channel_images, axis=-1)
+                    combined_image = np.stack(images_data, axis=-1)
                     # save the image as a tiff with the channels included
                     import tifffile
 
@@ -2201,8 +2203,30 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                             file_name + str(random.randint(0, 1000)) + ".tif",
                         )
                         iii += 1
-                    # Save the combined image as a TIFF file with metadata
-                    tifffile.imsave(output_path, combined_image, metadata=metadata)
+
+                    # save image to disk at a temp location
+                    import uuid
+                    import bioformats
+
+                    dtype = combined_image.dtype
+                    if dtype == np.uint16:
+                        dtype = bioformats.PT_UINT16
+                    elif dtype == np.uint8:
+                        dtype = bioformats.PT_UINT8
+
+                    # Ensure channel names are properly formatted strings
+                    formatted_channel_names = [str(name) for name in all_channels_list]
+
+                    # Write image with metadata
+                    bioformats.write_image(
+                        output_path,
+                        combined_image,
+                        pixel_type=dtype,
+                        size_z=1,
+                        size_t=1,
+                        c=0,
+                        channel_names=formatted_channel_names,
+                    )
                     out_urls.append(output_path)
                 if treatmetns:
                     self.MainWindow.add_new_treatment_item(treatmetns[i])
@@ -2328,7 +2352,16 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         )
                         iii += 1
                     # Save the combined image as a TIFF file with metadata
-                    tifffile.imsave(output_path, combined_image, metadata=metadata)
+                    import bioformats
+
+                    dtype = combined_image.dtype
+                    if dtype == np.uint16:
+                        dtype = bioformats.PT_UINT16
+                    elif dtype == np.uint8:
+                        dtype = bioformats.PT_UINT8
+
+                    bioformats.write_image(output_path, combined_image, dtype)
+
                     out_urls.append(output_path)
                 if treatmetns:
                     self.MainWindow.add_new_treatment_item(treatmetns[i])
