@@ -1470,30 +1470,7 @@ def get_specialized_image(
             dict_out["size_y"] = arr.shape[0]
             return arr, dict_out
     if not avoid_loading_ultra_high_res_arrays_normaly or not IS_ULTRA_HIGH_RES:
-        img = run_with_timeout(BioImage, tif_path, timeout=10)
-        if isinstance(img, type(None)):
-            # load it with alternative method as it failed
-            # if its a tifffile, attempt to laod it with tifffile, thats because
-            # sometimes AICSImage fails
-            return None, None
-
-        if img.dims.T > 1:
-            return None, None
-
-        # check to see if there is a channel dimension
-        if hasattr(img, "channel_names"):
-            dict_out["channels"] = img.channel_names
-            # get the channe
-        if hasattr(img, "physical_pixel_sizes"):
-            dict_out["physical_pixel_size_x"] = getattr(
-                img.physical_pixel_sizes, "X", None
-            )
-            dict_out["physical_pixel_size_y"] = getattr(
-                img.physical_pixel_sizes, "Y", None
-            )
-        dims_order = img.dims.order
-        dims_shape = img.dims.shape
-
+        raise ValueError("Failed to load image")
     # case of "TCZYXS" being actually "TSZYXC"
     if (
         dims_order.lower() == "tczyxs"
