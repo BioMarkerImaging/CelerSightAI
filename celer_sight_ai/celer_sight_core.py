@@ -2914,10 +2914,12 @@ class Master_MainWindow(CelerSightMainWindow):
                 first_item = self.RNAi_list.item(0)
                 self.RNAi_list.setCurrentItem(first_item)
                 # Manually call the method that handles item selection
-                self.switch_treatment_onchange()
                 # Trigger a scene refresh and image preview area refresh
                 config.global_signals.refresh_image_preview_graphicsscene_signal.emit()
                 config.global_signals.load_main_scene_signal.emit()
+                self.switch_treatment_onchange(
+                    first_item
+                )  # update the image buttons to match the treatment
             return images
         except Exception as e:
             logger.error(e)
