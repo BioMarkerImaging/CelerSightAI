@@ -12,7 +12,8 @@ class importTesting(unittest.TestCase):
             import time
 
             print("tufup")
-            from bioio import BioImage
+            import javabridge
+            import bioformats
             import tufup
             from celer_sight_ai import config
 

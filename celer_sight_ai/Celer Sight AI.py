@@ -2,7 +2,6 @@ from multiprocessing import freeze_support  # noqa
 
 freeze_support()  # noqa
 print("Running Celer Sight AI")
-import bioio
 import time
 from azure.storage.blob import BlobServiceClient, BlobClient
 import tufup

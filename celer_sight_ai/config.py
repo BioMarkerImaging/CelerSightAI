@@ -404,7 +404,7 @@ NON_SPECIALIZED_IMAGE_FORMATS = [
     ".exr",
     ".hdr",
 ]
-# use bioio for these formats
+# use bioformats for these formats
 # TODO: update to support more formats here
 SPECIALIZED_FORMATS = [
     ".tif",
