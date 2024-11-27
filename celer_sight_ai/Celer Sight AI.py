@@ -15,6 +15,7 @@ start = time.time()
 import os
 import sys
 import argparse
+from celer_sight_ai import config
 from celer_sight_ai.gui.custom_widgets.splash_widget import CustomSplashScreenWithText
 
 import javabridge

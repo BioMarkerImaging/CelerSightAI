@@ -11,6 +11,7 @@ import logging
 import javabridge
 import bioformats
 
+
 def start_jvm():
     javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
     javabridge.activate_awt()
@@ -32,12 +33,13 @@ if is_executable:
     # also append the celer_sight_ai folder
     sys.path.append(os.path.join(app_home, "celer_sight_ai"))
     os.chdir(os.path.join(app_home, "celer_sight_ai"))
-    if os.name == "nt": 
+    if os.name == "nt":
         os.environ["JAVA_HOME"] = os.path.join(app_home, "java")
         os.environ["CP_JAVA_HOME"] = os.path.join(app_home, "java")
     else:
         os.environ["JAVA_HOME"] = os.path.join(app_home, "Home")
         os.environ["CP_JAVA_HOME"] = os.path.join(app_home, "Home")
+    print(f"Java home: {os.environ['JAVA_HOME']}")
     print(f"Running from frozen executable, setting path to {app_home}")
 else:
     # get parent path of the current file
