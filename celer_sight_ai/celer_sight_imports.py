@@ -64,7 +64,6 @@ import pandas
 import sklearn
 import matplotlib
 import glob
-import bioio
 import statistics
 import PIL
 
