@@ -32,7 +32,8 @@ if is_executable:
     # also append the celer_sight_ai folder
     sys.path.append(os.path.join(app_home, "celer_sight_ai"))
     os.chdir(os.path.join(app_home, "celer_sight_ai"))
-
+    os.environ["JAVA_HOME"] = os.path.join(app_home, "java")
+    os.environ["CP_JAVA_HOME"] = os.path.join(app_home, "java")
     print(f"Running from frozen executable, setting path to {app_home}")
 else:
     # get parent path of the current file
