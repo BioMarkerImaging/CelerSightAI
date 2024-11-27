@@ -6015,27 +6015,6 @@ class Master_MainWindow(CelerSightMainWindow):
                     )
                 )
 
-    def closeEvent(self, event):
-
-        try:
-            # Terminate all threads forcefully
-            import javabridge
-
-            if javabridge.get_env() is not None:
-                javabridge.kill_vm()
-        except:
-            pass
-
-        try:
-            if hasattr(self, "onlineInfAll"):
-                self.onlineInfAll.stop()
-        except:
-            pass
-        from celer_sight_ai import clean_exit
-
-        clean_exit()
-        return
-
     def label_update(self, my_dir):
         if my_dir == None or my_dir == "." or my_dir == "":
             return False

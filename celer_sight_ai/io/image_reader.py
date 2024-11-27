@@ -1366,56 +1366,67 @@ def get_specialized_image(
         # we only need to extract the image data and channels,
         # 1 series and do max projection in the Z dimentions if needed
 
-        # Extract channels from metadata
-        channels = []
-        for i in range(pixel_data.channel_count):
-            channel = pixel_data.Channel(i)
-            if channel.Name:
-                channels.append(channel.Name)
-            else:
-                channels.append(f"Channel:{i}")
-
-        # Assign channels to output dict
-        dict_out["channels"] = channels
-
-        # get the physical pixel sizes in mm
-        dict_out["physical_pixel_size_x"] = pixel_data.PhysicalSizeX
-        dict_out["physical_pixel_size_y"] = pixel_data.PhysicalSizeY
-        dict_out["physical_pixel_unit_x"] = pixel_data.PhysicalSizeXUnit
-        dict_out["physical_pixel_unit_y"] = pixel_data.PhysicalSizeYUnit
-
         dict_out["size_x"] = pixel_data.SizeX
         dict_out["size_y"] = pixel_data.SizeY
 
-        image_file = config.bioformats.ImageReader(path=tif_path)
-
-        if pixel_data.SizeZ > 1:
-            z_data = np.empty(
-                (
-                    pixel_data.SizeZ,
-                    pixel_data.SizeY,
-                    pixel_data.SizeX,
-                    pixel_data.SizeC,
-                )
-            )
-            for z in range(pixel_data.SizeZ):
-                logger.debug(f"Max projection along axis Z: {z}")
-                img = image_file.read(series=0, z=z, rescale=False)
-                if len(img.shape) == 2:
-                    img = np.expand_dims(img, axis=2)
-                z_data[z, :, :, :] = img
-            # do max projection in the Z dimension
-            arr = np.max(z_data, axis=0)
-            dims_order = "YXC"
+        # if the image is ultra high res, dont use bioformats,
+        # instead we skip here and load it iteratively with tiffslide of openslide
+        if (
+            pixel_data.SizeX > config.ULTRA_HIGH_RES_THRESHOLD
+            or pixel_data.SizeY > config.ULTRA_HIGH_RES_THRESHOLD
+        ):
+            IS_ULTRA_HIGH_RES = True
         else:
-            dims_order, shape_squeezed = get_squeezed_bf_dimentions(pixel_data)
-            arr = image_file.read(series=0, rescale=False)
+            logger.debug("Image is not ultra high res, loading with bioformats")
+            # Extract channels from metadata
+            channels = []
+            for i in range(pixel_data.channel_count):
+                channel = pixel_data.Channel(i)
+                if channel.Name:
+                    channels.append(channel.Name)
+                else:
+                    channels.append(f"Channel:{i}")
 
-        # if channels are found, return the image
-        if dict_out["channels"]:
-            dict_out = extract_more_metadata_if_available(tif_path, dict_out)
-            dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
-            return arr, dict_out
+            # Assign channels to output dict
+            dict_out["channels"] = channels
+
+            # get the physical pixel sizes in mm
+            dict_out["physical_pixel_size_x"] = pixel_data.PhysicalSizeX
+            dict_out["physical_pixel_size_y"] = pixel_data.PhysicalSizeY
+            dict_out["physical_pixel_unit_x"] = pixel_data.PhysicalSizeXUnit
+            dict_out["physical_pixel_unit_y"] = pixel_data.PhysicalSizeYUnit
+
+            image_file = config.bioformats.ImageReader(path=tif_path)
+
+            if pixel_data.SizeZ > 1:
+                z_data = np.empty(
+                    (
+                        pixel_data.SizeZ,
+                        pixel_data.SizeY,
+                        pixel_data.SizeX,
+                        pixel_data.SizeC,
+                    )
+                )
+                for z in range(pixel_data.SizeZ):
+                    logger.debug(f"Max projection along axis Z: {z}")
+                    img = image_file.read(series=0, z=z, rescale=False)
+                    if len(img.shape) == 2:
+                        img = np.expand_dims(img, axis=2)
+                    z_data[z, :, :, :] = img
+                # do max projection in the Z dimension
+                arr = np.max(z_data, axis=0)
+                dims_order = "YXC"
+            else:
+                dims_order, shape_squeezed = get_squeezed_bf_dimentions(pixel_data)
+                arr = image_file.read(series=0, rescale=False)
+
+            # if channels are found, return the image
+            if dict_out["channels"]:
+                dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+                dict_out["channels"], arr = standardize_channels(
+                    arr, dict_out["channels"]
+                )
+                return arr, dict_out
 
     except Exception as e:
         logger.error(f"Error loading tiff file with bioformats: {e}")

@@ -1747,7 +1747,23 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # process events
         QtCore.QCoreApplication.processEvents()
 
-        sys.exit()
+        try:
+            # Terminate all threads forcefully
+            import javabridge
+
+            if javabridge.get_env() is not None:
+                javabridge.kill_vm()
+        except:
+            pass
+
+        try:
+            if hasattr(self, "onlineInfAll"):
+                self.onlineInfAll.stop()
+        except:
+            pass
+        from celer_sight_ai import clean_exit
+
+        clean_exit()
 
         return
 
