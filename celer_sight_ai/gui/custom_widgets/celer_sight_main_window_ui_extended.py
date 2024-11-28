@@ -468,6 +468,15 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.new_category_button.clicked.connect(
             lambda: self.spawn_create_new_category_dialog_on_organism_selection()
         )
+        # set icon
+        self.logo_top.setPixmap(
+            QtGui.QPixmap(
+                os.path.join(
+                    os.environ["CELER_SIGHT_AI_HOME"],
+                    "data/celer_sight_icons/app_logo_celer_sight.png",
+                )
+            )
+        )
 
         if os.name == "nt":
             # rename control widget
@@ -670,11 +679,39 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # isntall organism selction class to the stackedWidget
         from celer_sight_ai.NewAnalysisSetUp import NewAnalysis, organismSelectionClass
 
+        # the self.gridLayout_orgSelectionSection has too much empty space, lets remove it
+        self.gridLayout_orgSelectionSection.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout_orgSelectionSection.setSpacing(0)
+        self.organism_selection_title = QtWidgets.QLabel("Supercategories")
+        self.organism_selection_title.setStyleSheet(
+            """
+                                                    color: rgb(255,255,255);
+                                                    background-color: rgb(25,25,25);
+                                                    border-radius: 10px;
+                                                    font-size: 22px;
+                                                    """
+        )
+        self.organism_selection_title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.organism_selection_title.setFixedHeight(50)
+        self.organism_selection_title.setFixedWidth(350)
+        self.organism_selection_title.setParent(self)
+        self.gridLayout_orgSelectionSection.addWidget(
+            self.organism_selection_title,
+            0,
+            0,
+            1,
+            2,  # Changed from 1,1 to 1,2 to span 2 columns
+        )
+        self.gridLayout_orgSelectionSection.setAlignment(
+            self.organism_selection_title,
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+        )
         self.organism_selection = organismSelectionClass(self)
         self.organism_selection.myDialog.setParent(self.orgSelectionSection)
         self.gridLayout_orgSelectionSection.addWidget(
-            self.organism_selection.myDialog, 0, 0, 1, 1
+            self.organism_selection.myDialog, 1, 0, 1, 1
         )
+
         self.new_analysis_object = NewAnalysis(self)
 
         # check if the user has a small screen, if so adjust the size of the buttons accdingly
