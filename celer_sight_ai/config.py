@@ -68,7 +68,7 @@ else:
     os.environ["CELER_SIGHT_AI_HOME"] = str(p)
     # get parent path
     sys.path.append(str(p))
-    
+
 import javabridge
 import bioformats
 from celer_sight_ai import __version__
@@ -1459,6 +1459,7 @@ def update_celer_sight_ai():
                         "/move",  # deletes files and dirs from source dir after they've been copied
                         "/v",  # verbose (show what is going on)
                         "/w:2",  # set retry-timeout (default is 30 seconds)
+                        "/r:3",  # retry 3 times on failed copies
                         # multithreading
                         "/mt:8",
                         # reduce log spam
