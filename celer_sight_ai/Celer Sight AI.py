@@ -10,7 +10,7 @@ start = time.time()
 from azure.storage.blob import BlobServiceClient, BlobClient
 import tufup
 import networkx
-
+import openslide
 import imagecodecs
 import sys
 import os
