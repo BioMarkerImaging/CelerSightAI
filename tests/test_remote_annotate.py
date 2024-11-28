@@ -40,41 +40,41 @@ delete the image, validate the deletion and erase any mock images created in thi
 """
 
 
-# class MyTest(unittest.TestCase):
-#     def setUp(self):
-#         self.currentlyUsedS1Address = getServerLogAddress()
-#         self.mock_credentials = [
-#             (os.environ.get("USERNAME_ADMIN"), os.environ.get("PASSWORD_ADMIN")),
-#         ]
-#         self.client = FileClient(getServerLogAddress())
+class TestRemoteAnnotate(unittest.TestCase):
+    def setUp(self):
+        self.currentlyUsedS1Address = getServerLogAddress()
+        self.mock_credentials = [
+            (os.environ.get("USERNAME_ADMIN"), os.environ.get("PASSWORD_ADMIN")),
+        ]
+        self.client = FileClient(getServerLogAddress())
 
+    @parameterized.expand(
+        [
+            (
+                {
+                    "user_id": "manos.chaniotakis@biomarkerimaging.com",
+                    "supercategory": "on_plate",
+                    "categories": ["worm eggs"],
+                    "amount": 1,
+                    "categories_to_exclude": [],
+                    "contribute_mode_retrieval": "partially_annotated",
+                    "fetch_images_without_annotations": False,
+                    "randomized": False,
+                },
+                {"image_ids": [{"image_uuid": "62c3338f-fd26-4cce-8428-632ba4faa461"}]},
+            )
+        ]
+    )
+    def test_remote_image_batch_for_annotation(self, data, expected_response):
+        from celer_sight_ai.configHandle import get_remote_image_batch_for_annotation
+        from celer_sight_ai.core.file_client import FileClient
 
-#     @parameterized.expand(
-#         [
-#             (
-#                 {
-#                     "user_id": "manos.chaniotakis@biomarkerimaging.com",
-#                     "supercategory": "on_plate",
-#                     "categories": ["worm eggs"],
-#                     "amount": 1,
-#                     "categories_to_exclude": [],
-#                     "contribute_mode_retrieval": "partially_annotated",
-#                     "fetch_images_without_annotations": False,
-#                     "randomized": False,
-#                 },
-#                 {"image_ids": [{"image_uuid": "62c3338f-fd26-4cce-8428-632ba4faa461"}]},
-#             )
-#         ]
-#     )
-#     def test_remote_image_batch_for_annotation(self, data, expected_response):
-#         from celer_sight_ai.configHandle import get_remote_image_batch_for_annotation
-#         from celer_sight_ai.gui.net.lib import FileClient
+        self.client.login(self.mock_credentials[0][0], self.mock_credentials[0][1])
 
-#         self.client.login(self.mock_credentials[0][0], self.mock_credentials[0][1])
+        response = self.client.remote_image_batch_for_annotation_method(data)
 
-#         response = self.client.remote_image_batch_for_annotation_method(data)
+        self.assertEqual(response.json(), expected_response)
 
-#         self.assertEqual(response.json(), expected_response)
 
 #     @parameterized.expand(
 #         [

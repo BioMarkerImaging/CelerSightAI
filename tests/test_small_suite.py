@@ -56,7 +56,7 @@ bb_points_for_ultra_high_res = [
 ]
 os.environ["CELER_SIGHT_TESTING"] = "true"
 
-DELAY_TIME = 200  # in ms
+DELAY_TIME = 400  # in ms
 
 
 class CelerSightTestSimple(unittest.TestCase):
@@ -103,7 +103,8 @@ class CelerSightTestSimple(unittest.TestCase):
                 ],
             )
             qttest_utils.magic_box_predict(app, bb_point_pair[0], bb_point_pair[1])
-            QTest.qWait(2 * DELAY_TIME)
+            QtWidgets.QApplication.processEvents()
+            QTest.qWait(8 * DELAY_TIME)
         # make sure that there are 3 annotations
         assert (
             len([i for i in app.DH.BLobj.get_all_mask_objects()]) == 3

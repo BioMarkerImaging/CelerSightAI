@@ -9,8 +9,12 @@ class burger_settings_button(QtWidgets.QPushButton):
     def __init__(self, parent=None):
         QtWidgets.QPushButton.__init__(self, parent)
 
-        self.normal_icon_path = "data/icons/burger_config_normal.png"
-        self.cross_icon_path = "data/icons/burger_config_cross.png"
+        self.normal_icon_path = os.path.join(
+            os.environ["CELER_SIGHT_AI_HOME"], "data/icons/burger_config_normal.png"
+        )
+        self.cross_icon_path = os.path.join(
+            os.environ["CELER_SIGHT_AI_HOME"], "data/icons/burger_config_cross.png"
+        )
         self.setMouseTracking(True)
         self.installEventFilter(self)
         self.burger_state = "on"

@@ -3222,6 +3222,13 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         class_id = (
             self.MainWindow.custom_class_list_widget.currentItemWidget().unique_id
         )
+        # if there are no treatments available, throw an error
+        
+        if not self.MainWindow.DH.BLobj.get_current_condition_uuid():
+            config.global_signals.errorSignal.emit(
+                "No treatments available, please add a treatment to continue"
+            )
+            return
         self.draw_bounding_box_stop(
             None,
             self.MainWindow.DH.BLobj.get_current_group(),  # this is the group name, it needs to change to group id

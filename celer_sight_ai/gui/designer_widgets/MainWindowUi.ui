@@ -765,12 +765,6 @@ background-color: rgba(0,0,0,0);
 	border-bottom-left-radius: 10px;
 }
 
-/* Logo Top */
-#logo_top {
-	border-image: url(data/celer_sight_icons/app_logo_celer_sight.png);
-	background-position: center;
-	background-repeat: no-repeat;
-}
 
 /* Buttons */
 

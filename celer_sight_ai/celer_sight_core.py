@@ -4787,7 +4787,10 @@ class Master_MainWindow(CelerSightMainWindow):
         if not image_object:
             return
         # delete the image and the button
-        image_object.myButton.button_instance.deleteCurrentImage(reload_image=True)
+        try:
+            image_object.myButton.button_instance.deleteCurrentImage(reload_image=True)
+        except:
+            logger.exception("Error deleting image with button")
 
     def load_all_current_image_annotations(self, img_uuid):
         from celer_sight_ai.gui.custom_widgets.scene import (

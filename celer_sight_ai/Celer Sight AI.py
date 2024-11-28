@@ -1,8 +1,12 @@
 from multiprocessing import freeze_support  # noqa
 
 freeze_support()  # noqa
+
 print("Running Celer Sight AI")
 import time
+
+start = time.time()
+
 from azure.storage.blob import BlobServiceClient, BlobClient
 import tufup
 import networkx
@@ -10,8 +14,10 @@ import networkx
 import imagecodecs
 import sys
 import os
+import zarr
+import zarr.storage
+import numcodecs
 
-start = time.time()
 import os
 import sys
 import argparse

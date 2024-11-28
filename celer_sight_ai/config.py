@@ -10,11 +10,33 @@ import queue
 import logging
 
 
-
 def start_jvm():
     javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
-    javabridge.activate_awt()
-    jvm_lock = threading.RLock()
+    """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
+    during runtime.
+    From CellProfiler/python-bioformats.
+    """
+    rootLoggerName = javabridge.get_static_field(
+        "org/slf4j/Logger", "ROOT_LOGGER_NAME", "Ljava/lang/String;"
+    )
+
+    rootLogger = javabridge.static_call(
+        "org/slf4j/LoggerFactory",
+        "getLogger",
+        "(Ljava/lang/String;)Lorg/slf4j/Logger;",
+        rootLoggerName,
+    )
+
+    logLevel = javabridge.get_static_field(
+        "ch/qos/logback/classic/Level", "WARN", "Lch/qos/logback/classic/Level;"
+    )
+
+    javabridge.call(
+        rootLogger, "setLevel", "(Lch/qos/logback/classic/Level;)V", logLevel
+    )
+
+
+jvm_lock = threading.RLock()
 
 
 logger = logging.getLogger(__name__)
@@ -122,6 +144,8 @@ def dbg_polygon(
     from skimage.draw import polygon
     import cv2
 
+    if is_executable:
+        return False
     try:
         # Create empty mask
         mask = np.zeros(image_shape, dtype=np.uint8)

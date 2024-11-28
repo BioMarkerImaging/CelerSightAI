@@ -670,8 +670,6 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # isntall organism selction class to the stackedWidget
         from celer_sight_ai.NewAnalysisSetUp import NewAnalysis, organismSelectionClass
 
-        self.organism_selection = organismSelectionClass(self)
-        self.organism_selection.myDialog.setParent(self.orgSelectionSection)
         self.gridLayout_orgSelectionSection.addWidget(
             self.organism_selection.myDialog, 0, 0, 1, 1
         )
@@ -815,7 +813,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.bottom_menus.setContentsMargins(0, 0, 0, 0)
 
         # Set up Fillers for QuickTools to Hide to Side
-        from celer_sight_ai.gui.designer_widgets_py_filesgets_py_files.quickToolStickAreaForm import (
+        from celer_sight_ai.gui.designer_widgets_py_files.quickToolStickAreaForm import (
             Ui_Form as quickToolsUiFormHide,
         )
 
