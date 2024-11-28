@@ -8,8 +8,7 @@ import threading
 import queue
 
 import logging
-import javabridge
-import bioformats
+
 
 
 def start_jvm():
@@ -47,7 +46,9 @@ else:
     os.environ["CELER_SIGHT_AI_HOME"] = str(p)
     # get parent path
     sys.path.append(str(p))
-
+    
+import javabridge
+import bioformats
 from celer_sight_ai import __version__
 
 
