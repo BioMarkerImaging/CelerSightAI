@@ -135,7 +135,9 @@ def getServerLogAddress():
     Returns:
         str: ip address
     """
-    if os.environ.get("CELER_SIGHT_API_IP"):
+    if os.environ.get("CELER_SIGHT_TESTING"):
+        return "http://localhost:7500"
+    elif os.environ.get("CELER_SIGHT_API_IP"):
         return f"{os.environ.get('CELER_SIGHT_API_IP')}"
     else:
         return "https://s1.biomarkerimaging.com"
