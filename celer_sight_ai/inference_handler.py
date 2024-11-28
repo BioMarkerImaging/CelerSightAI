@@ -1227,10 +1227,10 @@ class InferenceHandler:
                         processed_tile_dimention=processed_tile_dimention,
                     )
 
-                config.dbg_polygon(
-                    polygon_object,
-                    [image_object.SizeX, image_object.SizeY],
-                )
+                # config.dbg_polygon(
+                #     polygon_object,
+                #     [image_object.SizeX, image_object.SizeY],
+                # )
 
                 # remove polygons close to the edge of the image
                 if remove_polygons_close_to_edge:
@@ -1243,6 +1243,8 @@ class InferenceHandler:
                     ):
                         logger.info("Polygon close to edge, skipping")
                         return
+                    
+                logger.debug(f"Time taken to process polygon p1: {time.time() - start}")
 
                 # Validate and order polygons once
                 polygon_object = self.order_and_validate_polygons(polygon_object)
