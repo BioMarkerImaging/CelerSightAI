@@ -1696,6 +1696,7 @@ def extract_tile_data_from_tiff(tiff_path, tile_bbox=None, forced_resolution=Non
     try:
         with tifffile.TiffFile(tiff_path) as tif:
             position1_series = tif.series[0]
+            logger.debug(f"zarr: {zarr}")
             position1_zarr = zarr.open(position1_series.aszarr(), mode="r")
 
             if not forced_resolution:
@@ -1734,9 +1735,10 @@ def extract_tile_data_from_tiff(tiff_path, tile_bbox=None, forced_resolution=Non
 
     except Exception as e:
         logger.error(f"Error extracting tile data from {tiff_path}: {e}")
-        from tifffile import TiffFile
+        logger.info("Falling back to tifffile for thumbnail")
+        from tiffslide import TiffSlide
 
-        slide = TiffFile(tiff_path)
+        slide = TiffSlide(tiff_path)
         downsampled_image = slide.get_thumbnail((target_size, target_size))
         downsampled_image = np.array(downsampled_image)
         metadata["size_x"] = slide.dimensions[0]

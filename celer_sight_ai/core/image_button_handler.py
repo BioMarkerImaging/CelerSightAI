@@ -398,8 +398,11 @@ class AddButtonHandler(QtWidgets.QWidget):
                 [group_id, cond_uuid, image_object.unique_id, thumbnail]
             )
         except Exception as e:
+            import traceback
+
             logger.error(f"Error loading image from {img_url} : {e}")
-            # probably due an image being deleted
+            # get traceback on debug
+            logger.debug(traceback.format_exc())
         return
 
     def AddPixmapFromImageSignalHandler(self, signal_obj):
