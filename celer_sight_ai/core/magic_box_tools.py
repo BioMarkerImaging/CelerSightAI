@@ -240,12 +240,12 @@ class SamPredictorONNX:
             # TODO: needs more validation and support of batch size in some cases
             # Set the execution provider to GPU if available
             if not force_provider:
-                # if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
-                #     providers = ["CUDAExecutionProvider"]
-                if "DmlExecutionProvider" in onnxruntime.get_available_providers():
+                if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
+                    providers = ["CUDAExecutionProvider"]
+                elif "DmlExecutionProvider" in onnxruntime.get_available_providers():
                     providers = ["DmlExecutionProvider"]
-                elif "CoreMLExecutionProvider" in onnxruntime.get_available_providers():
-                    providers = ["CoreMLExecutionProvider"]
+            #     elif "CoreMLExecutionProvider" in onnxruntime.get_available_providers():
+            #         providers = ["CoreMLExecutionProvider"]
             else:
                 providers = [force_provider]
 
@@ -428,7 +428,6 @@ class SamPredictorONNX:
     ):
         # start generating button spinner etc..
         config.global_signals.set_mask_suggestor_generating_signal.emit(True)
-        QtWidgets.QApplication.processEvents()
         logger.debug("Starting suggested mask generator")
         if not self.loaded:
             try:
@@ -465,6 +464,7 @@ class SamPredictorONNX:
                 "class_uuid": self.MainWindow.DH.BLobj.get_current_class_uuid(),
                 "mask_uuid": None,  # not used in roi suggestsions
             }
+
         if isinstance(initial_bbox, type(None)):
             initial_bbox = self._initial_tile_box
         if isinstance(subject_bbox, type(None)):
@@ -514,12 +514,12 @@ class SamPredictorONNX:
             image = image_object.getImage(
                 to_uint8=True,
                 to_rgb=True,
-                fast_load_ram=True,
                 bbox=tile,
                 avoid_loading_ultra_high_res_arrays_normaly=True,
             )
             if isinstance(image, type(None)):
                 continue
+
             self.get_mask_suggestions(
                 image,
                 image.shape,
@@ -991,8 +991,8 @@ class SamPredictorONNX:
                 "is_animated": True,
             }
         )
+
         self._running_inferences.append(inference_uuid)
-        QtWidgets.QApplication.processEvents()
         image_tmp = image.copy()
         if not config.user_cfg["USER_WORKERS"]:
             QtWidgets.QApplication.processEvents()
@@ -1109,7 +1109,7 @@ class SamPredictorONNX:
 
         # for each point, get the mask
         for p in points:
-
+            QtWidgets.QApplication.processEvents()
             if not config.user_cfg["USER_WORKERS"]:
                 QtWidgets.QApplication.processEvents()
 
@@ -1135,6 +1135,7 @@ class SamPredictorONNX:
                 post_process=False,
                 # debug_image=input_image.copy(),
             )
+
             # add best mask to scene
             # post process first
             pred_mask, score = self.post_process(
