@@ -614,11 +614,14 @@ class CelerSightObj:  # contains group obj
             return self.current_condition
 
     def get_current_condition_uuid(self):
-        return (
-            self.groups[self.get_current_group()]
-            .conds[self.get_current_condition()]
-            .unique_id
-        )
+        try:
+            return (
+                self.groups[self.get_current_group()]
+                .conds[self.get_current_condition()]
+                .unique_id
+            )
+        except:
+            return None
 
     def get_all_treatment_names(self):
         return [i for i in self.groups[self.get_current_group()].conds.keys()]
