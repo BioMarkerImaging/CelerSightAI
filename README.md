@@ -30,15 +30,8 @@ Traditional image analysis tools often require extensive training or programming
 - Automated analysis pipelines
 
 
-### Quick Start
-#### App download
-1) Download the latest release from our [official website](https://www.biomarkerimaging.com/download)
-2) No account? No worries! Just select "Offline" in the log in screen and you can use the app without needing an account.
-#### Registration (For access to our models we require registration to avoid abuse).
-1) Sign up for the [waitlist](https://www.biomarkerimaging.com/waitlist) . Please specify if you will be able to provide us with annotated data or are interested in buying a paid version in the future.
-2) Once you are accepted from the waitlist, you can [register](https://www.biomarkerimaging.com/register)
-3) Once registered, you will have access to all of the community models when you sign in the app.
-
+### Quick Start Guide
+Please follow the [quick start guide here](/docs/getting-started.md)
 
 ## See it in action:
 
