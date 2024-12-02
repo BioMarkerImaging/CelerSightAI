@@ -204,7 +204,13 @@ class LogInHandler(Ui_LogInDialog):
 
     # on close event, close app
     def closeEvent(self, event):
-        logger.info(f"Closing LogInDialog")
+        logger.info(f"Closing application")
+        from celer_sight_ai import clean_exit
+
+        try:
+            clean_exit()
+        except Exception as e:
+            logger.error(e)
         sys.exit()
 
     def set_log_in_error_text(self, text):

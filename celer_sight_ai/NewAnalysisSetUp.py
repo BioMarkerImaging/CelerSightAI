@@ -233,12 +233,6 @@ class organismSelectionClass(OrgSelDialog):
         # from celer_sight_ai.gui.Utilities.tutorialStuff import organismSelectionTutorial
         # self.myTutorialUi = organismSelectionTutorial(self)
 
-    def closeEvent(self, event):
-        print("runnig event")
-        # self.MainWindow.MainWindow.close()
-        # QtCore.QCoreApplication.exit(0)
-        # sys.exit()
-
     def CreateProject(self, projectType="worm"):
         from celer_sight_ai import config
 
