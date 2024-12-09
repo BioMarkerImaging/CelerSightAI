@@ -9,7 +9,7 @@ import time
 
 import unittest
 
-from celer_sight_ai.io.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import read_specialized_image
 import logging
 
 logger = logging.getLogger(__name__)

@@ -12,7 +12,7 @@ from tests import qttest_utils
 from parameterized import parameterized
 
 sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
-from celer_sight_ai.io.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import read_specialized_image
 import logging
 from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
     gather_cfgs,

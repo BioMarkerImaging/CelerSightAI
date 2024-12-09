@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # from tests.csight_test_loader import tags
 import unittest
 
-from celer_sight_ai.io.image_reader import get_specialized_image
+from celer_sight_ai.io.image_reader import read_specialized_image
 import logging
 
 
@@ -273,7 +273,7 @@ class MyTest(unittest.TestCase):
             #     continue
             logger.info("Testing image: " + img_path)
             try:
-                result, arr_metadata = get_specialized_image(
+                result, arr_metadata = read_specialized_image(
                     os.path.join(self.fixture_dir_abs_path, img_path)
                 )
 
