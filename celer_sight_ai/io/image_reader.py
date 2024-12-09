@@ -1308,7 +1308,7 @@ def get_squeezed_bf_dimentions(pixel_data):
     return axes_squeezed, shape_squeezed
 
 
-def get_specialized_image(
+def read_specialized_image(
     tif_path,
     avoid_loading_ultra_high_res_arrays_normaly=False,
     for_thumbnail=False,
@@ -1426,6 +1426,8 @@ def get_specialized_image(
                 dict_out["channels"], arr = standardize_channels(
                     arr, dict_out["channels"]
                 )
+                if bbox:
+                    arr = crop_and_pad_image(arr, bbox)
                 return arr, dict_out
 
     except Exception as e:
