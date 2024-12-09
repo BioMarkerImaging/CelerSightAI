@@ -51,8 +51,8 @@ from celer_sight_ai import config
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-print("Importing get_specialized_image")
-from celer_sight_ai.io.image_reader import get_specialized_image
+print("Importing read_specialized_image")
+from celer_sight_ai.io.image_reader import read_specialized_image
 
 print(sys.path)
 try:
@@ -178,7 +178,7 @@ def readImage(
         return img, out_dict
 
     if path.lower().endswith(tuple(config.SPECIALIZED_FORMATS)) and not is_pyramidal:
-        # tiff is included here, get_specialized_image will handle ultra high res images
+        # tiff is included here, read_specialized_image will handle ultra high res images
         logger.debug(f"Importing image from {path} : tiff")
         from celer_sight_ai.io.image_reader import (
             interactive_untiled_tiff_preview,
@@ -187,7 +187,7 @@ def readImage(
 
         # First we attempt to read the image normally, if the image is ultra high res, handle later
 
-        result = get_specialized_image(
+        result = read_specialized_image(
             path,
             for_interactive_zoom=for_interactive_zoom,
             for_thumbnail=for_thumbnail,
@@ -3223,7 +3223,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self.MainWindow.custom_class_list_widget.currentItemWidget().unique_id
         )
         # if there are no treatments available, throw an error
-        
+
         if not self.MainWindow.DH.BLobj.get_current_condition_uuid():
             config.global_signals.errorSignal.emit(
                 "No treatments available, please add a treatment to continue"

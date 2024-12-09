@@ -71,7 +71,6 @@ class organismSelectionClass(OrgSelDialog):
 
         self.myDialog = QtWidgets.QDialog()
         self.setupUi(DialogMainSelection=self.myDialog)
-        self.myDialog.closeEvent = self.closeEvent
         self.ShadowEffect = QtWidgets.QGraphicsDropShadowEffect()
         self.ShadowEffect.setColor(QtGui.QColor(0, 0, 0, 250))
         self.ShadowEffect.setBlurRadius(70)
@@ -232,12 +231,6 @@ class organismSelectionClass(OrgSelDialog):
 
         # from celer_sight_ai.gui.Utilities.tutorialStuff import organismSelectionTutorial
         # self.myTutorialUi = organismSelectionTutorial(self)
-
-    def closeEvent(self, event):
-        print("runnig event")
-        # self.MainWindow.MainWindow.close()
-        # QtCore.QCoreApplication.exit(0)
-        # sys.exit()
 
     def CreateProject(self, projectType="worm"):
         from celer_sight_ai import config

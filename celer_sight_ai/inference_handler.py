@@ -1243,7 +1243,7 @@ class InferenceHandler:
                     ):
                         logger.info("Polygon close to edge, skipping")
                         return
-                    
+
                 logger.debug(f"Time taken to process polygon p1: {time.time() - start}")
 
                 # Validate and order polygons once
