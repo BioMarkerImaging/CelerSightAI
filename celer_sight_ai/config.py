@@ -928,6 +928,19 @@ class UserConfig:
     def __delattr__(self, key):
         del self._user_cfg[key]
 
+    def get(self, key, default=None):
+        """
+        Get a value from the config, returning default if the key doesn't exist.
+
+        Args:
+            key: The key to look up
+            default: The value to return if key is not found (defaults to None)
+
+        Returns:
+            The value associated with key if it exists, otherwise default
+        """
+        return self._user_cfg.get(key, default)
+
 
 def load_user_settings():
     """
