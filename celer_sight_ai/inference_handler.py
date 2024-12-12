@@ -91,6 +91,8 @@ def is_polygon_close_to_edge(vertices, image_shape, threshold=10):
     Returns:
         bool: True if the polygon is close to the edge, False otherwise.
     """
+    if config.user_cfg.get("KEEP_EDGE_ANNOTATIONS"):
+        return False
     # Get the minimum and maxiamum vertex coordinates
     min_row, min_col = np.min(vertices, axis=0)
     max_row, max_col = np.max(vertices, axis=0)
