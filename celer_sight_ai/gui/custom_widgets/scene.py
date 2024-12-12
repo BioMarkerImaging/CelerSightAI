@@ -295,7 +295,12 @@ def readImage(
         except Exception as e:
             logger.error(f"Error loading image {path}: {str(e)}")
             return None, {}
-        if not not isinstance(im, type(None)) and not for_thumbnail:
+        if (
+            not not isinstance(im, type(None))
+            and not for_thumbnail
+            and not for_interactive_zoom
+            and not bbox
+        ):
             config.ram_image = im
             config.ram_image_path = path
         if bbox:
@@ -329,14 +334,14 @@ def readImage(
         ]
         # remove channels that are not in the channel_names_to_filter
         im = im[:, :, channel_names_to_filter]
-    if (
-        not isinstance(im, type(None))
-        and not for_thumbnail
-        and not for_interactive_zoom
-        and isinstance(bbox, type(None))
-    ):
-        config.ram_image = im
-        config.ram_image_path = path
+    # if (
+    #     not isinstance(im, type(None))
+    #     and not for_thumbnail
+    #     and not for_interactive_zoom
+    #     and isinstance(bbox, type(None))
+    # ):
+    #     config.ram_image = im
+    #     config.ram_image_path = path
     if not isinstance(im, type(None)):
         logger.debug(f"Image {im.shape} imported with channels : {channels}")
 
@@ -4948,7 +4953,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             if type(item) == PolygonAnnotation:
                 if item.isUnderMouse():
                     item.DeleteMask()
-                return
+                    return
 
     def clearAllMasksUnderMouse(self, pos):
         # clear masks in current image in the self._scene
