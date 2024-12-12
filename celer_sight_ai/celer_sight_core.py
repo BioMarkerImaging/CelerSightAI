@@ -4804,21 +4804,32 @@ class Master_MainWindow(CelerSightMainWindow):
             return
         io._masks_spawned = True
         # load mask objects to scene
+        masks_to_remove = []
         for mask_idx in range(len(io.masks)):
 
             mask_obj = io.masks[mask_idx]
             if mask_obj.mask_type == "polygon":
-                tmpItem = PolygonAnnotation(
-                    self,  # parent
-                    io.unique_id,  # image uuid
-                    mask_obj.polygon_array,  # array
-                    mask_obj.class_id,  # class name
-                    mask_obj.unique_id,  # unique id
-                    track_unique_id=mask_obj._annotation_track_id,
-                    is_suggested=mask_obj.is_suggested,
-                    score=mask_obj.score,
-                    _disable_spawn_extra_items=io._disable_overlay_annotation_items,
-                )
+                try:
+                    tmpItem = PolygonAnnotation(
+                        self,  # parent
+                        io.unique_id,  # image uuid
+                        mask_obj.polygon_array,  # array
+                        mask_obj.class_id,  # class name
+                        mask_obj.unique_id,  # unique id
+                        track_unique_id=mask_obj._annotation_track_id,
+                        is_suggested=mask_obj.is_suggested,
+                        score=mask_obj.score,
+                        _disable_spawn_extra_items=io._disable_overlay_annotation_items,
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error loading polygon annotation {mask_obj.unique_id}"
+                    )
+                    config.global_signals.notify_error_signal.emit(
+                        f"Error loading polygon annotation {mask_obj.unique_id}"
+                    )
+                    # delete mask object
+                    masks_to_remove.append(mask_obj.unique_id)
                 scene_items_to_add = tmpItem.get_graphic_scene_items()
 
             elif mask_obj.mask_type == "bitmap":
@@ -4852,6 +4863,9 @@ class Master_MainWindow(CelerSightMainWindow):
                 if i not in self.viewer.scene().items()
             ]
             tmpItem.canDetectChange = True
+        # delete the masks that were not loaded
+        for mask_obj in masks_to_remove:
+            del self.io.masks[mask_obj]
 
     def change_image_hook_method(self, object):
         logger.debug("Image change hook running")
@@ -5332,7 +5346,7 @@ class Master_MainWindow(CelerSightMainWindow):
         return self.custom_class_list_widget.currentItemWidget().text()
 
     def remove_class_item(self, class_uuid=None):
-        # removes the current or specified selected class, and shoiuld also remove the masks
+        # removes the current or specified selected class, and should also remove the masks
         if not class_uuid:
             class_uuid = self.custom_class_list_widget.getItemWidget(
                 self.custom_class_list_widget.currentRow()
