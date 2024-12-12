@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 import celer_sight_ai.configHandle as configHandle
 import threading
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 
 class AuthenticationError(Exception):
@@ -171,11 +173,30 @@ class FileClient:
             cls._instance = super(FileClient, cls).__new__(cls)
             cls._instance.jwt = None  # short lived access token
             cls._instance.jwt_long = None  # long lived access token
-            cls._instance.session = requests.Session()
+            cls._instance.session = cls.create_retry_session()  # Use retry session
         if MainWindow:
             cls._instance.MainWindow = MainWindow
         cls._instance.mainAddr = configHandle.getServerLogAddress()
         return cls._instance
+
+    @staticmethod
+    def create_retry_session(
+        retries=3,
+        backoff_factor=0.3,
+        status_forcelist=(500, 502, 504),
+    ):
+        session = requests.Session()
+        retry = Retry(
+            total=retries,
+            read=retries,
+            connect=retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
 
     def __init__(self, address_override=None, MainWindow=None) -> None:
         # get biomarkerimaging address
