@@ -84,6 +84,8 @@ REMOTE_ANNOTATIONS_PARTIAL_ID: null # string id of the partial annotation, or "l
 REMOTE_ANNOTATION_CATEGORY: "cell" # if its null, it will fetch images without categories
 REMOTE_ANNOTATIONS_AUDITED: true # if the annotations are audited or not
 
+KEEP_EDGE_ANNOATIONS : false
+
 production:
 
   # Admin dabase image data auditing tool
@@ -147,6 +149,10 @@ production:
 developer:
   USER_WORKERS : true # single or multithreaded mode
   OFFLINE_MODE : false # work offline
+
+
+  KEEP_EDGE_ANNOTATIONS : true
+
 
   # Admin dabase image data auditing tool
   ##################################

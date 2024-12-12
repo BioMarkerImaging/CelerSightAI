@@ -1922,20 +1922,6 @@ def get_optimal_crop_bbox(
     y_min = center_y - (crop_size / 2)
     y_max = center_y + (crop_size / 2)
 
-    # Adjust for image boundaries
-    if x_min < 0:
-        x_max += -x_min  # Try to shift right
-        x_min = 0
-    if x_max > image_width:
-        x_min -= x_max - image_width  # Try to shift left
-        x_max = image_width
-    if y_min < 0:
-        y_max += -y_min  # Try to shift down
-        y_min = 0
-    if y_max > image_height:
-        y_min -= y_max - image_height  # Try to shift up
-        y_max = image_height
-
     # Final boundary checks
     x_min = max(0, x_min)
     x_max = min(image_width, x_max)
