@@ -588,13 +588,6 @@ def get_deep_zoom_by_tiffslide(image_path, viewport_bounding_box):
     mapped_idx = [k for k, v in _dzgen._mapped_levels.items() if v == idx][0]
     for tile in tiles:
         tile_jpg = _dzgen.get_tile(mapped_idx, tile[0], tile[1])
-        # convert byte_array byte object jpg to numpy array
-        # Convert the byte object to a NumPy array
-        jpeg_array = np.frombuffer(tile_jpg, dtype=np.uint16)
-        # Decode the image
-        image = cv2.imdecode(jpeg_array, cv2.IMREAD_COLOR)
-        # save to disk
-        # cv2.imwrite("test.jpg", image)
         all_tile_jpgs.append(tile_jpg)
         lvl_width = _dzgen._im_levels[idx][0]
         lvl_height = _dzgen._im_levels[idx][1]
@@ -1932,7 +1925,9 @@ def get_optimal_crop_bbox(
     width = x_max - x_min
     height = y_max - y_min
     if width != height:
-        target_size = min(width, height)
+        # needs to be max , if we use min sometimes it crops
+        # the subject.
+        target_size = max(width, height)
         # Adjust to maintain center while making square
         x_adjust = (width - target_size) / 2
         y_adjust = (height - target_size) / 2
