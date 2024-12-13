@@ -286,6 +286,7 @@ def group_ranges_to_tile_size(
     min_groups: list,
     class_mask_sizes: dict,
     optimal_annotation_ranges_and_image_size: dict,
+    overlap_sizes: dict,
 ) -> dict:
     """
     Given a group of ranges, find the optimal tile size in each group, it should be the average of the
@@ -301,9 +302,21 @@ def group_ranges_to_tile_size(
             max_image_size = max(
                 [optimal_annotation_ranges_and_image_size[i]["img_size"] for i in group]
             )
+            optimal_overlap = 0
+            for c in group:
+                optimal_overlap = max(optimal_overlap, max(overlap_sizes.get(c, 0)))
+            if optimal_overlap == 0:
+                optimal_overlap = 0.2
+            elif 1 > optimal_overlap > 3:
+                optimal_overlap = 0.3
+            elif 3 > optimal_overlap > 6:
+                optimal_overlap = 0.5
+            elif optimal_overlap > 6:
+                optimal_overlap = 0.8
             result[tuple(group)] = {
                 "tile_size": (min_val + max_val) / 2,
                 "image_size": max_image_size,
+                "overlap": optimal_overlap,
             }
         else:
             result[tuple(group)] = None
@@ -764,20 +777,6 @@ class CelerSightObj:  # contains group obj
                     continue
             yield mask
 
-    def get_all_classes(self):
-        # iterate over all groups, all conditions, all images, all masks and return a set of all available classes
-
-        all_classes = []
-
-        for group in self.groups:
-            for condition in self.groups[group]:
-                for image in condition.images:
-                    for self.mask in image.masks:
-                        all_classes.append(self.mask.class_id)
-        all_classes = set(all_classes)
-
-        return list(all_classes)
-
     def get_all_annotation_tracks_for_treatment(self, treatment_object):
         # get every mask fr that teatment
         all_tracks = []
@@ -873,6 +872,9 @@ class CelerSightObj:  # contains group obj
                     im_format,
                 )
             )
+
+    def get_all_classes(self):
+        return self.MainWindow.custom_class_list_widget.classes
 
     def get_all_top_level_classes(self):
         # get all the class uuids of classes without any children
@@ -2598,7 +2600,7 @@ class ImageObject:
                 tile_width = tile_groups[tile_group]["tile_size"]
                 tile_height = tile_groups[tile_group]["tile_size"]
 
-            overlap = 0.2 * tile_width  # get overlap in pixels
+            overlap = tile_groups[tile_group].get("overlap", 0.2) * tile_width  # get overlap in pixels
             image_center = [image_width / 2, image_height / 2]
 
             initial_bbox = [
