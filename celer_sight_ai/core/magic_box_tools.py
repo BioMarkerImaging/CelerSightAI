@@ -722,7 +722,9 @@ class SamPredictorONNX:
         resize_points = max(image.shape[0], image.shape[1]) / max(
             tile_bbox[2], tile_bbox[3]
         )
-
+        config.dbg_image(
+            image, bbox=[point1[0], point1[1], point2[0], point2[1]], mode="xyxy"
+        )
         # adjust point to image
         point1[0] = point1[0] * resize_points  # x1
         point1[1] = point1[1] * resize_points  # y1
@@ -1119,14 +1121,10 @@ class SamPredictorONNX:
 
             # tramsfer point to original image
             p *= 16  # -> 1024x1024
-            # p[0] /= self.resize_xy s
             # inverse x and y
             p = p[::-1]
             p.astype(np.int32)
             # predict new mask set from point
-            # img = cv2.circle(cv2.resize(image.copy() , (1024,1024)) , (int(p[0]) , int(p[1])) , 2 , (255,0 ,0), -1)
-            # cv2.imwrite("test.jpg" , img)
-            # p_ = (p*16) / self.resize_xy
             pred_masks, scores, coords = self.predict(
                 features=self.long_term_memory_features,
                 point_coords=np.array([[p]]),
@@ -1490,7 +1488,7 @@ class SamPredictorONNX:
     ):
         # We need to extract the highest scoring mask that does not touch the border of the image
         # if there is no mask that fullfills this criteria, we return the highest scoring mask
-        MIN_SCORE = 0.5
+        MIN_SCORE = 0.8
         IGNORE_LEFT = False
         IGNORE_RIGHT = False
         IGNORE_TOP = False
@@ -1769,18 +1767,24 @@ class sdknn_tool(object):
     ):
         # boundin box is x1,y1,x2,y2
         # tile is x,y,w,h
+        padding_top = 0
+        padding_left = 0
+        if tile_bbox[1] < 0:
+            padding_top = tile_bbox[1] // 2
+        if tile_bbox[0] < 0:
+            padding_left = tile_bbox[0] // 2
         image = image[
-            max(0, int(bounding_box[1])) : min(int(bounding_box[3]), image.shape[0]),
-            max(0, int(bounding_box[0])) : min(int(bounding_box[2]), image.shape[1]),
+            max(0, int(bounding_box[1] + padding_top)) : min(
+                int(bounding_box[3]), image.shape[0]
+            ),
+            max(0, int(bounding_box[0] + padding_left)) : min(
+                int(bounding_box[2]), image.shape[1]
+            ),
             ...,
         ]
-        offset_x = max(
-            0, bounding_box[0] + tile_bbox[0]
-        )  # + tile_bbox[0]  # - subject_bbox2[0]  # subject_bbox2[0]  # bounding_box[0] + tile_bbox[0]
-        offset_y = max(
-            bounding_box[1] + tile_bbox[1], 0
-        )  # + tile_bbox[1]  # - subject_bbox2[1]  # subject_bbox2[1]  # bounding_box[1] + tile_bbox[1]
-
+        # Calculate offsets relative to the original image coordinates
+        offset_x = bounding_box[0] + tile_bbox[0] + padding_left
+        offset_y = bounding_box[1] + tile_bbox[1] + padding_top
         self.orgHeight = image.shape[1]  # of the cut
         self.orgWidth = image.shape[0]  # of the cut
         if any([i <= 0 for i in image.shape[:2]]):
@@ -1844,7 +1848,7 @@ class sdknn_tool(object):
         image,
         celer_sight_object,
         bounding_box: list,
-        tile_bbox: list = None,
+        tile_bbox: list = [],
     ) -> Tuple[np.ndarray, int, int]:
         """
         bounds a list condtianin (up) , (right) ,(down) ,(left)
