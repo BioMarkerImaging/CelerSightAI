@@ -84,7 +84,7 @@ class LoadingDialog(QDialog):
             reply = QMessageBox.question(
                 self,
                 "Confirm Exit",
-                "Are you sure you want to abord?",
+                "Are you sure you want to exit?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
 

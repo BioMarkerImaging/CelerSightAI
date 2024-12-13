@@ -962,15 +962,44 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         """
         menu = QtWidgets.QMenu()
         event_pos = self.mapToGlobal(event.pos())
-        self.DeleteAction = QtGui.QAction("Delete", None)
-        self.DeleteAction.triggered.connect(
+        DeleteAction = QtGui.QAction("Delete", None)
+        DeleteAction.triggered.connect(
             lambda: self.delete_image(proxy_item, widget_item)
         )
         proxy_item = self.scene().itemAt(
             self.mapToScene(event.pos()), QtGui.QTransform()
         )
+        if proxy_item is None:
+            return
         widget_item = proxy_item.widget()
-        menu.addAction(self.DeleteAction)
+        io = self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+            widget_item.ButtonHolder.image_uuid
+        )
+
+        # Add ROI submenu for inferenec on this image
+
+        classes = (
+            self.MainWindow.DH.BLobj.get_all_classes()
+        )  # Assuming this method exists
+
+        roi_menu = menu.addMenu("Get ROI for...")
+        roi_all_action = roi_menu.addAction("All")
+        roi_all_action.triggered.connect(
+            lambda: self.MainWindow.MyInferenceHandler.DoInferenceAllImagesOnlineThreaded(
+                provided_classes=[i for i in classes], provided_image_objects=[io]
+            )
+        )
+
+        for some_class in classes:
+            action = roi_menu.addAction(classes[some_class].text())
+            action.triggered.connect(
+                lambda: self.MainWindow.MyInferenceHandler.DoInferenceAllImagesOnlineThreaded(
+                    provided_classes=[some_class], provided_image_objects=[io]
+                )
+            )
+
+        menu.addAction(DeleteAction)
+        menu.addMenu(roi_menu)
         menu.exec(event_pos)
 
     def delete_image(self, proxy, widget):
@@ -3334,6 +3363,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             y2 = max(self.aa_tool_bb_first_y, self.last_bbox_y)
         else:
             x1, y1, x2, y2 = bbox
+
         # Make the click tool same size/raidus:
         from celer_sight_ai.io.image_reader import (
             get_optimal_crop_bbox,
@@ -3346,6 +3376,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             .conds[self.MainWindow.DH.BLobj.get_current_condition()]
             .images[current_image_uuid]
         )
+        # make sure the the bbox is within bounds
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(image_object.SizeX, x2)
+        y2 = min(image_object.SizeY, y2)
         if not image_object.SizeX or not image_object.SizeY:
             logger.warning("Image size not found, skipping")
             return
@@ -3382,6 +3417,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             bbox=bbox_tile,  # [bbox_tile[0], bbox_tile[1], bbox_tile[2] - bbox_tile[0], bbox_tile[3] - bbox_tile[1]], # bbox : [x,y,w,h]
             avoid_loading_ultra_high_res_arrays_normaly=True,
         )
+        # add brightness and contrast to match the scene
+        seg_image_prior = self.MainWindow.handle_adjustment_to_image(seg_image_prior)
         # if the bounding box is less than config.MAGIC_BOX_2_IDEAL_SIZE then we need to infer using tiles
         self.mgcClickWidth = max(x2 - x1, y2 - y1)
 
@@ -3409,17 +3446,21 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             "SizeY": image_object.SizeY,
         }
         bbox_object = [x1, y1, x2, y2]
-        effective_resize_tile = [
-            max(0, bbox_tile[0]),
-            max(0, bbox_tile[1]),
-            bbox_tile[2],  # min(image_object.SizeX, bbox_tile[2]),
-            bbox_tile[3],  # min(image_object.SizeY, bbox_tile[3]),
-        ]
+
+        if bbox_tile[1] < 0:
+            padding_top = bbox_tile[1]
+        else:
+            padding_top = 0
+        if bbox_tile[0] < 0:
+            padding_left = bbox_tile[0]
+        else:
+            padding_left = 0
+        print(bbox_object)
         bbox_object_in_seg_image_prior = [
-            (bbox_object[0] - effective_resize_tile[0]),
-            (bbox_object[1] - effective_resize_tile[1]),
-            (bbox_object[2] - effective_resize_tile[0]),
-            (bbox_object[3] - effective_resize_tile[1]),
+            bbox_object[0] - bbox_tile[0],
+            bbox_object[1] - bbox_tile[1],
+            (bbox_object[2] - bbox_tile[0]),
+            (bbox_object[3] - bbox_tile[1]),
         ]
         try:
             (
@@ -3452,8 +3493,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.aa_review_state = False
         from celer_sight_ai.core.magic_box_tools import mask_to_polygon
 
-        resize_factor_x = seg_image_prior.shape[1] / effective_resize_tile[2]
-        resize_factor_y = seg_image_prior.shape[0] / effective_resize_tile[3]
+        resize_factor_x = seg_image_prior.shape[1] / bbox_tile[2]
+        resize_factor_y = seg_image_prior.shape[0] / bbox_tile[3]
         print()
 
         # effective_resize_tile [290, 282.5, 1328, 1048]

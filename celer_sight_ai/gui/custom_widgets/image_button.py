@@ -108,16 +108,21 @@ class ButtonAssetClass(QtWidgets.QPushButton):
             )
             DeleteButtonAction = self.contextMenu.addAction("Delete Asset")
             IncludeAllInAnalysis = self.contextMenu.addAction("Include All In Analysis")
+
+            # Connect existing actions
             IncludeInAnalysisAction.triggered.connect(
                 lambda: self.SetAnalysisStatus(Status=True)
             )
             ExcludeFromAnalysisAction.triggered.connect(
                 lambda: self.SetAnalysisStatus(Status=False)
             )
-
             DeleteButtonAction.triggered.connect(
                 lambda: self.deleteCurrentImage(reload_image=True)
             )
+
+            # Remove the empty action that was there before
+            # run_inference_action = self.contextMenu.addAction("")
+
         self.ui = AssetButtonWidgetUI()
         self.ui.setupUi(self)
         self.ui.MainAssetButton.hide()
