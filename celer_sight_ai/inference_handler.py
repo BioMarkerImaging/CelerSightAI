@@ -79,36 +79,6 @@ def calculate_polygon_width(vertices):
     return (side_weight * max_side) + (distance_weight * radius)
 
 
-def is_polygon_close_to_edge(vertices, image_shape, threshold=10):
-    """
-    Checks if a polygon defined by 'vertices' is close to the boundary of an image of 'image_shape'.
-
-    Parameters:
-        vertices (np.array): An array of shape (n, 2) where each row represents the x and y coordinates of a vertex.
-        image_shape (tuple): A tuple (height, width) representing the dimensions of the image.
-        threshold (int): The distance to the edge below which the polygon is considered close.
-
-    Returns:
-        bool: True if the polygon is close to the edge, False otherwise.
-    """
-    if config.user_cfg.get("KEEP_EDGE_ANNOTATIONS"):
-        return False
-    # Get the minimum and maxiamum vertex coordinates
-    min_row, min_col = np.min(vertices, axis=0)
-    max_row, max_col = np.max(vertices, axis=0)
-
-    # Get the dimensions of the image
-    height, width = image_shape
-
-    # Check proximity to each edge
-    close_to_top = min_row <= threshold
-    close_to_bottom = (height - max_row) <= threshold
-    close_to_left = min_col <= threshold
-    close_to_right = (width - max_col) <= threshold
-
-    return close_to_top or close_to_bottom or close_to_left or close_to_right
-
-
 class InferenceHandler:
     import os
     import math
@@ -268,9 +238,13 @@ class InferenceHandler:
                         continue
                     if not rr.get("segmentation"):
                         continue
-                    if is_polygon_close_to_edge(
-                        rr["segmentation"][0],
-                        inference_object.get("send_image_dimention"),
+                    # get original image dimentions
+
+                    if self.is_polygon_close_to_edge(
+                        rr["segmentation"],
+                        [img_obj.SizeX, img_obj.SizeY],
+                        processed_shape=inference_object.get("send_image_dimention"),
+                        source_tile=source_tile,
                     ):
                         continue
                     results_to_process.append(rr)
@@ -374,7 +348,10 @@ class InferenceHandler:
         )  # set in DoInferenceAllImagesOnlineThreaded
 
     def DoInferenceAllImagesOnlineThreaded(
-        self, ignore_high_load: bool = False, provided_classes=None
+        self,
+        ignore_high_load: bool = False,
+        provided_classes=None,
+        provided_image_objects=None,
     ):
         """
         This function is responsible for doing inference on all images for all conditions and groups. Image uploading and
@@ -432,7 +409,9 @@ class InferenceHandler:
         logger.debug("Before do_inference_all_images_online_threaded_func")
 
         self.do_inference_all_images_online_threaded_func(
-            ignore_high_load=ignore_high_load, provided_classes=provided_classes
+            ignore_high_load=ignore_high_load,
+            provided_classes=provided_classes,
+            provided_image_objects=provided_image_objects,
         )
 
     def updateQueuePosLoadingAnim(self, Position):
@@ -544,6 +523,7 @@ class InferenceHandler:
             dict: class uuid : average bbox size per class
         """
         class_mask_sizes = {}
+        class_mask_overlaps = {}
         all_class_items = []
         all_classes_uuids = [
             i.unique_id
@@ -554,6 +534,7 @@ class InferenceHandler:
         # get all available classes
         for class_uuid in all_classes_uuids:
             class_mask_sizes[class_uuid] = []
+            class_mask_overlaps[class_uuid] = []
             for mask in all_masks:
                 if (
                     class_mask_sizes.get(class_uuid)
@@ -561,19 +542,20 @@ class InferenceHandler:
                 ):
                     break  # just use 4 masks per class
                 if mask.class_id == class_uuid:
-                    if mode == "bbox":
-                        # compute the size of the mask
-                        mask_bbox = mask.get_bounding_box()
-                        if isinstance(mask_bbox, type(None)):
-                            continue
-                        average_size = (mask_bbox[2] + mask_bbox[3]) / 2
-                    elif mode == "distance":
-                        # draw the polygon into a nupy
-                        average_size = calculate_polygon_width(
-                            mask.get_array()[0].astype(np.uint32)
-                        )
-                    class_mask_sizes[class_uuid].append(int(average_size))
+                    mask_arr = mask.get_array()[0].astype(np.uint32)
+                    # draw the polygon into a nupy
+                    average_size = calculate_polygon_width(mask_arr)
+                    # overlap needs to be determined by the determined size vs the bbox size.
+                    # if the size is much smaller than the bbox size, then the overlap should
+                    # be larger.
+                    # Calculate the bounding box size
+                    bbox_width = np.max(mask_arr[:, 0]) - np.min(mask_arr[:, 0])
+                    bbox_height = np.max(mask_arr[:, 1]) - np.min(mask_arr[:, 1])
+                    bbox_size = np.max(bbox_width + bbox_height)
+                    overlap = bbox_size / average_size
 
+                    class_mask_sizes[class_uuid].append(int(average_size))
+                    class_mask_overlaps[class_uuid].append(int(overlap))
         # for every class average out the mask sizes
         for class_uuid in class_mask_sizes:
             # case where the user has not annotated any masks
@@ -584,7 +566,7 @@ class InferenceHandler:
                 class_mask_sizes[class_uuid] = sum(class_mask_sizes[class_uuid]) / len(
                     class_mask_sizes[class_uuid]
                 )
-        return class_mask_sizes
+        return class_mask_sizes, class_mask_overlaps
 
     def calculate_tile_size(self, annotation_size: int, percentage: int) -> int:
         """Calculate the tile size based on the annotation size and a given percentage."""
@@ -608,34 +590,34 @@ class InferenceHandler:
         y_max = max(y1 + h1, y2 + h2)
         return (x_min, y_min, x_max - x_min, y_max - y_min)
 
-    def generate_tiles(
-        self, annotations: List[Tuple[int, int, int, int]]
-    ) -> List[Tuple[int, int, int, int]]:
-        """Generate tiles based on the annotations."""
-        tiles = []
-        for x, y, width, height in annotations:
-            percentage = random.randint(
-                3, 25
-            )  # Choose a random percentage between 3% and 25%
-            tile_size = self.calculate_tile_size(
-                (width + height) // 2, percentage
-            )  # Calculate the tile size
-            tile = (
-                x - (tile_size - width) // 2,
-                y - (tile_size - height) // 2,
-                tile_size,
-                tile_size,
-            )
+    # def generate_tiles(
+    #     self, annotations: List[Tuple[int, int, int, int]]
+    # ) -> List[Tuple[int, int, int, int]]:
+    #     """Generate tiles based on the annotations."""
+    #     tiles = []
+    #     for x, y, width, height in annotations:
+    #         percentage = random.randint(
+    #             3, 25
+    #         )  # Choose a random percentage between 3% and 25%
+    #         tile_size = self.calculate_tile_size(
+    #             (width + height) // 2, percentage
+    #         )  # Calculate the tile size
+    #         tile = (
+    #             x - (tile_size - width) // 2,
+    #             y - (tile_size - height) // 2,
+    #             tile_size,
+    #             tile_size,
+    #         )
 
-            # Check for overlap with existing tiles and merge if necessary
-            for i, existing_tile in enumerate(tiles):
-                if self.check_overlap(tile, existing_tile):
-                    tile = self.merge_tiles(tile, existing_tile)
-                    tiles[i] = tile  # Update the existing tile with the merged one
-                    break
-            else:
-                tiles.append(tile)  # Add the new tile if no overlap occurred
-        return tiles
+    #         # Check for overlap with existing tiles and merge if necessary
+    #         for i, existing_tile in enumerate(tiles):
+    #             if self.check_overlap(tile, existing_tile):
+    #                 tile = self.merge_tiles(tile, existing_tile)
+    #                 tiles[i] = tile  # Update the existing tile with the merged one
+    #                 break
+    #         else:
+    #             tiles.append(tile)  # Add the new tile if no overlap occurred
+    #     return tiles
 
     def calculate_dynamic_leeway(self, optimal_ratio, min_leeway=0.2, max_leeway=0.4):
         """
@@ -684,8 +666,7 @@ class InferenceHandler:
     def do_inference_all_images_online_threaded_func(
         self,
         provided_classes=None,  #  uuid list
-        provided_treatments=None,  #  uuid list
-        provided_images=None,  #  uuid list
+        provided_image_objects=None,  #  uuid list
         ignore_high_load=False,
     ) -> None:
         """
@@ -707,7 +688,9 @@ class InferenceHandler:
             #    - iterate over all classes, and get the average size of the masks
             #    - tile should be around 10-20x times larger than the size of the mask
 
-            class_mask_sizes = self._get_class_mask_sizes(mode="distance")
+            class_mask_sizes, overlap_sizes = self._get_class_mask_sizes(
+                mode="distance"
+            )
             # class name : optimal range {min: , max: }
 
             if provided_classes:
@@ -757,6 +740,7 @@ class InferenceHandler:
                 min_groups,
                 class_mask_sizes_in_tile,
                 optimal_annotation_ranges_and_image_size,
+                overlap_sizes,
             )
 
             config.stop_inference = (
@@ -773,7 +757,11 @@ class InferenceHandler:
             )
 
         except Exception as e:
-            logger.debug(f"Error during initialization phase of inference {e}")
+            import traceback
+
+            logger.debug(
+                f"Error during initialization phase of inference {traceback.print_exc()}"
+            )
             config.global_signals.errorSignal.emit("Failed to initialize AI process.")
             skip_inferece_due_to_error = True
             config.global_signals.unlock_ui_signal.emit()
@@ -804,11 +792,15 @@ class InferenceHandler:
                     )
             try:
                 config.STARTED_RETRIEVAL = False
-
-                all_image_objects = [
-                    self.MainWindowRef.DH.BLobj.get_image_object_by_uuid(i.unique_id)
-                    for i in self.MainWindowRef.DH.BLobj.get_all_image_objects()
-                ]
+                if provided_image_objects:
+                    all_image_objects = provided_image_objects
+                else:
+                    all_image_objects = [
+                        self.MainWindowRef.DH.BLobj.get_image_object_by_uuid(
+                            i.unique_id
+                        )
+                        for i in self.MainWindowRef.DH.BLobj.get_all_image_objects()
+                    ]
 
                 total_tiles_as_lists = [
                     i.get_all_possible_tiles(min_tile_groups) for i in all_image_objects
@@ -1242,6 +1234,7 @@ class InferenceHandler:
                             image_object.SizeX,
                             image_object.SizeY,
                         ],  # in image_object array [ [2N] , ...]
+                        source_tile=source_tile,
                     ):
                         logger.info("Polygon close to edge, skipping")
                         return
@@ -1249,7 +1242,7 @@ class InferenceHandler:
                 logger.debug(f"Time taken to process polygon p1: {time.time() - start}")
 
                 # Validate and order polygons once
-                polygon_object = self.order_and_validate_polygons(polygon_object)
+                # polygon_object = self.order_and_validate_polygons(polygon_object)
                 if len(polygon_object) == 0:
                     return
 
@@ -1369,24 +1362,89 @@ class InferenceHandler:
                 new_uuid,
             )  # make sure ids match
 
-    def is_polygon_close_to_edge(self, polygon_object, image_shape):
-        """If the polygon is close to the edge of the image, remove it"""
+    def is_polygon_close_to_edge(
+        self,
+        polygon_object,
+        image_shape,
+        processed_shape=[1024, 1024],
+        source_tile=None,
+        threshold=0.05,
+    ):
+        """
+        Check if polygon should be removed based on edge proximity, considering tile position.
+        Only removes polygons if they are close to an edge that isn't also close to the image boundary.
 
-        # check only the outer polygon
+        Args:
+            polygon_object: List of polygon vertices
+            image_shape: (width, height) of full image
+            processed_shape: (width, height) of the processed tile size
+            source_tile: Optional [x, y, w, h] of tile coordinates
+            threshold: Percentage of dimension to consider as edge
+
+        Returns:
+            bool: True if polygon should be removed
+        """
+        # Check only the outer polygon
         arr = np.array(polygon_object[0])
-        most_left_point = np.min(arr.T)
-        most_right_point = np.max(arr.T)
-        most_top_point = np.min(arr.T)
-        most_bottom_point = np.max(arr.T)
-        boundry_x = image_shape[1] * 0.005
-        boundry_y = image_shape[0] * 0.005
-        if (
-            most_left_point <= boundry_x
-            or most_right_point >= image_shape[1] - boundry_x
-            or most_top_point <= boundry_y
-            or most_bottom_point >= image_shape[0] - boundry_y
-        ):
-            return True
+
+        # Get extreme points
+        most_left = np.min(arr[:, 0])
+        most_right = np.max(arr[:, 0])
+        most_top = np.min(arr[:, 1])
+        most_bottom = np.max(arr[:, 1])
+
+        # If we have a tile, check against processed shape boundaries
+        if processed_shape is not None:
+            # Calculate boundary thresholds for processed shape
+            boundary_x = processed_shape[0] * threshold
+            boundary_y = processed_shape[1] * threshold
+
+            # Determine which edges the polygon is close to in the processed shape
+            close_to_left = most_left <= boundary_x
+            close_to_right = most_right >= processed_shape[0] - boundary_x
+            close_to_top = most_top <= boundary_y
+            close_to_bottom = most_bottom >= processed_shape[1] - boundary_y
+
+            # If source tile exists, determine which edges it touches on the full image
+            if source_tile:
+                tile_x, tile_y, tile_w, tile_h = source_tile
+                tile_touches_left = tile_x <= (image_shape[0] * threshold)
+                tile_touches_right = (tile_x + tile_w) >= (
+                    image_shape[0] * (1 - threshold)
+                )
+                tile_touches_top = tile_y <= (image_shape[1] * threshold)
+                tile_touches_bottom = (tile_y + tile_h) >= (
+                    image_shape[1] * (1 - threshold)
+                )
+
+                # Only return True if the polygon is close to an edge that isn't touching the image boundary
+                if (
+                    (close_to_left and not tile_touches_left)
+                    or (close_to_right and not tile_touches_right)
+                    or (close_to_top and not tile_touches_top)
+                    or (close_to_bottom and not tile_touches_bottom)
+                ):
+                    return True
+            else:
+                # If no source tile, use original behavior
+                if close_to_left or close_to_right or close_to_top or close_to_bottom:
+                    return True
+
+        # For full image edges, check config
+        if not config.user_cfg.get("KEEP_EDGE_ANNOTATIONS", False):
+            # Calculate boundary thresholds
+            boundary_x = image_shape[0] * threshold
+            boundary_y = image_shape[1] * threshold
+
+            # Check if polygon touches image edges
+            if (
+                most_left <= boundary_x
+                or most_right >= image_shape[0] - boundary_x
+                or most_top <= boundary_y
+                or most_bottom >= image_shape[1] - boundary_y
+            ):
+                return True
+
         return False
 
     def DoInferenceCurrentImageOnline(self, Image):
