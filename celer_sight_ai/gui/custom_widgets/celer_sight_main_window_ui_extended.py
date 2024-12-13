@@ -1708,9 +1708,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def updateClassColor_onIndexChange(self):
         # when we change index on the listwidget we also update the colors of the buttons
-        logger.info(
-            "current index is {}".format(self.custom_class_list_widget.currentRow())
-        )
+        logger.debug("Update class color on index change")
         if self.custom_class_list_widget.currentRow() == -1:
             return
         if not self.custom_class_list_widget.currentItemWidget():

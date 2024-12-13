@@ -733,6 +733,7 @@ class CustomClassListWidgetItem(QWidget):
         # Sets the color of the class and updates the class button color
         # Color needs to be in rgb format
         if color:
+            color = list(color)
             if len(color) == 3:
                 # get the opacity
                 color.append(self.MainWindow.pg1_settings_mask_opasity_slider.value())
