@@ -74,16 +74,41 @@ import bioformats
 from celer_sight_ai import __version__
 
 
-def dbg_image(img):
+def dbg_image(img, bbox=None, mode: str = "xywh"):
     """
     On installations, we cannot write on disk, use this to avoid erros
+    Args:
+        img (np.ndarray): the image to save
+        bbox (list): the bbox to draw on the image in format [x1, y1, x2, y2]
+        mode (str): the mode to draw the bbox in, "xywh" or "xyxy"
     """
     import cv2
 
     if is_executable:
         return
+    image_drawn = img.copy()
+    if not isinstance(bbox, type(None)):
+        # draw bbox on the image
+
+        if mode == "xywh":
+            cv2.rectangle(
+                image_drawn,
+                (int(bbox[0]), int(bbox[1])),
+                (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3])),
+                (0, 255, 0),
+                2,
+            )
+        elif mode == "xyxy":
+            cv2.rectangle(
+                image_drawn,
+                (int(bbox[0]), int(bbox[1])),
+                (int(bbox[2]), int(bbox[3])),
+                (0, 255, 0),
+                2,
+            )
+
     try:
-        cv2.imwrite("test.jpg", img)
+        cv2.imwrite("test.jpg", image_drawn)
     except Exception as e:
         print(f"Error saving image: {e}")
 
