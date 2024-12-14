@@ -766,7 +766,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         # remove the amount form all buttons (for image_id), is usually triggered when deleting an image
         # only affect images larger than reference_id
 
-        for b in self.MainWindow.DH.get_all_buttons(
+        for b in self.MainWindow.DH.BLobj.get_all_buttons(
             self.MainWindow.DH.BLobj.get_current_group(),
             self.MainWindow.DH.BLobj.get_current_condition(),
         ):
@@ -881,7 +881,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
             # show buttons needed
             all_buttons_to_create_instance = []
             total_buttons_len = len(
-                self.MainWindow.DH.get_all_buttons(
+                self.MainWindow.DH.BLobj.get_all_buttons(
                     currentGroup, current_condition_widget.text()
                 )
             )
@@ -895,7 +895,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                 if total_buttons_len <= i:
                     continue
                 all_buttons_to_create_instance.append(i)
-                button = self.MainWindow.DH.get_button(
+                button = self.MainWindow.DH.BLobj.get_button(
                     currentGroup, current_condition_widget.text(), i
                 )
 
@@ -1006,7 +1006,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         logger.info(f"Deleted image preview item : {widget.image_number}")
         self.scene().removeItem(proxy)
         widget.deleteCurrentImage()
-        # TODO: reorder the rest of the items
+
         return
 
     def displace_image_preview_widgets_after_delete(self):
