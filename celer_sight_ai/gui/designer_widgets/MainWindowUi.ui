@@ -9233,8 +9233,8 @@ border:2 px solid black;</string>
                           <rect>
                            <x>0</x>
                            <y>0</y>
-                           <width>387</width>
-                           <height>2197</height>
+                           <width>390</width>
+                           <height>2218</height>
                           </rect>
                          </property>
                          <layout class="QGridLayout" name="gridLayoutwidget_graph_visualizer_scroll_area_2_contents">
@@ -12684,7 +12684,7 @@ background-color: rgb(80, 80, 80);</string>
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>370</width>
+                               <width>390</width>
                                <height>120</height>
                               </rect>
                              </property>
@@ -12947,7 +12947,7 @@ border-radius:8px;</string>
      <x>0</x>
      <y>0</y>
      <width>1297</width>
-     <height>37</height>
+     <height>24</height>
     </rect>
    </property>
    <property name="font">
@@ -12964,8 +12964,8 @@ border-radius:8px;</string>
    <widget class="QMenu" name="menuFile">
     <property name="geometry">
      <rect>
-      <x>540</x>
-      <y>151</y>
+      <x>798</x>
+      <y>1594</y>
       <width>131</width>
       <height>221</height>
      </rect>
@@ -13023,7 +13023,7 @@ border-radius:8px;</string>
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout_BioLens"/>
+    <addaction name="actionAbout_CelerSight"/>
     <addaction name="actionSend_logs_to_dev"/>
    </widget>
    <widget class="QMenu" name="menuAI">
@@ -13035,6 +13035,7 @@ border-radius:8px;</string>
     <addaction name="separator"/>
     <addaction name="actionimport_from_coco"/>
     <addaction name="actionExport_to_COCO"/>
+    <addaction name="actionQA_check_duplicates"/>
    </widget>
    <widget class="QMenu" name="menuVideo">
     <property name="title">
@@ -13311,7 +13312,7 @@ border-radius:8px;</string>
   </action>
   <action name="actionimport_from_coco">
    <property name="text">
-    <string>import from COCO</string>
+    <string>Import from COCO</string>
    </property>
   </action>
   <action name="actionSave_ML_model">
@@ -13344,7 +13345,7 @@ border-radius:8px;</string>
     <string>Export to imagej</string>
    </property>
   </action>
-  <action name="actionAbout_BioLens">
+  <action name="actionAbout_CelerSight">
    <property name="text">
     <string>About Celer Sight...</string>
    </property>
@@ -13424,6 +13425,11 @@ border-radius:8px;</string>
   <action name="actionPatreon">
    <property name="text">
     <string>Patreon</string>
+   </property>
+  </action>
+  <action name="actionQA_check_duplicates">
+   <property name="text">
+    <string>QA check duplicates</string>
    </property>
   </action>
  </widget>
