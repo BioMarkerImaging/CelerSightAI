@@ -332,8 +332,8 @@ class AddButtonHandler(QtWidgets.QWidget):
                     avoid_loading_ultra_high_res_arrays_normaly=True,
                 )  # this image can still be 16 bit  # this image can still be 16 bit
                 channels = image_object.channel_list
-                button = self.MainWindow.DH.get_button_by_uuid(
-                    group_id, cond_uuid, image_object.unique_id
+                button = self.MainWindow.DH.BLobj.get_button_by_uuid(
+                    image_object.unique_id
                 )
                 if not button:
                     return
@@ -416,9 +416,7 @@ class AddButtonHandler(QtWidgets.QWidget):
         if not cond_object:
             return
         try:
-            button = self.MainWindow.DH.get_button_by_uuid(
-                group_id, cond_uuid, image_uuid
-            )
+            button = self.MainWindow.DH.get_button_by_uuid(image_uuid)
             if not button:
                 logger.error("Button not found")
                 return
@@ -663,7 +661,7 @@ class AddButtonHandler(QtWidgets.QWidget):
                 range(
                     0,
                     len(
-                        self.MainWindow.DH.get_all_buttons(
+                        self.MainWindow.DH.BLobj.get_all_buttons(
                             "default", self._CurrentCondition
                         )
                     )
@@ -675,7 +673,7 @@ class AddButtonHandler(QtWidgets.QWidget):
                 range(
                     0,
                     len(
-                        self.MainWindow.DH.get_all_buttons(
+                        self.MainWindow.DH.BLobj.get_all_buttons(
                             "default", self._CurrentCondition
                         )
                     ),

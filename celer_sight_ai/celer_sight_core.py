@@ -3973,7 +3973,7 @@ class Master_MainWindow(CelerSightMainWindow):
     def delete_image_preview_buttons(self):
         # remove all widgets on the images preview part of the graphics view
         for proxy_item in self.images_preview_graphicsview.scene().items():
-            if proxy_item.widget() in self.DH.get_all_buttons(
+            if proxy_item.widget() in self.DH.BLobj.get_all_buttons(
                 self.DH.BLobj.get_current_group(), self.RNAi_list.currentItem().text()
             ):
                 self.images_preview_graphicsview.scene().removeItem(proxy_item)
@@ -4782,10 +4782,12 @@ class Master_MainWindow(CelerSightMainWindow):
         logger.info(f"Deleting image with button {object}")
         treatment_object = self.DH.BLobj.get_condition_by_uuid(object["treatment_uuid"])
         if not treatment_object:
+            treatment_object = self.DH.BLobj.get_treatment_object_from_image_uuid(
+                object["image_uuid"]
+            )
+        if not treatment_object:
             return
         image_object = treatment_object.images[object["image_uuid"]]
-        if not image_object:
-            return
         # delete the image and the button
         try:
             image_object.myButton.button_instance.deleteCurrentImage(reload_image=True)

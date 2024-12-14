@@ -439,37 +439,6 @@ class DataHandler(object):
         self.BLobj = CelerSightObj(self.MainWindow)
         self.BLobj.newAnalysis(self)
 
-    def get_all_buttons(self, group_id: str, condition_name: str) -> list:
-        if condition_name:
-            return [
-                i.myButton
-                for i in self.BLobj.groups[group_id].conds[condition_name].images
-            ]
-        else:
-            return []
-
-    def get_button(self, group_id, condition_id, image_id):
-        logger.debug(f"Getting button for {group_id}, {condition_id}, {image_id}")
-        if condition_id in self.BLobj.groups[group_id].conds:
-            return (
-                self.BLobj.groups[group_id]
-                .conds[condition_id]
-                .images[image_id]
-                .myButton
-            )
-        else:
-            return None
-
-    def get_button_by_uuid(self, group_id=None, condition_uuid=None, image_uuid=None):
-        logger.debug(f"Getting button for {group_id}, {condition_uuid}, {image_uuid}")
-        condition_object = self.BLobj.get_condition_by_uuid(condition_uuid)
-        if condition_object:
-            image_object = condition_object.images[image_uuid]
-            if image_object:
-                return image_object.myButton
-        else:
-            return None
-
 
 class CelerSightObj:  # contains group obj
     def __init__(self, MainWindow=None):
@@ -497,6 +466,14 @@ class CelerSightObj:  # contains group obj
         self.importing_images = 0  # set to +1 when we are loading images,set to -1 when all images are loaded. 0 means all images are loaded form all groups
         self.set_current_group("default")
 
+    def get_all_buttons(self, group_id: str, condition_name: str) -> list:
+        if condition_name:
+            return [
+                i.myButton for i in self.groups[group_id].conds[condition_name].images
+            ]
+        else:
+            return []
+
     def get_all_channels(self):
         # get all possible channels from all images
         channels = []
@@ -506,6 +483,19 @@ class CelerSightObj:  # contains group obj
                     for channel in image.channel_list:
                         channels.append(channel)
         return [i for i in list(set(channels)) if i]
+
+    def get_button(self, group_id, condition_id, image_id):
+        logger.debug(f"Getting button for {group_id}, {condition_id}, {image_id}")
+        if condition_id in self.groups[group_id].conds:
+            return self.groups[group_id].conds[condition_id].images[image_id].myButton
+        else:
+            return None
+
+    def get_button_by_uuid(self, image_uuid=None):
+        logger.debug(f"Getting button for {image_uuid}")
+        image_object = self.get_image_object_by_uuid(image_uuid)
+        if image_object:
+            return image_object.myButton
 
     def set_current_condition(self, condition_name: str | None = None) -> None:
         """
@@ -733,14 +723,6 @@ class CelerSightObj:  # contains group obj
                     for mask in image.masks:
                         if mask.unique_id == mask_uuid:
                             return image.unique_id
-
-    def get_all_mask_objects(self):
-        # iterate over all groups, all conditions, all images, all masks and yield the mask
-        for group in self.groups:
-            for condition in self.groups[group].conds:
-                for image in self.groups[group].conds[condition].images:
-                    for mask in image.masks:
-                        yield mask
 
     def get_all_annotations_on_image_from_classes_id(
         self, group_name, coondition_id, image_idx, class_id
@@ -1181,6 +1163,58 @@ class CelerSightObj:  # contains group obj
                     config.global_signals.refresh_image_preview_graphicsscene_signal.emit()
             except Exception as e:
                 print(e)
+
+    def qa_check_duplicates(self):
+        """
+        Check every image for duplicates in the server and delete them.
+        Continues checking until no more duplicates are found.
+        """
+        from celer_sight_ai.io.image_reader import get_all_possible_image_hashes
+
+        while True:
+            hash_algorithm = "sha256_256"
+            hash_to_image_id = {}
+
+            # get all images in this session
+            all_image_objects = self.get_all_image_objects()
+
+            # If no images left, break
+            if not list(all_image_objects):
+                break
+
+            for image_object in all_image_objects:
+                image_hashes = get_all_possible_image_hashes(
+                    image_object.get_path(),
+                    is_ultra_high_res=image_object._is_ultra_high_res,
+                    TARGET_SIZE=(256, 256),
+                )
+                for hashed_image, hash_algorithm in image_hashes:
+                    hash_to_image_id[hashed_image] = image_object.unique_id
+
+            duplicate_hashes = config.client.check_for_duplicates(
+                list(hash_to_image_id.keys()), hash_algorithm
+            )
+
+            # If no duplicates found, break
+            if not duplicate_hashes:
+                logger.info("No more duplicates found")
+                break
+
+            logger.info(f"Found {len(duplicate_hashes)} duplicate hashes")
+
+            for duplicate_hash in duplicate_hashes:
+                image_uuid = hash_to_image_id.get(duplicate_hash, None)
+                if not image_uuid:
+                    continue
+                image_object = self.get_image_object_by_uuid(image_uuid)
+                config.global_signals.delete_image_with_button_signal.emit(
+                    {
+                        "group_name": image_object.group_uuid,
+                        "treatment_uuid": image_object.treatment_uuid,
+                        "image_uuid": image_object.unique_id,
+                    }
+                )
+                logger.info(f"Deleting image {image_uuid}")
 
 
 class grpObj:  # contains group condObj
@@ -2600,7 +2634,9 @@ class ImageObject:
                 tile_width = tile_groups[tile_group]["tile_size"]
                 tile_height = tile_groups[tile_group]["tile_size"]
 
-            overlap = tile_groups[tile_group].get("overlap", 0.2) * tile_width  # get overlap in pixels
+            overlap = (
+                tile_groups[tile_group].get("overlap", 0.2) * tile_width
+            )  # get overlap in pixels
             image_center = [image_width / 2, image_height / 2]
 
             initial_bbox = [
