@@ -526,6 +526,12 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionimages.triggered.connect(
             lambda: self.myButtonHandler.import_images_with_file_dialog()
         )
+        # only show QA check duplicates if the user is admin
+        self.actionQA_check_duplicates.setVisible(config.is_admin())
+        self.actionQA_check_duplicates.setEnabled(config.is_admin())
+        self.actionQA_check_duplicates.triggered.connect(
+            lambda: self.DH.BLobj.qa_check_duplicates()
+        )
 
         self.actionExport_to_COCO.triggered.connect(lambda: self.ExportCOCOTools())
         self.actionimport_from_coco.triggered.connect(lambda: self.import_coco_tools())
