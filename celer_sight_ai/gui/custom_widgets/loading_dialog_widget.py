@@ -78,22 +78,6 @@ class LoadingDialog(QDialog):
         self.action_completed = True
         self.cleanup()
 
-    def closeEvent(self, event):
-        event.ignore()
-        if not self.action_completed:
-            reply = QMessageBox.question(
-                self,
-                "Confirm Exit",
-                "Are you sure you want to exit?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-
-            if reply == QMessageBox.StandardButton.Yes:
-                self.cleanup()
-                event.accept()
-            else:
-                event.ignore()
-
     def nn_download_cleanupfunction(self, path):
         import os
 
