@@ -970,47 +970,94 @@ def calculate_best_level(
     return best_idx
 
 
-# def compute_tile_request_level_openslide(level_resolution, image_position, image_size):
-#     from celer_sight_ai.config import ZOOM_OUT_REZ
-#     import math
+def get_all_possible_image_hashes(
+    image_path, is_ultra_high_res=False, TARGET_SIZE=(256, 256)
+):
+    all_hashes = []
+    for jpg_quality in [100, 95, 90]:
+        all_hashes.append(
+            standardize_and_hash_image(
+                image_path,
+                is_ultra_high_res=is_ultra_high_res,
+                TARGET_SIZE=TARGET_SIZE,
+                to_jpg=True,
+                jpg_quality=jpg_quality,
+            )
+        )
+    # compute png hash
+    all_hashes.append(
+        standardize_and_hash_image(
+            image_path,
+            is_ultra_high_res=is_ultra_high_res,
+            TARGET_SIZE=TARGET_SIZE,
+            to_jpg=False,
+        )
+    )
+    return all_hashes
 
-#     minx = image_position[0] - (image_size[0] // 2)
-#     miny = image_position[1] - (image_size[1] // 2)
-#     maxx = image_position[0] + (image_size[0] // 2)
-#     maxy = image_position[1] + (image_size[1] // 2)
-#     # Start fom the lowest resolution possible and work our way up
-#     resolution_candidates = [i for i in level_resolution if i[0] > ZOOM_OUT_REZ]
-#     if not resolution_candidates:
-#         resolution_candidates = [level_resolution[-1]]
-#     lowest_res_posible = min(
-#         resolution_candidates, key=lambda x: x[0]
-#     )
-#     idx = level_resolution.index(lowest_res_posible)
 
-#     # calculate tiles needed for that resolution from minx to maxx ,  clip to min max
-#     from_tile_x = np.clip(
-#         math.floor(minx / level_resolution[idx][0]),
-#         0,
-#         level_resolution[0][
-#             0
-#         ],  # TODO: Find a more robust way to get the max resolution
-#     )
-#     to_tile_x = np.clip(
-#         math.ceil(maxx / level_resolution[idx][0]), 0, level_resolution[0][0]
-#     )
-#     from_tile_y = np.clip(
-#         math.floor(miny / level_resolution[idx][1]), 0, level_resolution[0][1]
-#     )
-#     to_tile_y = np.clip(
-#         math.ceil(maxy / level_resolution[idx][1]), 0, level_resolution[0][1]
-#     )
+def standardize_and_hash_image(
+    image_path,
+    is_ultra_high_res=False,
+    TARGET_SIZE=(256, 256),
+    to_jpg=False,
+    jpg_quality=95,
+):
+    """
+    Standardizes an image to 256x256 int8 format and generates a hash.
+    Works with both regular and ultra-high-res images.
 
-#     all_tiles_needed = [
-#         (x, y)
-#         for x in range(from_tile_x, to_tile_x)
-#         for y in range(from_tile_y, to_tile_y)
-#     ]
-#     return all_tiles_needed, idx
+    Args:
+        image_path (str): Path to the image file
+        is_ultra_high_res (bool): Whether the image is ultra high resolution
+
+    Returns:
+        str: SHA-256 hash of the standardized image
+    """
+    from tiffslide import TiffSlide
+    import cv2
+    import numpy as np
+    import hashlib
+
+    hash_method = "sha256_" + str(TARGET_SIZE[0])
+    if is_ultra_high_res:
+        try:
+            # Use TiffSlide for ultra-high-res images
+            with TiffSlide(image_path) as slide:
+                # Get thumbnail at approximately 256x256
+                thumb = slide.get_thumbnail(TARGET_SIZE)
+                # Convert PIL image to numpy array
+                img_array = np.array(thumb)
+
+                # Convert to grayscale if RGB
+                if len(img_array.shape) == 3:
+                    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+        except Exception as e:
+            logger.error(f"Error processing ultra-high-res image: {e}")
+            raise
+    else:
+        # Regular image processing
+        img_array = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if to_jpg:
+            cv2.imwrite(
+                "test.jpg", img_array, [int(cv2.IMWRITE_JPEG_QUALITY), jpg_quality]
+            )
+            img_array = cv2.imread("test.jpg", cv2.IMREAD_GRAYSCALE)
+        if img_array is None:
+            raise ValueError(f"Could not read image at {image_path}")
+
+        # Resize to target size
+        img_array = cv2.resize(img_array, TARGET_SIZE, interpolation=cv2.INTER_AREA)
+
+    # Ensure int8 format
+    if img_array.dtype != np.uint8:
+        # Normalize and convert higher bit depth images
+        img_array = cv2.normalize(img_array, None, 0, 255, cv2.NORM_MINMAX)
+        img_array = img_array.astype(np.uint8)
+
+    # Generate hash from standardized image
+    return hashlib.sha256(img_array.tobytes()).hexdigest(), hash_method
 
 
 def compute_tile_request_level(level_resolution, image_position, image_size):

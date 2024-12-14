@@ -1845,3 +1845,22 @@ class FileClient:
         except Exception as e:
             print(e)
             pass
+
+    def check_for_duplicates(
+        self, image_hashes: list = [], hash_algorithm: str = "sha256_256"
+    ):
+        """
+        Check for duplicates in the server and return the non duplicate items.
+        """
+        from celer_sight_ai.configHandle import get_check_for_duplicates_address
+
+        check_for_duplicates_address = get_check_for_duplicates_address()
+        resp = self.session.get(
+            check_for_duplicates_address,
+            json={
+                "image_hashes": image_hashes,
+                "lab_id": config.user_attributes.lab_uuid,
+                "hash_method": hash_algorithm,
+            },
+        )
+        return resp.json().get("duplicate_hashes", [])

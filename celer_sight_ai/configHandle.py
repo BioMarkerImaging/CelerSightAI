@@ -459,6 +459,14 @@ def get_update_remote_annotation_address() -> str:
     return ad
 
 
+def get_check_for_duplicates_address():
+    if os.name == "nt":
+        ad = getServerLogAddress() + "/api/v1/admin/check_hashed_images"
+    else:
+        ad = os.path.join(getServerLogAddress(), "api/v1/admin/check_hashed_images")
+    return ad
+
+
 def set_load_from_past_login(load_from_past_login: str) -> None:
     """Method to set the load from past login
 
