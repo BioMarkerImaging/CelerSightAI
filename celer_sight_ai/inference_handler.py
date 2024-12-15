@@ -76,6 +76,11 @@ def calculate_polygon_width(vertices):
     side_weight = 0.1
     distance_weight = 0.9
 
+    # compute the ratio between the max side and the radius, if its less than 0.2, then increase the radius
+    ratio = radius / max_side
+    if ratio < 0.2:
+        radius = max_side * 0.2
+
     return (side_weight * max_side) + (distance_weight * radius)
 
 
