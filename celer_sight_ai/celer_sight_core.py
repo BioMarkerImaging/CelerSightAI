@@ -291,7 +291,9 @@ class Master_MainWindow(CelerSightMainWindow):
         # #######################################################################
 
         self.under_window_comments.setText("")
-
+        # Add near the beginning of the method
+        self.undoAction.setShortcut(QtGui.QKeySequence.StandardKey.Undo)
+        self.redoAction.setShortcut(QtGui.QKeySequence.StandardKey.Redo)
         self.initialize_analysis_button.setEnabled_(False)  # before we add RNAi
         self.get_roi_ai_button.setEnabled_(False)  # before we add RNAi
         config.global_signals.RNAi_list_widget_update_signal.connect(
@@ -742,12 +744,23 @@ class Master_MainWindow(CelerSightMainWindow):
         return super(Master_MainWindow, self).keyReleaseEvent(e)
 
     def keyPressEvent(self, e):
+        # Ignore standalone modifier key presses
+        if e.key() in (
+            QtCore.Qt.Key.Key_Control,  # 16777249
+            QtCore.Qt.Key.Key_Shift,
+            QtCore.Qt.Key.Key_Alt,
+            QtCore.Qt.Key.Key_Meta,
+        ):
+            return super(Master_MainWindow, self).keyPressEvent(e)
+
         # self.modifiers = QtWidgets.QApplication.keyboardModifiers()
         # Move to next image with keys:
         if e.matches(QtGui.QKeySequence.StandardKey.Undo):
             self.undoAction.trigger()
+            return
         if e.matches(QtGui.QKeySequence.StandardKey.Redo):
             self.redoAction.trigger()
+            return
         # if e.key() == Qt.Key.Key_I and e.modifiers() == Qt.KeyboardModifier.ControlModifier:
         # do single image inference
         if e.type() == QtCore.QEvent.Type.KeyPress:
