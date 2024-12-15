@@ -10,6 +10,13 @@ import queue
 import logging
 
 
+def stop_jvm():
+    try:
+        javabridge.kill_vm()
+    except:
+        pass
+
+
 def start_jvm():
     javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
     """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
