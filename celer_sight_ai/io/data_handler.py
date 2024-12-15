@@ -73,7 +73,7 @@ class HashList:
     def __getitem__(self, key):
         if isinstance(key, int):
             if key >= len(self._list):
-                logger.error("Tried to access items out of bouds. Returning None")
+                logger.error("Tried to access items out of bounds. Returning None")
                 return None
             return self._list[key]
         elif isinstance(key, str):
@@ -310,9 +310,9 @@ def group_ranges_to_tile_size(
             elif 1 > optimal_overlap > 3:
                 optimal_overlap = 0.3
             elif 3 > optimal_overlap > 6:
-                optimal_overlap = 0.5
-            elif optimal_overlap > 6:
-                optimal_overlap = 0.8
+                optimal_overlap = 0.4
+            else:
+                optimal_overlap = 0.65
             result[tuple(group)] = {
                 "tile_size": (min_val + max_val) / 2,
                 "image_size": max_image_size,
