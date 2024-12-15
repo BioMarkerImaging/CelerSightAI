@@ -416,7 +416,7 @@ class AddButtonHandler(QtWidgets.QWidget):
         if not cond_object:
             return
         try:
-            button = self.MainWindow.DH.get_button_by_uuid(image_uuid)
+            button = self.MainWindow.DH.BLobj.get_button_by_uuid(image_uuid)
             if not button:
                 logger.error("Button not found")
                 return
