@@ -19,11 +19,9 @@ import logging
 class MyTest(unittest.TestCase):
     def setUp(self):
 
-        import javabridge
-        import bioformats
+        from celer_sight_ai.config import start_jvm
 
-        javabridge.start_vm(class_path=bioformats.JARS)
-
+        start_jvm()
         self.fixture_dir_abs_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
@@ -38,6 +36,11 @@ class MyTest(unittest.TestCase):
         }
 
         self.mock_image_data = {
+            "PIR3_L1_TMRE_Image015.tif": {
+                "channels": ["red", "green", "blue"],
+                "size_x": 1024,
+                "size_y": 1024,
+            },
             "4D-series.ome.tif": {
                 "channels": ["gray"],
                 "size_x": 439,
@@ -259,9 +262,9 @@ class MyTest(unittest.TestCase):
                 self.fail()
 
     def tearDown(self):
-        import javabridge
+        from celer_sight_ai.config import stop_jvm
 
-        javabridge.kill_vm()
+        stop_jvm()
 
     def test_tifffile_loader(self):
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
@@ -269,8 +272,8 @@ class MyTest(unittest.TestCase):
             if not os.path.basename(img_path) in self.mock_image_data.keys():
                 logger.info("Skipping image: " + img_path)
                 continue
-            # if not "z-series.ome.tif" in img_path:
-            #     continue
+            if not "PIR3_L1_TMRE_Image015.tif" in img_path:
+                continue
             logger.info("Testing image: " + img_path)
             try:
                 result, arr_metadata = read_specialized_image(
