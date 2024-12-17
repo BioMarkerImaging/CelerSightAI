@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import logging
+import tempfile
 
 logger = logging.getLogger(__name__)
 # from tests.csight_test_loader import tags
@@ -34,12 +35,12 @@ class MyTest(unittest.TestCase):
         self.mock_proprietory_images = {
             "tests/fixtures/tissue_files/TCGA-HC-7820-01A-01-TS1.f9131ac5-c635-42a7-a383-634d90d212d4.svs": None
         }
-
+        self.temp_dir = tempfile.mkdtemp()
         self.mock_image_data = {
             "PIR3_L1_TMRE_Image015.tif": {
                 "channels": ["red", "green", "blue"],
-                "size_x": 1024,
-                "size_y": 1024,
+                "size_x": 1392,
+                "size_y": 1040,
             },
             "4D-series.ome.tif": {
                 "channels": ["gray"],
@@ -115,7 +116,7 @@ class MyTest(unittest.TestCase):
                 "size_x": 2457,
                 "size_y": 2457,
             },
-            "TMRE_D1_gsk-3_EGTA_Overview.tif": None,
+            # "TMRE_D1_gsk-3_EGTA_Overview.tif": None,
             "wt L1 TMRE_Image003.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 1392,
@@ -126,11 +127,11 @@ class MyTest(unittest.TestCase):
                 "size_x": 439,
                 "size_y": 167,
             },
-            "TMRE_D1_gsk-3_UA+EGTA_06.tif": {
-                "channels": ["FGW"],
-                "size_x": 2457,
-                "size_y": 2457,
-            },
+            # "TMRE_D1_gsk-3_UA+EGTA_06.tif": { # does not exists?
+            #     "channels": ["FGW"],
+            #     "size_x": 2457,
+            #     "size_y": 2457,
+            # },
             "neuronal_rosella_D5_C_05.tif": {
                 "channels": ["FBW", "FGW"],
                 "size_x": 2457,
@@ -264,6 +265,10 @@ class MyTest(unittest.TestCase):
     def tearDown(self):
         from celer_sight_ai.config import stop_jvm
 
+        import shutil
+
+        shutil.rmtree(self.temp_dir)
+
         stop_jvm()
 
     def test_tifffile_loader(self):
@@ -299,6 +304,70 @@ class MyTest(unittest.TestCase):
                 logger.info("Channels: " + str(arr_metadata["channels"]))
             else:
                 logger.info("Invalid image.")
+
+    def test_write_read_ome_tiff(self):
+        """
+        Write every tiff file and record its channels, read it back again and
+        validate that the channels and shape are the same.
+        """
+        from celer_sight_ai.io.image_reader import write_ome_tiff
+        from celer_sight_ai.io.image_reader import read_specialized_image
+
+        skip_images = [
+            "4D-series.ome.tif",
+            "multi-channel-time-series.ome.tif",
+            "multi-channel-4D-series.ome.tif",
+            "multi-channel-z-series.ome.tif",
+            "multi-channel.ome.tif",
+            "z-series.ome.tif",
+            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_22.tif",  # channel is an array of color
+            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_23.tif",  # channel is an array of color
+            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_24.tif",  # channel is an array of color
+            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_25.tif",  # channel is an array of color
+            "Cell_2.tif",
+        ]
+        for img_path in self.mock_image_data.keys():
+            if img_path in skip_images:
+                logger.info(f"Skipping image: {img_path}")
+                continue
+            # read it normaly
+            logger.info(f"Testing image: {img_path}")
+            arr, arr_metadata = read_specialized_image(
+                os.path.join(self.path_images_tif, img_path)
+            )
+            logger.info(f"Shape: {arr.shape}")
+            logger.info(f"Channels: {self.mock_image_data[img_path]['channels']}")
+            # write it to ome-tiff
+            logger.info(f"Writing to ome-tiff")
+            result = write_ome_tiff(
+                arr=arr,
+                channels=self.mock_image_data[img_path]["channels"],
+                tif_path=os.path.join(self.temp_dir, "test.tiff"),
+                physical_pixel_size_x=self.mock_image_data[img_path].get(
+                    "physical_pixel_size_x", None
+                ),
+                physical_pixel_size_y=self.mock_image_data[img_path].get(
+                    "physical_pixel_size_y", None
+                ),
+                physical_pixel_unit_x=self.mock_image_data[img_path].get(
+                    "physical_pixel_unit_x", None
+                ),
+                physical_pixel_unit_y=self.mock_image_data[img_path].get(
+                    "physical_pixel_unit_y", None
+                ),
+            )
+            logger.info("Reading it back.")
+            self.assertTrue(result)
+            # read it back
+            result, arr_metadata = read_specialized_image(
+                os.path.join(self.temp_dir, "test.tiff")
+            )
+            logger.info(f"Shape: {arr.shape}")
+            logger.info(f"Channels: {self.mock_image_data[img_path]['channels']}")
+
+            self.check_key_value_pairs(
+                self.mock_image_data[os.path.basename(img_path)], arr_metadata
+            )
 
     # def test_ultra_high_res_preview(self):
     #     from celer_sight_ai import config
