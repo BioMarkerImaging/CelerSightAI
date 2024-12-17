@@ -1159,29 +1159,11 @@ def read_ome_tiff(tif_path):
                 .upper()
             )
             dimension_size = []
-
+            metadata_extracted = extract_ome_metadata(tif_path, {})
             for dim in dimension_order:
-                dimension_size.append(
-                    ome_metadata.get("ome:OME", {})
-                    .get("ome:Image", {})
-                    .get("ome:Pixels", {})
-                    .get(f"@Size{dim}", "1")
-                )
-            channels = (
-                ome_metadata.get("ome:OME", {})
-                .get("ome:Image", {})
-                .get("ome:Pixels", {})
-                .get("ome:Channel", {})
-            )
-            if channels:
-                channels_list = [channel.get("@Name", "") for channel in channels]
-            # case gray image without channel
-            elif not channels and len(data.shape) == 2:
-                channels_list = ["gray"]
-            elif not channels and len(data.shape) == 3:
-                channels_list = ["red", "green", "blue"]
-            else:
-                return None, None
+                dimension_size.append(metadata_extracted.get(f"size_{dim}".lower(), 1))
+            channels = metadata_extracted.get("channels", None)
+
             # If array shape doesn't match metadata dimensions, try to infer correct order
             if len(data.shape) != len(dimension_order):
                 # Create mapping of sizes to dimensions
@@ -1254,7 +1236,7 @@ def read_ome_tiff(tif_path):
                 data = np.transpose(data, axes=rearrange_axes)
 
             return np.ascontiguousarray(data), {
-                "channels": channels_list,
+                "channels": channels,
                 "size_x": int(dimension_size[1]),
                 "size_y": int(dimension_size[0]),
             }
@@ -1275,13 +1257,21 @@ def extract_ome_metadata(tif_path, dict_out):
             parsed_metadata = reader.parse_metadata(tif.ome_metadata)
             if parsed_metadata is None:
                 raise Exception("No parsed metadata found")
+
+            # Extract dimension sizes and order
+            dict_out["size_x"] = parsed_metadata.get("SizeX")
+            dict_out["size_y"] = parsed_metadata.get("SizeY")
+            dict_out["size_z"] = parsed_metadata.get("SizeZ")
+            dict_out["size_c"] = parsed_metadata.get("SizeC")
+            dict_out["size_t"] = parsed_metadata.get("SizeT")
+            dict_out["dimension_order"] = parsed_metadata.get("DimensionOrder")
+
             if (
                 parsed_metadata.get("Channels")
                 and len(parsed_metadata["Channels"].keys()) == parsed_metadata["SizeC"]
             ):
                 if not list(parsed_metadata["Channels"].keys()) == [None]:
                     all_channels = list(parsed_metadata["Channels"].keys())
-
                     dict_out["channels"] = [
                         parsed_metadata["Channels"][i]["Name"]
                         for i in all_channels
@@ -1303,17 +1293,34 @@ def extract_ome_metadata(tif_path, dict_out):
         except Exception as e:
             m_ome = remove_at_symbol(xmltodict.parse(tif.ome_metadata))
 
-            if "OME" in m_ome.keys():
-                m_ome = m_ome["OME"]
-            if "OME:Image" in m_ome.keys():
-                image_key = "OME:Image"
-                pixels_key = "OME:Pixels"
-                channel_key = "OME:Channel"
-            else:
-                image_key = "Image"
-                pixels_key = "Pixels"
-                channel_key = "Channel"
-            if channel_key in m_ome[image_key][pixels_key]:
+            # Check for different possible namespace prefixes
+            possible_prefixes = ["ome:", "xmlns:", ""]
+            image_key = None
+            pixels_key = None
+            channel_key = None
+
+            # Find the correct keys based on what exists in the metadata
+            for prefix in possible_prefixes:
+                if f"{prefix}OME" in m_ome:
+                    m_ome = m_ome[f"{prefix}OME"]
+                    for img_prefix in possible_prefixes:
+                        if f"{img_prefix}Image" in m_ome:
+                            image_key = f"{img_prefix}Image"
+                            for pix_prefix in possible_prefixes:
+                                if f"{pix_prefix}Pixels" in m_ome[image_key]:
+                                    pixels_key = f"{pix_prefix}Pixels"
+                                    for ch_prefix in possible_prefixes:
+                                        if (
+                                            f"{ch_prefix}Channel"
+                                            in m_ome[image_key][pixels_key]
+                                        ):
+                                            channel_key = f"{ch_prefix}Channel"
+                                            break
+                                    break
+                            break
+                    break
+
+            if all([image_key, pixels_key, channel_key]):
                 channels = m_ome[image_key][pixels_key][channel_key]
                 channels = remove_at_symbol(channels)
                 if isinstance(channels, list):
@@ -1328,24 +1335,32 @@ def extract_ome_metadata(tif_path, dict_out):
                         dict_out["channels"] = channels["Name"]
                     elif channels["ID"] == "Channel:0:2":  # --> rgb
                         dict_out["channels"] = ["red", "green", "blue"]
-                    if (
+                    elif (
                         channels["ID"] == "Channel:0:0"
                         or channels["ID"] == "Channel:d1"
                     ):  # --> grayscale
                         dict_out["channels"] = ["gray"]
                     else:
                         logger.error(f"No channel found for {tif.filename}")
-            # Extract physical units from XML if available
-            if pixels_key in m_ome[image_key]:
-                pixels = m_ome[image_key][pixels_key]
-                dict_out["physical_pixel_size_x_unit"] = pixels.get(
-                    "PhysicalSizeXUnit", None
-                )
-                dict_out["physical_pixel_size_y_unit"] = pixels.get(
-                    "PhysicalSizeYUnit", None
-                )
-                dict_out["physical_pixel_size_x"] = pixels.get("PhysicalSizeX", None)
-                dict_out["physical_pixel_size_y"] = pixels.get("PhysicalSizeY", None)
+
+                # Extract physical units from XML if available
+                if pixels_key in m_ome[image_key]:
+                    pixels = m_ome[image_key][pixels_key]
+                    dict_out["physical_pixel_size_x_unit"] = pixels.get(
+                        "PhysicalSizeXUnit", None
+                    )
+                    dict_out["physical_pixel_size_y_unit"] = pixels.get(
+                        "PhysicalSizeYUnit", None
+                    )
+                    dict_out["physical_pixel_size_x"] = pixels.get(
+                        "PhysicalSizeX", None
+                    )
+                    dict_out["physical_pixel_size_y"] = pixels.get(
+                        "PhysicalSizeY", None
+                    )
+            else:
+                logger.error(f"Could not find required metadata keys in {tif.filename}")
+
     return dict_out
 
 
