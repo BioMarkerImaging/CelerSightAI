@@ -940,6 +940,8 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
 
         except Exception as e:
             print(e)
+        finally:
+            self._is_updating_buttons = False
 
     def scrollContentsBy(self, dx, dy):
         self.update_visible_buttons()
@@ -2115,7 +2117,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self, image_channel_list, channel_names, multi_treatment=False, treatmetns=None
     ):
         # Combines all images into one image , saves it to disk and returns the url
-        import copy
+        from celer_sight_ai.io.image_reader import write_ome_tiff
 
         image_channel_list_arr = []
         channel_names_arr = []
@@ -2251,15 +2253,22 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                     # Ensure channel names are properly formatted strings
                     formatted_channel_names = [str(name) for name in all_channels_list]
 
-                    # Write image with metadata
-                    bioformats.write_image(
-                        output_path,
-                        combined_image,
-                        pixel_type=dtype,
-                        size_z=1,
-                        size_t=1,
-                        c=0,
-                        channel_names=formatted_channel_names,
+                    write_ome_tiff(
+                        arr=combined_image,
+                        channels=formatted_channel_names,
+                        tif_path=output_path,
+                        physical_pixel_size_x=result_dict.get(
+                            "physical_pixel_size_x", None
+                        ),
+                        physical_pixel_size_y=result_dict.get(
+                            "physical_pixel_size_y", None
+                        ),
+                        physical_pixel_unit_x=result_dict.get(
+                            "physical_pixel_unit_x", None
+                        ),
+                        physical_pixel_unit_y=result_dict.get(
+                            "physical_pixel_unit_y", None
+                        ),
                     )
                     out_urls.append(output_path)
                 if treatmetns:
