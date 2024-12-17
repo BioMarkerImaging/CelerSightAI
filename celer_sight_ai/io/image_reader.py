@@ -1131,6 +1131,139 @@ def extract_more_metadata_if_available(tif_path, dict_out):
     return dict_out
 
 
+def read_ome_tiff(tif_path):
+    """
+    Reads an OME-TIFF file using tifffile and returns a YXC array.
+    If there are time or Z dimensions, performs max projection along those axes.
+    """
+    import tifffile
+    import numpy as np
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        with tifffile.TiffFile(tif_path) as tif:
+            # Read the full data
+            data = tif.asarray()
+
+            # Get dimension order from OME metadata
+            if not tif.ome_metadata:
+                return None, None
+            ome_metadata = xmltodict.parse(tif.ome_metadata)
+            dimension_order = (
+                ome_metadata.get("ome:OME", {})
+                .get("ome:Image", {})
+                .get("ome:Pixels", {})
+                .get("@DimensionOrder", "XYZCT")
+                .upper()
+            )
+            dimension_size = []
+
+            for dim in dimension_order:
+                dimension_size.append(
+                    ome_metadata.get("ome:OME", {})
+                    .get("ome:Image", {})
+                    .get("ome:Pixels", {})
+                    .get(f"@Size{dim}", "1")
+                )
+            channels = (
+                ome_metadata.get("ome:OME", {})
+                .get("ome:Image", {})
+                .get("ome:Pixels", {})
+                .get("ome:Channel", {})
+            )
+            if channels:
+                channels_list = [channel.get("@Name", "") for channel in channels]
+            # case gray image without channel
+            elif not channels and len(data.shape) == 2:
+                channels_list = ["gray"]
+            elif not channels and len(data.shape) == 3:
+                channels_list = ["red", "green", "blue"]
+            else:
+                return None, None
+            # If array shape doesn't match metadata dimensions, try to infer correct order
+            if len(data.shape) != len(dimension_order):
+                # Create mapping of sizes to dimensions
+                size_to_dim = {}
+                found_dims = set()
+                for i, size in enumerate(data.shape):
+                    matching_dims = [
+                        dim
+                        for dim, dim_size in zip(dimension_order, dimension_size)
+                        if int(dim_size) == size and dim not in found_dims
+                    ]
+                    if matching_dims:
+                        size_to_dim[i] = matching_dims[0]
+                        found_dims.add(matching_dims[0])
+
+                # Reconstruct dimension order based on array shape
+                dimension_order = "".join(
+                    [
+                        size_to_dim.get(
+                            i, ""
+                        )  # Use empty string if no matching dimension
+                        for i in range(len(data.shape))
+                    ]
+                )
+
+                # If we couldn't match all dimensions, fall back to standard order
+                if len(dimension_order) != len(data.shape):
+                    if len(data.shape) == 2:
+                        dimension_order = "YX"
+                    elif len(data.shape) == 3:
+                        dimension_order = "YXC"
+                    elif len(data.shape) == 4:
+                        dimension_order = "ZYXC"
+                    elif len(data.shape) == 5:
+                        dimension_order = "TZYXC"
+
+                # adjust the dimension size
+                dimension_size = [
+                    dimension_size[dimension_order.index(dim)]
+                    for dim in dimension_order
+                ]
+
+            # Build a mapping from dimension character to axis index
+            dim_map = {dim: idx for idx, dim in enumerate(dimension_order)}
+
+            # Perform max projection along T and Z if necessary
+            axes_to_project = []
+            # Check if 'T' and 'Z' are in the dimension order and if their sizes >1
+            for dim in ("T", "Z"):
+                if dim in dim_map and data.shape[dim_map[dim]] > 1:
+                    axes_to_project.append(dim_map[dim])
+
+            if axes_to_project:
+                data = np.max(data, axis=tuple(axes_to_project), keepdims=False)
+                # Remove projected dimensions from dimension_order
+                dimension_order = "".join([d for d in dimension_order if d not in "TZ"])
+                dim_map = {dim: idx for idx, dim in enumerate(dimension_order)}
+
+            # Ensure 'C' dimension is present
+            if "C" not in dimension_order:
+                data = np.expand_dims(data, axis=-1)
+                dimension_order += "C"
+                dim_map["C"] = len(dimension_order) - 1
+
+            # Rearrange data to YXC format if necessary
+            desired_order = "YXC"
+            if dimension_order != desired_order:
+                # Get the axes to transpose
+                rearrange_axes = [dim_map[dim] for dim in desired_order]
+                data = np.transpose(data, axes=rearrange_axes)
+
+            return np.ascontiguousarray(data), {
+                "channels": channels_list,
+                "size_x": int(dimension_size[1]),
+                "size_y": int(dimension_size[0]),
+            }
+
+    except Exception as e:
+        logger.error(f"Error reading OME-TIFF file {tif_path}: {e}")
+        return None, None
+
+
 def extract_ome_metadata(tif_path, dict_out):
     from pyometiff import OMETIFFReader
 
@@ -1154,6 +1287,19 @@ def extract_ome_metadata(tif_path, dict_out):
                         for i in all_channels
                         if i is not None
                     ]
+                # Extract physical units if available
+                dict_out["physical_pixel_size_x_unit"] = parsed_metadata.get(
+                    "PhysicalSizeXUnit", None
+                )
+                dict_out["physical_pixel_size_y_unit"] = parsed_metadata.get(
+                    "PhysicalSizeYUnit", None
+                )
+                dict_out["physical_pixel_size_x"] = parsed_metadata.get(
+                    "PhysicalSizeX", None
+                )
+                dict_out["physical_pixel_size_y"] = parsed_metadata.get(
+                    "PhysicalSizeY", None
+                )
         except Exception as e:
             m_ome = remove_at_symbol(xmltodict.parse(tif.ome_metadata))
 
@@ -1189,6 +1335,17 @@ def extract_ome_metadata(tif_path, dict_out):
                         dict_out["channels"] = ["gray"]
                     else:
                         logger.error(f"No channel found for {tif.filename}")
+            # Extract physical units from XML if available
+            if pixels_key in m_ome[image_key]:
+                pixels = m_ome[image_key][pixels_key]
+                dict_out["physical_pixel_size_x_unit"] = pixels.get(
+                    "PhysicalSizeXUnit", None
+                )
+                dict_out["physical_pixel_size_y_unit"] = pixels.get(
+                    "PhysicalSizeYUnit", None
+                )
+                dict_out["physical_pixel_size_x"] = pixels.get("PhysicalSizeX", None)
+                dict_out["physical_pixel_size_y"] = pixels.get("PhysicalSizeY", None)
     return dict_out
 
 
@@ -1348,11 +1505,82 @@ def get_squeezed_bf_dimentions(pixel_data):
     return axes_squeezed, shape_squeezed
 
 
+def write_ome_tiff(
+    arr,
+    channels,
+    tif_path,
+    physical_pixel_size_x: float | None = None,
+    physical_pixel_size_y: float | None = None,
+    physical_pixel_unit_x: str | None = None,
+    physical_pixel_unit_y: str | None = None,
+):
+    import pyometiff
+    from pathlib import Path
+
+    logger.debug(f"Writing OME-TIFF to {tif_path}")
+    c_size = 1
+    try:
+        if len(arr.shape) > 2:
+            c_size = arr.shape[2]
+
+        metadata_dict = {
+            "SizeX": arr.shape[1],
+            "SizeY": arr.shape[0],
+            "SizeC": c_size,
+            "SizeT": 1,
+            "SizeZ": 1,
+            "Channels": {
+                str(channels[i]): {
+                    "Name": channels[i],
+                    "SamplesPerPixel": 1,
+                }
+                for i in range(len(channels))
+            },
+        }
+        if physical_pixel_size_x:
+            metadata_dict["PhysicalSizeX"] = physical_pixel_size_x
+        if physical_pixel_size_y:
+            metadata_dict["PhysicalSizeY"] = physical_pixel_size_y
+        if physical_pixel_unit_x:
+            metadata_dict["PhysicalSizeXUnit"] = physical_pixel_unit_x
+        if physical_pixel_unit_y:
+            metadata_dict["PhysicalSizeYUnit"] = physical_pixel_unit_y
+
+        # a string describing the dimension ordering
+        dimension_order = "CYX"
+
+        # Rearrange dimensions to match the dimension order
+        data_to_write = np.transpose(
+            arr, (2, 1, 0)
+        )  # .reshape(c_size, arr.shape[0], arr.shape[1])
+        # if there is a single named channel and multiple are provided, we need to do
+        # max projection
+        if c_size == 1:
+            data_to_write = np.max(data_to_write, axis=2)
+        print(data_to_write.shape)
+
+        writer = pyometiff.OMETIFFWriter(
+            fpath=Path(tif_path),
+            dimension_order=dimension_order,
+            array=data_to_write,
+            metadata=metadata_dict,
+            overwrite=True,
+            explicit_tiffdata=False,
+        )
+
+        writer.write()
+        writer.write_xml()
+    except Exception as e:
+        logger.error(f"Error writing OME-TIFF: {e}")
+        return False
+    logger.debug(f"OME-TIFF written to {tif_path}")
+    return True
+
+
 def read_specialized_image(
     tif_path,
     avoid_loading_ultra_high_res_arrays_normaly=False,
     for_thumbnail=False,
-    # Interactive zoom attributes only for high resesolution images
     for_interactive_zoom=False,
     bbox=None,
 ):
@@ -1392,88 +1620,105 @@ def read_specialized_image(
 
     IS_PYRAMIDAL = False
     IS_ULTRA_HIGH_RES = None
+    IS_OME_TIFF = False
+    # test if its ome tiff
+    with tifffile.TiffFile(tif_path) as tif:
+        if tif.is_ome:
+            IS_OME_TIFF = True
+            logger.debug("its ome tiff")
 
     # # try first to get everything with bioio, if that fails try other methods
-    try:
-        # with config.jvm_lock:
-        print("attaching to jvm")
-        javabridge.attach()
-        metadata_xml = config.bioformats.get_omexml_metadata(path=tif_path)
-        metadata_dict = config.bioformats.omexml.OMEXML(metadata_xml)
-        # extract yxc
-        pixel_data = metadata_dict.image().Pixels
-        dims_order = pixel_data.DimensionOrder
-        # we only need to extract the image data and channels,
-        # 1 series and do max projection in the Z dimentions if needed
+    if not IS_OME_TIFF:
+        try:
+            # with config.jvm_lock:
+            print("attaching to jvm")
+            javabridge.attach()
+            metadata_xml = config.bioformats.get_omexml_metadata(path=tif_path)
+            metadata_dict = config.bioformats.omexml.OMEXML(metadata_xml)
+            # extract yxc
+            pixel_data = metadata_dict.image().Pixels
+            dims_order = pixel_data.DimensionOrder
+            # we only need to extract the image data and channels,
+            # 1 series and do max projection in the Z dimentions if needed
 
-        dict_out["size_x"] = pixel_data.SizeX
-        dict_out["size_y"] = pixel_data.SizeY
+            dict_out["size_x"] = pixel_data.SizeX
+            dict_out["size_y"] = pixel_data.SizeY
 
-        # if the image is ultra high res, dont use bioformats,
-        # instead we skip here and load it iteratively with tiffslide of openslide
-        if (
-            pixel_data.SizeX > config.ULTRA_HIGH_RES_THRESHOLD
-            or pixel_data.SizeY > config.ULTRA_HIGH_RES_THRESHOLD
-        ):
-            IS_ULTRA_HIGH_RES = True
-        else:
-            logger.debug("Image is not ultra high res, loading with bioformats")
-            # Extract channels from metadata
-            channels = []
-            for i in range(pixel_data.channel_count):
-                channel = pixel_data.Channel(i)
-                if channel.Name:
-                    channels.append(channel.Name)
-                else:
-                    channels.append(f"Channel:{i}")
-
-            # Assign channels to output dict
-            dict_out["channels"] = channels
-
-            # get the physical pixel sizes in mm
-            dict_out["physical_pixel_size_x"] = pixel_data.PhysicalSizeX
-            dict_out["physical_pixel_size_y"] = pixel_data.PhysicalSizeY
-            dict_out["physical_pixel_unit_x"] = pixel_data.PhysicalSizeXUnit
-            dict_out["physical_pixel_unit_y"] = pixel_data.PhysicalSizeYUnit
-
-            image_file = config.bioformats.ImageReader(path=tif_path)
-
-            if pixel_data.SizeZ > 1:
-                z_data = np.empty(
-                    (
-                        pixel_data.SizeZ,
-                        pixel_data.SizeY,
-                        pixel_data.SizeX,
-                        pixel_data.SizeC,
-                    )
-                )
-                for z in range(pixel_data.SizeZ):
-                    logger.debug(f"Max projection along axis Z: {z}")
-                    img = image_file.read(series=0, z=z, rescale=False)
-                    if len(img.shape) == 2:
-                        img = np.expand_dims(img, axis=2)
-                    z_data[z, :, :, :] = img
-                # do max projection in the Z dimension
-                arr = np.max(z_data, axis=0)
-                dims_order = "YXC"
+            # if the image is ultra high res, dont use bioformats,
+            # instead we skip here and load it iteratively with tiffslide of openslide
+            if (
+                pixel_data.SizeX > config.ULTRA_HIGH_RES_THRESHOLD
+                or pixel_data.SizeY > config.ULTRA_HIGH_RES_THRESHOLD
+            ):
+                IS_ULTRA_HIGH_RES = True
             else:
-                dims_order, shape_squeezed = get_squeezed_bf_dimentions(pixel_data)
-                arr = image_file.read(series=0, rescale=False)
+                logger.debug("Image is not ultra high res, loading with bioformats")
+                # Extract channels from metadata
+                channels = []
+                for i in range(pixel_data.channel_count):
+                    channel = pixel_data.Channel(i)
+                    if channel.Name:
+                        channels.append(channel.Name)
+                    else:
+                        channels.append(f"Channel:{i}")
 
-            # if channels are found, return the image
-            if dict_out["channels"]:
-                dict_out = extract_more_metadata_if_available(tif_path, dict_out)
-                dict_out["channels"], arr = standardize_channels(
-                    arr, dict_out["channels"]
-                )
-                if bbox:
-                    arr = crop_and_pad_image(arr, bbox)
-                return arr, dict_out
+                # Assign channels to output dict
+                dict_out["channels"] = channels
 
-    except Exception as e:
-        logger.error(f"Error loading tiff file with bioformats: {e}")
-    finally:
-        javabridge.detach()
+                # get the physical pixel sizes in mm
+                dict_out["physical_pixel_size_x"] = pixel_data.PhysicalSizeX
+                dict_out["physical_pixel_size_y"] = pixel_data.PhysicalSizeY
+                dict_out["physical_pixel_unit_x"] = pixel_data.PhysicalSizeXUnit
+                dict_out["physical_pixel_unit_y"] = pixel_data.PhysicalSizeYUnit
+
+                image_file = config.bioformats.ImageReader(path=tif_path)
+
+                if pixel_data.SizeZ > 1:
+                    z_data = np.empty(
+                        (
+                            pixel_data.SizeZ,
+                            pixel_data.SizeY,
+                            pixel_data.SizeX,
+                            pixel_data.SizeC,
+                        )
+                    )
+                    for z in range(pixel_data.SizeZ):
+                        logger.debug(f"Max projection along axis Z: {z}")
+                        img = image_file.read(series=0, z=z, rescale=False)
+                        if len(img.shape) == 2:
+                            img = np.expand_dims(img, axis=2)
+                        z_data[z, :, :, :] = img
+                    # do max projection in the Z dimension
+                    arr = np.max(z_data, axis=0)
+                    dims_order = "YXC"
+                else:
+                    dims_order, shape_squeezed = get_squeezed_bf_dimentions(pixel_data)
+                    arr = image_file.read(series=0, rescale=False)
+
+                # if channels are found, return the image
+                if dict_out["channels"]:
+                    dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+                    dict_out["channels"], arr = standardize_channels(
+                        arr, dict_out["channels"]
+                    )
+                    if bbox:
+                        arr = crop_and_pad_image(arr, bbox)
+                    return arr, dict_out
+        except Exception as e:
+            logger.error(f"Error loading tiff file with bioformats: {e}")
+        finally:
+            javabridge.detach()
+    if IS_OME_TIFF:
+        # read with pyometiff
+        arr, metadata = read_ome_tiff(tif_path)
+        if arr is None or metadata is None:
+            raise ValueError("Failed to load image")
+        # crop the image if bbox is provided
+        if bbox:
+            arr = crop_and_pad_image(arr, bbox)
+
+        dict_out.update(metadata)
+        return arr, dict_out
     try:
         with tifffile.TiffFile(tif_path) as tif:
             # get dimenions of the first image
