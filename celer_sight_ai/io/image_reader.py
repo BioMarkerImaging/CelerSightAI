@@ -1229,7 +1229,7 @@ def read_ome_tiff(tif_path):
                 dim_map["C"] = len(dimension_order) - 1
 
             # Rearrange data to YXC format if necessary
-            desired_order = "YXC"
+            desired_order = "XYC"
             if dimension_order != desired_order:
                 # Get the axes to transpose
                 rearrange_axes = [dim_map[dim] for dim in desired_order]
