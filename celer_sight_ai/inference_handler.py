@@ -245,6 +245,7 @@ class InferenceHandler:
                         [img_obj.SizeX, img_obj.SizeY],
                         processed_shape=inference_object.get("send_image_dimention"),
                         source_tile=source_tile,
+                        adjust_to_final_image=True,
                     ):
                         continue
                     results_to_process.append(rr)
@@ -1369,6 +1370,7 @@ class InferenceHandler:
         processed_shape=[1024, 1024],
         source_tile=None,
         threshold=0.05,
+        adjust_to_final_image=False,
     ):
         """
         Check if polygon should be removed based on edge proximity, considering tile position.
@@ -1435,13 +1437,22 @@ class InferenceHandler:
             # Calculate boundary thresholds
             boundary_x = image_shape[0] * threshold
             boundary_y = image_shape[1] * threshold
-
+            if adjust_to_final_image:
+                most_left_adjusted = most_left * image_shape[0] / processed_shape[0]
+                most_right_adjusted = most_right * image_shape[0] / processed_shape[0]
+                most_top_adjusted = most_top * image_shape[1] / processed_shape[1]
+                most_bottom_adjusted = most_bottom * image_shape[1] / processed_shape[1]
+            else:
+                most_left_adjusted = most_left
+                most_right_adjusted = most_right
+                most_top_adjusted = most_top
+                most_bottom_adjusted = most_bottom
             # Check if polygon touches image edges
             if (
-                most_left <= boundary_x
-                or most_right >= image_shape[0] - boundary_x
-                or most_top <= boundary_y
-                or most_bottom >= image_shape[1] - boundary_y
+                most_left_adjusted <= boundary_x
+                or most_right_adjusted >= image_shape[0] - boundary_x
+                or most_top_adjusted <= boundary_y
+                or most_bottom_adjusted >= image_shape[1] - boundary_y
             ):
                 return True
 
