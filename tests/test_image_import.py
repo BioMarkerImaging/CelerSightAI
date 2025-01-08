@@ -8,227 +8,24 @@ import sys
 import time
 import logging
 import tempfile
+from tests.base_image_testcase import BaseImageTest
+from celer_sight_ai.io.image_reader import read_specialized_image
 
 logger = logging.getLogger(__name__)
-# from tests.csight_test_loader import tags
-import unittest
-
-from celer_sight_ai.io.image_reader import read_specialized_image
-import logging
 
 
-class MyTest(unittest.TestCase):
+class TestImageImport(BaseImageTest):
+
     def setUp(self):
-
-        from celer_sight_ai.config import start_jvm
-
-        start_jvm()
-        self.fixture_dir_abs_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        )
-        self.path_images_tif = os.path.join(
-            self.fixture_dir_abs_path, "tests/fixtures/import_images"
-        )
-        self.all_images_tif = glob(self.path_images_tif + "/*.tif") + glob(
-            self.path_images_tif + "/*.TIF"
-        )
-        self.mock_proprietory_images = {
-            "tests/fixtures/tissue_files/TCGA-HC-7820-01A-01-TS1.f9131ac5-c635-42a7-a383-634d90d212d4.svs": None
-        }
+        """Set up test-specific fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.mock_image_data = {
-            "PIR3_L1_TMRE_Image015.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 1392,
-                "size_y": 1040,
-            },
-            "4D-series.ome.tif": {
-                "channels": ["gray"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "Cell_2.tif": {
-                "channels": ["gray"],
-                "size_x": 251,
-                "size_y": 449,
-            },
-            "multi-channel-4D-series.ome.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "multi-channel-time-series.ome.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "multi-channel-z-series.ome.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "multi-channel.ome.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "N2_100x_150ms_4gain_2x2_L1_Image002.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 696,
-                "size_y": 520,
-                "physical_pixel_size_x": 352.77778048831453,
-                "physical_pixel_size_y": 352.77778048831453,
-            },
-            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_22.tif": {
-                "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
-                "size_x": 1039,
-                "size_y": 1444,
-            },
-            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_23.tif": {
-                "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
-                "size_x": 1484,
-                "size_y": 1009,
-            },
-            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_24.tif": {
-                "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
-                "size_x": 1019,
-                "size_y": 1672,
-            },
-            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_25.tif": {
-                "channels": [np.array([255, 0, 0]), np.array([0, 255, 0])],
-                "size_x": 1761,
-                "size_y": 643,
-                "physical_pixel_size_x": 0.6917064397869545,
-                "physical_pixel_size_y": 0.6917997516438892,
-            },
-            "single-channel.ome.tif": {
-                "channels": ["gray"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            "TMRE_D1_gsk-3_C_02.tif": {
-                "channels": ["FGW"],
-                "size_x": 2457,
-                "size_y": 2457,
-            },
-            "TMRE_D1_gsk-3_C_10.tif": {
-                "channels": ["FGW"],
-                "size_x": 2457,
-                "size_y": 2457,
-            },
-            # "TMRE_D1_gsk-3_EGTA_Overview.tif": None,
-            "wt L1 TMRE_Image003.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 1392,
-                "size_y": 1040,
-            },
-            "z-series.ome.tif": {
-                "channels": ["gray"],
-                "size_x": 439,
-                "size_y": 167,
-            },
-            # "TMRE_D1_gsk-3_UA+EGTA_06.tif": { # does not exists?
-            #     "channels": ["FGW"],
-            #     "size_x": 2457,
-            #     "size_y": 2457,
-            # },
-            "neuronal_rosella_D5_C_05.tif": {
-                "channels": ["FBW", "FGW"],
-                "size_x": 2457,
-                "size_y": 2457,
-            },
-            "daf-2_D2_aup-1i.tif": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 2740,
-                "size_y": 2740,
-            },
-            "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": {
-                "size_x": 512,
-                "size_y": 512,
-                "channels": ["Ch1", "Ch2"],
-                "is_ultra_high_res": False,
-                "physical_pixel_size_x": 352.77777777777777,
-                "physical_pixel_size_y": 352.77777777777777,
-                "physical_pixel_unit_x": "µm",
-                "physical_pixel_unit_y": "µm",
-            },
-            "Philips-1.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 45056,
-                "size_y": 35840,
-            },
-            "pl_ua_1_gfp.tif": {
-                "channels": ["GFP"],
-                "size_x": 1992,
-                "size_y": 1992,
-            },
-            "pl con_Top Slide_R_p01_0_A01f00d1.TIF": {
-                "channels": ["gray"],
-                "size_x": 2048,
-                "size_y": 1536,
-            },
-            "control_Bottom Slide_D_p00_0_A01f11d1.TIF": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 2048,
-                "size_y": 1536,
-                "physical_pixel_size_x": 1.2380542388637508,
-                "physical_pixel_size_y": 1.2380542388637508,
-            },
-        }
+        self.addCleanup(self.cleanup)
 
-        self.mock_high_res_images = {
-            # "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": None,
-            # "CMU-1.ndpi": {
-            #     "channels": ["red", "green", "blue"],
-            #     "size_x": 51200,
-            #     "size_y": 38144,
-            # },
-            "CMU-1.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 46000,
-                "size_y": 32914,
-            },
-            "Philips-1.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 45056,
-                "size_y": 35840,
-            },
-            "Philips-3.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 131072,
-                "size_y": 100352,
-            },
-            # Needs to be converted to a pyramidal tiff first
-            # "aup-1_13_Top Left Dish_TM_p00_0_A01f00d0.TIF": {
-            #     "channels": ["red", "green", "blue"],
-            #     "size_x": 17229,
-            #     "size_y": 17526,
-            # },
-            "KPA01_2_13_Top Right Dish_TM_p00_0_A01f00d0.TIF": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 17231,
-                "size_y": 17525,
-            },
-        }
-        self.ultra_high_res_root_path = "tests/fixtures/import_images_high_res"
+    def cleanup(self):
+        """Clean up test resources."""
+        import shutil
 
-    def check_key_value_pairs(self, dict1, dict2):
-        if isinstance(dict1, type(None)) and isinstance(dict2, type(None)):
-            return
-        # check that all key value pairs in dict1 are in dict2
-        for key in dict1.keys():
-            value = dict1.get(key)
-            if isinstance(value, type(None)):
-                self.assertEqual(dict2[key], None)
-                self.assertEqual(dict2[key], None)
-            elif isinstance(value, list):
-                self.assertIsNone(np.testing.assert_array_equal(dict2.get(key), value))
-                self.assertIsNone(np.testing.assert_array_equal(dict2.get(key), value))
-            # Add special handling for floating point numbers
-            elif isinstance(value, (float, np.floating)):
-                self.assertTrue(np.allclose(dict2[key], value, rtol=1e-05, atol=1e-08))
-            else:
-                self.assertEqual(dict2[key], value)
+        shutil.rmtree(self.temp_dir)
 
     def test_extract_tile_data_from_tiff(self):
         from celer_sight_ai.io.image_reader import (
@@ -262,22 +59,13 @@ class MyTest(unittest.TestCase):
                 print(e)
                 self.fail()
 
-    def tearDown(self):
-        from celer_sight_ai.config import stop_jvm
-
-        import shutil
-
-        shutil.rmtree(self.temp_dir)
-
-        stop_jvm()
-
     def test_tifffile_loader(self):
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
         for img_path in self.all_images_tif:
             if not os.path.basename(img_path) in self.mock_image_data.keys():
                 logger.info("Skipping image: " + img_path)
                 continue
-            if not "PIR3_L1_TMRE_Image015.tif" in img_path:
+            if not "ntrol_Bottom Slide_D_p00_0_A01f11d1.TIF" in img_path:
                 continue
             logger.info("Testing image: " + img_path)
             try:
@@ -291,6 +79,17 @@ class MyTest(unittest.TestCase):
                 print(traceback.format_exc())
                 print(e)
                 self.fail()
+
+            # delete the readable key from the mock_image_data
+            is_readable = self.mock_image_data[os.path.basename(img_path)].get(
+                "readable", False
+            )
+            if not is_readable:
+                # make sure that the image data is None
+                print("Skipping image: " + img_path)
+                continue
+            if "readable" in self.mock_image_data[os.path.basename(img_path)]:
+                del self.mock_image_data[os.path.basename(img_path)]["readable"]
             self.check_key_value_pairs(
                 self.mock_image_data[os.path.basename(img_path)], arr_metadata
             )

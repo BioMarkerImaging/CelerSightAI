@@ -7,20 +7,15 @@ import os
 import sys
 import logging
 from celer_sight_ai import config
-
+import time
+import unittest
 
 logger = logging.getLogger(__name__)
 
-# from celer_sight_ai.gui.Utilities.bioformats_reader import BioformatsReader
-# from bioformats_reader import BioformatsReader
-import time
-import unittest
 
 path_images = "tests/fixtures/import_images"
 all_images = glob(path_images + "/*.tif")
 from celer_sight_ai.config import DEEPZOOM_TILE_SIZE
-
-# if mac os:
 
 
 def get_tif_tags(tag_vals):
@@ -189,8 +184,6 @@ def getImage(
             from celer_sight_ai import config
 
             im = image_object.load_current_ram_image(bbox)
-            # if not isinstance(image_object.channel_list, type(None)):
-            #     im = filter_channels(im, image_object, image_object.channel_list)
         if im.shape[0] == 0 or im.shape[1] == 0:
             return None
 
@@ -1135,6 +1128,7 @@ def read_ome_tiff(tif_path):
     """
     Reads an OME-TIFF file using tifffile and returns a YXC array.
     If there are time or Z dimensions, performs max projection along those axes.
+    Also extracts physical pixel size information if available.
     """
     import tifffile
     import numpy as np
@@ -1165,7 +1159,9 @@ def read_ome_tiff(tif_path):
             channels = metadata_extracted.get("channels", None)
 
             # If array shape doesn't match metadata dimensions, try to infer correct order
-            if len(data.shape) != len(dimension_order):
+            if len(data.shape) != len(dimension_order) or data.shape != tuple(
+                dimension_size
+            ):
                 # Create mapping of sizes to dimensions
                 size_to_dim = {}
                 found_dims = set()
@@ -1205,10 +1201,8 @@ def read_ome_tiff(tif_path):
                     dimension_size[dimension_order.index(dim)]
                     for dim in dimension_order
                 ]
-
             # Build a mapping from dimension character to axis index
             dim_map = {dim: idx for idx, dim in enumerate(dimension_order)}
-
             # Perform max projection along T and Z if necessary
             axes_to_project = []
             # Check if 'T' and 'Z' are in the dimension order and if their sizes >1
@@ -1217,6 +1211,7 @@ def read_ome_tiff(tif_path):
                     axes_to_project.append(dim_map[dim])
 
             if axes_to_project:
+
                 data = np.max(data, axis=tuple(axes_to_project), keepdims=False)
                 # Remove projected dimensions from dimension_order
                 dimension_order = "".join([d for d in dimension_order if d not in "TZ"])
@@ -1237,8 +1232,24 @@ def read_ome_tiff(tif_path):
 
             return np.ascontiguousarray(data), {
                 "channels": channels,
-                "size_x": int(dimension_size[1]),
-                "size_y": int(dimension_size[0]),
+                "size_x": int(dimension_size[0]),
+                "size_y": int(dimension_size[1]),
+                "physical_pixel_size_x": (
+                    float(metadata_extracted.get("physical_pixel_size_x"))
+                    if metadata_extracted.get("physical_pixel_size_x") is not None
+                    else None
+                ),
+                "physical_pixel_size_y": (
+                    float(metadata_extracted.get("physical_pixel_size_y"))
+                    if metadata_extracted.get("physical_pixel_size_y") is not None
+                    else None
+                ),
+                "physical_pixel_size_x_unit": metadata_extracted.get(
+                    "physical_pixel_size_x_unit"
+                ),
+                "physical_pixel_size_y_unit": metadata_extracted.get(
+                    "physical_pixel_size_y_unit"
+                ),
             }
 
     except Exception as e:
@@ -1323,6 +1334,17 @@ def extract_ome_metadata(tif_path, dict_out):
             if all([image_key, pixels_key, channel_key]):
                 channels = m_ome[image_key][pixels_key][channel_key]
                 channels = remove_at_symbol(channels)
+
+                # Extract dimension sizes and order from pixels metadata
+                pixels = m_ome[image_key][pixels_key]
+                dict_out["size_x"] = int(pixels.get("SizeX", 0))
+                dict_out["size_y"] = int(pixels.get("SizeY", 0))
+                dict_out["size_z"] = int(pixels.get("SizeZ", 1))
+                dict_out["size_c"] = int(pixels.get("SizeC", 1))
+                dict_out["size_t"] = int(pixels.get("SizeT", 1))
+                dict_out["dimension_order"] = pixels.get("DimensionOrder", "XYZCT")
+
+                # Continue with existing channel extraction
                 if isinstance(channels, list):
                     for ii in range(len(channels)):
                         if "Name" in channels[ii].keys():
@@ -1470,6 +1492,8 @@ def standardize_channels(arr, current_channels):
             elif arr.shape[2] == 4:
                 logger.info("Found image with alpha channel, throwing out alpha.")
                 return ["red", "green", "blue"], arr[:, :, :3]
+            elif arr.shape[2] == 1:
+                return ["gray"], arr
         elif len(arr.squeeze().shape) == 2:
             return ["gray"], arr
 
@@ -1539,8 +1563,8 @@ def write_ome_tiff(
             c_size = arr.shape[2]
 
         metadata_dict = {
-            "SizeX": arr.shape[1],
-            "SizeY": arr.shape[0],
+            "SizeX": arr.shape[0],
+            "SizeY": arr.shape[1],
             "SizeC": c_size,
             "SizeT": 1,
             "SizeZ": 1,
@@ -1553,9 +1577,17 @@ def write_ome_tiff(
             },
         }
         if physical_pixel_size_x:
-            metadata_dict["PhysicalSizeX"] = physical_pixel_size_x
+            metadata_dict["PhysicalSizeX"] = (
+                float(physical_pixel_size_x)
+                if not isinstance(physical_pixel_size_x, type(None))
+                else None
+            )
         if physical_pixel_size_y:
-            metadata_dict["PhysicalSizeY"] = physical_pixel_size_y
+            metadata_dict["PhysicalSizeY"] = (
+                float(physical_pixel_size_y)
+                if not isinstance(physical_pixel_size_y, type(None))
+                else None
+            )
         if physical_pixel_unit_x:
             metadata_dict["PhysicalSizeXUnit"] = physical_pixel_unit_x
         if physical_pixel_unit_y:
@@ -1733,6 +1765,11 @@ def read_specialized_image(
             arr = crop_and_pad_image(arr, bbox)
 
         dict_out.update(metadata)
+
+        # curate channels
+        dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+        dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
+
         return arr, dict_out
     try:
         with tifffile.TiffFile(tif_path) as tif:
@@ -1781,6 +1818,10 @@ def read_specialized_image(
             dict_out = extract_ome_metadata(tif, dict_out)
             dict_out["size_x"] = arr.shape[1]
             dict_out["size_y"] = arr.shape[0]
+
+            # curate channels
+            dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+            dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
             return arr, dict_out
     if not avoid_loading_ultra_high_res_arrays_normaly or not IS_ULTRA_HIGH_RES:
         raise ValueError("Failed to load image")
