@@ -475,14 +475,30 @@ class CelerSightObj:  # contains group obj
             return []
 
     def get_all_channels(self):
+        """Get all unique channels from all images, handling both string and list channels.
+
+        Returns:
+            list: List of unique channels, preserving their original types
+        """
         # get all possible channels from all images
         channels = []
         for group in self.groups:
             for condition in self.groups[group].conds:
                 for image in self.groups[group].conds[condition].images:
+                    if not image.channel_list:
+                        continue
+
                     for channel in image.channel_list:
+                        # For list channels, convert to tuple to make hashable
+                        if isinstance(channel, list):
+                            channel = tuple(channel)
                         channels.append(channel)
-        return [i for i in list(set(channels)) if i]
+
+        # Convert to set to get unique values
+        unique_channels = set(channels)
+
+        # Convert tuple channels back to lists
+        return [list(c) if isinstance(c, tuple) else c for c in unique_channels if c]
 
     def get_button(self, group_id, condition_id, image_id):
         logger.debug(f"Getting button for {group_id}, {condition_id}, {image_id}")
@@ -2278,7 +2294,7 @@ class ImageObject:
                                     self.to_shapely(mask_B.get_array_for_storing()),
                                 )
 
-                            if inclusion_score > INCLUSION_THRESHOLD:
+                            if inclusion_score >= INCLUSION_THRESHOLD:
                                 potential_parents.append((mask_B, inclusion_score))
 
                 if potential_parents:
