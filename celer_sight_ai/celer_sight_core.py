@@ -262,7 +262,7 @@ class Master_MainWindow(CelerSightMainWindow):
         all_channels = [
             tuple(i.channel_list) if i.channel_list else tuple() for i in all_images
         ]
-        if len(set(all_channels)) > 1:
+        if len(set([str(i) for i in all_channels])) > 1:
             if not force_continue:
                 config.global_signals.actionDialogSignal.emit(
                     "Multiple channels detected across images. This might lead to unexpected behavior.\n Continue?",

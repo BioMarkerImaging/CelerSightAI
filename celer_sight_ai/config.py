@@ -1055,6 +1055,22 @@ bright_colors = [
 ]
 
 
+def ch_as_str(ch):
+    if isinstance(ch, list):
+        # Convert RGB list to tuple for comparison
+        rgb_tuple = tuple(ch[:3])  # Take first 3 values (RGB, ignore alpha if present)
+
+        # Search through channel_colors for matching RGB values
+        for color_name, color_rgb in channel_colors.items():
+            if rgb_tuple == color_rgb[:3]:
+                return color_name.capitalize()
+
+        # If no exact match found, return RGB as string
+        return f"RGB{rgb_tuple}"
+    else:
+        return str(ch)
+
+
 class MagicToolModes(Enum):
     MAGIC_BOX_ROI_GENERIC = 0
     MAGIC_BOX_ROI_FINETUNE = 1

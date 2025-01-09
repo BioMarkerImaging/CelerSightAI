@@ -2457,6 +2457,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 filtered_patterns_with_same_count = set(patterns_with_same_count)
                 patterns_list = sorted(patterns_with_same_count, key=len, reverse=True)
 
+                # Discard potential similar / almost identical patterns
                 for i in range(len(patterns_list)):
                     for j in range(i + 1, len(patterns_list)):
                         if patterns_list[j] in patterns_list[i]:
@@ -2484,7 +2485,13 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         )
 
     def load_files_by_drag_and_drop(
-        self, urls=[], channel_pattern=True, treatment_pattern=True, auto_accept=False
+        self,
+        urls=[],
+        channel_pattern=True,
+        treatment_pattern=True,
+        auto_accept=False,
+        channel_pattern_auto_accept=False,
+        treatment_pattern_auto_accept=False,
     ):
         """
         Determines if the list of urls is:

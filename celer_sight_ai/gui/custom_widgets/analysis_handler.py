@@ -1298,10 +1298,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                                 continue
                             metrics_for_channel["Subject (ROI) area"] = len(rr)
 
-                            if isinstance(channels[ch_indx], str):
-                                channel_key = channels[ch_indx]
-                            else:
-                                channel_key = str(ch_indx)
+                            channel_key = config.ch_as_str(channels[ch_indx])
                             self.MainWindow.DH.BLobj.groups["default"].conds[
                                 Condition
                             ].images[i].masks[m].particle_metrics[
@@ -1467,10 +1464,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                             continue
                         metrics_for_channel["area"] = len(rr)
 
-                        if isinstance(channels[ch_indx], str):
-                            channel_key = channels[ch_indx]
-                        else:
-                            channel_key = str(ch_indx)
+                        channel_key = config.ch_as_str(channels[ch_indx])
                         self.MainWindow.DH.BLobj.groups["default"].conds[
                             Condition
                         ].images[i].masks[m].intensity_metrics[
@@ -1589,13 +1583,14 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
             i for i in list(itertools.product(all_class_ids, repeat=2))
         ]
 
+        all_channels = self.MainWindow.DH.BLobj.get_all_channels()
+        all_channels = [
+            config.ch_as_str(i) for i in all_channels
+        ]  # convert the rgb values to string
+
         # Generate Channel Combinations excluding identical pairs
         channel_combinations = [
-            i
-            for i in list(
-                itertools.product(self.MainWindow.DH.BLobj.get_all_channels(), repeat=2)
-            )
-            if i[0] != i[1]
+            i for i in list(itertools.product(all_channels, repeat=2)) if i[0] != i[1]
         ]
 
         # Generate ROI Combinations excluding identical pairs
@@ -1622,20 +1617,13 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                     .channel_list
                 )
                 all_channels_names = [
-                    (
-                        str(c)
-                        if isinstance(all_channels[c], np.ndarray)
-                        else all_channels[c]
-                    )
+                    (str(c) if isinstance(all_channels[c], list) else all_channels[c])
                     for c in range(len(all_channels))
                 ]
 
                 # Iterate Over Each Channel
                 for ch_indx in range(len(all_channels)):
-                    if isinstance(all_channels[ch_indx], str):
-                        ch_key = all_channels[ch_indx]
-                    else:
-                        ch_key = str(ch_indx)
+                    ch_key = config.ch_as_str(all_channels[ch_indx])
                     # Iterate Over Each Mask in the Image
                     for m, mask in enumerate(
                         self.MainWindow.DH.BLobj.get_all_annotation_objects_for_image(
@@ -1728,7 +1716,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                             channel_key_2 = f"<font color={ch2_name}>{ch2}</font>"
                             comb_channel_key = (
                                 channel_key_1
-                                + f"<font color=white>{operation_ch}</font> "
+                                + f"<font color=white> {operation_ch} </font> "
                                 + channel_key_2
                             )
                             # Add as values the displayed names, needed for indexing of the original channel names
