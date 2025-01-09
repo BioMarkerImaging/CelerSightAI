@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class BaseImageTest(unittest.TestCase):
+class BaseImageTestCase(unittest.TestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod
@@ -53,6 +53,23 @@ class BaseImageTest(unittest.TestCase):
                 )
             else:
                 self.assertEqual(dict2[key], value)
+
+    @classmethod
+    def _load_mock_image_intensity_data(cls):
+        return [
+            (
+                "fixtures/image_intensity/red_green.tif",  # image path
+                {
+                    "mean": {"green": [20.230], "red": [10.170]}
+                },  # expected intensity values
+                ["fixtures/image_intensity/red_green_tif"],  # annotations
+            ),
+            (
+                "fixtures/image_intensity/red_brightfield.tif",
+                {"mean": {"fgw": [226.177], "fbw": [276.116]}},
+                ["fixtures/image_intensity/red_brightfield_tif"],
+            ),
+        ]
 
     @classmethod
     def _load_mock_image_data(cls):
