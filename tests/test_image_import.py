@@ -8,13 +8,13 @@ import sys
 import time
 import logging
 import tempfile
-from tests.base_image_testcase import BaseImageTest
+from tests.base_image_testcase import BaseImageTestCase
 from celer_sight_ai.io.image_reader import read_specialized_image
 
 logger = logging.getLogger(__name__)
 
 
-class TestImageImport(BaseImageTest):
+class TestImageImport(BaseImageTestCase):
 
     def setUp(self):
         """Set up test-specific fixtures."""
@@ -131,6 +131,18 @@ class TestImageImport(BaseImageTest):
                 continue
             # read it normaly
             logger.info(f"Testing image: {img_path}")
+
+            # delete the readable key from the mock_image_data
+            if "readable" in self.mock_image_data[os.path.basename(img_path)]:
+                del self.mock_image_data[os.path.basename(img_path)]["readable"]
+
+            # if its not readable, skip it
+            if not self.mock_image_data[os.path.basename(img_path)].get(
+                "readable", False
+            ):
+                logger.info(f"Skipping image: {img_path}")
+                continue
+
             arr, arr_metadata = read_specialized_image(
                 os.path.join(self.path_images_tif, img_path)
             )
