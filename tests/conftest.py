@@ -11,6 +11,29 @@ from unittest.mock import patch
 from celer_sight_ai.configHandle import get_stored_password, get_stored_username
 from typing import Literal, Any, Callable
 from ui_qtbot_tools import get_gui_main
+import pytest
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--online", action="store_true", default=False, help="run online tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "online: mark test as requiring internet connection"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    # Skip online tests by default unless --online flag is provided
+    if not config.getoption("--online", default=False):
+        skip_online = pytest.mark.skip(reason="online test requires --online flag")
+        for item in items:
+            if "online" in item.keywords:
+                item.add_marker(skip_online)
+
 
 # get parent dir
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,37 +46,6 @@ except Exception as e:
     print(f"Error loading env vars {e}")
 
 
-def mock_password_fail() -> str:
-    return "ASojnaAJO"
-
-
-def mock_correct_password() -> str:
-    return os.environ.get("PASSWORD")
-
-
-def mock_correct_username() -> str:
-    return os.environ["USERNAME"]
-
-
 @pytest.fixture
-def app(qtbot, mock_correct_creds) -> Any:
+def app(qtbot) -> Any:
     return get_gui_main(qtbot)
-
-
-@pytest.fixture
-def mock_correct_creds(monkeypatch) -> None:
-    # Patch the get_stored_password function to return a mock settings object
-    monkeypatch.setattr(
-        "celer_sight_ai.configHandle.get_stored_username", mock_correct_username
-    )
-    monkeypatch.setattr(
-        "celer_sight_ai.configHandle.get_stored_password", mock_correct_password
-    )
-
-
-@pytest.fixture
-def mock_failed_creds(monkeypatch) -> None:
-    # Patch the get_stored_password function to return a mock settings object
-    monkeypatch.setattr(
-        "celer_sight_ai.configHandle.get_stored_password", mock_password_fail
-    )

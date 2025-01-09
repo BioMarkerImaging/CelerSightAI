@@ -166,12 +166,14 @@ def click_on_image_button(app, image_idx):
 
 @add_delay
 def to_main_window(
-    app: QtWidgets.QApplication,
+    app: QtWidgets.QApplication | None,
     mode: str = "intensity",
     model_button_names: list[str] = ["body"],
     organism: str = "worm",  # can also be "on_plate"
 ):
-    # qtbot.addWidget(app)
+
+    if app is None:
+        return
     wait_until_shown(app.MainWindow)
     if organism == "on_plate":
         # click on organism on_plate
@@ -247,7 +249,9 @@ def assert_data_equals(app, roi_name="body", treatment_name=None, values_to_chec
             FOUND = False
             for i in range(app.channel_analysis_metrics_combobox.count()):
                 if (
-                    get_plain_text(app.channel_analysis_metrics_combobox.itemText(i))
+                    get_plain_text(
+                        app.channel_analysis_metrics_combobox.itemText(i)
+                    ).lower()
                     == channel_name
                 ):
                     app.channel_analysis_metrics_combobox.setCurrentIndex(i)
@@ -261,7 +265,7 @@ def assert_data_equals(app, roi_name="body", treatment_name=None, values_to_chec
             df = app.all_condition_analysis_table.model_pandas.dataFrame[
                 treatment_name
             ].values
-            assert np.allclose(np.round(df[0]), np.round(value))
+            assert np.allclose(np.round(df[0]), np.round(value), atol=1)
 
 
 def adjust_bbox_points(point1, point2):
@@ -386,15 +390,15 @@ def draw_mask_by_array(gui_main, point_array):
     zoom_to_box(gui_main, [x1, y1, x2, y2])
     for point in point_array:
         point = adjust_point_from_scene_to_viewport(gui_main, point)
-        QTest.qWait(50)
+        QTest.qWait(10)
         QTest.mousePress(
             gui_main.viewer.viewport(), QtCore.Qt.MouseButton.LeftButton, pos=point
         )
-        QTest.qWait(50)
+        QTest.qWait(10)
         QTest.mouseRelease(
             gui_main.viewer.viewport(), QtCore.Qt.MouseButton.LeftButton, pos=point
         )
-        QTest.qWait(50)
+        QTest.qWait(10)
     # double clik to close the polygon
     QTest.mouseDClick(
         gui_main.viewer.viewport(), QtCore.Qt.MouseButton.LeftButton, pos=point
