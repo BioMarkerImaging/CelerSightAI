@@ -276,8 +276,8 @@ def channel_to_color(channel_var):
     # converts microscope channel to a emmision color
     from celer_sight_ai import config
 
-    if isinstance(channel_var, np.ndarray):
-        return channel_var.tolist()
+    if isinstance(channel_var, list):
+        return channel_var
 
     if channel_var.lower() in config.channel_colors.keys():
         return config.channel_colors[channel_var.lower()]
@@ -1527,7 +1527,9 @@ def extract_channels_from_imagej_metadata(dict_out, metadata):
 
     try:
         # Convert LUT to color rgb max value for each channel
-        dict_out["channels"] = [np.max(lut, axis=1) for lut in metadata["LUTs"]]
+        dict_out["channels"] = [
+            np.max(lut, axis=1).tolist() for lut in metadata["LUTs"]
+        ]
     except Exception as e:
         logger.error(f"Error extracting channels from ImageJ LUTs: {e}")
     return dict_out
@@ -1597,9 +1599,7 @@ def write_ome_tiff(
         dimension_order = "CYX"
 
         # Rearrange dimensions to match the dimension order
-        data_to_write = np.transpose(
-            arr, (2, 1, 0)
-        )  # .reshape(c_size, arr.shape[0], arr.shape[1])
+        data_to_write = np.transpose(arr, (2, 0, 1))
         # if there is a single named channel and multiple are provided, we need to do
         # max projection
         if c_size == 1:
@@ -1917,10 +1917,8 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
     - grid_width, grid_height: The number of tiles in each dimension.
     """
     import pyvips
-    import openslide
     import math
-    import io
-    import tempfile
+    import os
     import zlib
 
     # Open the .svs file with pyvips
@@ -1929,18 +1927,49 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
     # Convert to RGB if it's not already (some SVS files might be CMYK or other formats)
     if image.bands == 4:  # Assuming the last band is alpha
         image = image[0:3]  # Drop the alpha channel
-    img_path = os.path.join(temp_dir, "tmp.jpg")
-    # Save the image directly to a .jpg file with specified quality
-    image.jpegsave(img_path, Q=70)
+
+    # Calculate number of tiles needed
+    MAX_DIMENSION = 65000  # Slightly below JPEG limit of 65500
+    width = image.width
+    height = image.height
+    
+    if width <= MAX_DIMENSION and height <= MAX_DIMENSION:
+        # Image is small enough to save directly
+        img_path = os.path.join(temp_dir, "tmp.jpg")
+        image.jpegsave(img_path, Q=quality)
+    else:
+        # Need to tile the image
+        n_cols = math.ceil(width / MAX_DIMENSION)
+        n_rows = math.ceil(height / MAX_DIMENSION)
+        
+        # Create a directory for tiles
+        tiles_dir = os.path.join(temp_dir, "tiles")
+        os.makedirs(tiles_dir, exist_ok=True)
+        
+        # Save image as tiled pyramid TIFF instead
+        img_path = os.path.join(temp_dir, "tmp.tif")
+        image.tiffsave(
+            img_path,
+            compression="jpeg",
+            Q=quality,
+            pyramid=True,
+            tile=True,
+            tile_width=1024,
+            tile_height=1024,
+            bigtiff=True
+        )
+
     if compress:
-        # compress with zlib without having to read the whole file to memory
+        # Compress with zlib without having to read the whole file to memory
         with open(img_path, "rb") as f:
             compressed = zlib.compress(f.read())
-            # write the compressed data to a new file
-        final_path = img_path.replace(".jpg", ".zip")
+        
+        # Write the compressed data to a new file
+        final_path = img_path.replace(os.path.splitext(img_path)[1], ".zip")
         with open(final_path, "wb") as f:
             f.write(compressed)
         return final_path
+
     return img_path
 
 
