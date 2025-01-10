@@ -8,7 +8,6 @@ sys.path.append(p_dir)
 
 import pytest
 from unittest.mock import patch
-from celer_sight_ai.configHandle import get_stored_password, get_stored_username
 from typing import Literal, Any, Callable
 from ui_qtbot_tools import get_gui_main
 import pytest
@@ -17,12 +16,6 @@ import pytest
 def pytest_addoption(parser):
     parser.addoption(
         "--online", action="store_true", default=False, help="run online tests"
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "online: mark test as requiring internet connection"
     )
 
 

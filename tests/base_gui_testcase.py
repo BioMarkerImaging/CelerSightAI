@@ -13,9 +13,10 @@ class BaseGuiTestCase(unittest.TestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod
-    def setUpClass(cls, app):
+    def setUpClass(cls):
         """Set up class-level test fixtures."""
-        cls.app = app
+        super().setUpClass()
+        cls.app = qttest_utils.get_gui_main(offline=True)
         qttest_utils.wait_until_shown(cls.app.MainWindow)
 
     def check_key_value_pairs(self, dict1, dict2):
@@ -38,4 +39,5 @@ class BaseGuiTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.app.close()
+        super().tearDownClass()
+        cls.app.closeApp()

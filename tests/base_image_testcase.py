@@ -13,6 +13,7 @@ class BaseImageTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         """Set up class-level test fixtures."""
         from celer_sight_ai.config import start_jvm
 
@@ -35,6 +36,9 @@ class BaseImageTestCase(unittest.TestCase):
         cls.mock_proprietory_images = {
             "tests/fixtures/tissue_files/TCGA-HC-7820-01A-01-TS1.f9131ac5-c635-42a7-a383-634d90d212d4.svs": None
         }
+        cls.test_dir = os.path.join(
+            os.path.dirname(os.environ.get("CELER_SIGHT_AI_HOME") or ""), "tests"
+        )
 
     def check_key_value_pairs(self, dict1, dict2):
         """Compare two dictionaries with special handling for None and numpy arrays."""
@@ -244,6 +248,11 @@ class BaseImageTestCase(unittest.TestCase):
         # Reference to original mock_high_res_images dictionary
         # tests/test_image_import.py lines 179-212
         return {
+            "aup-1_13_2_Top Right Dish_TM_p00_0_A01f00d0.TIF": {
+                "channels": ["red", "green", "blue"],
+                "size_x": 17515,
+                "size_y": 17239,
+            },
             # "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": None,
             # "CMU-1.ndpi": {
             #     "channels": ["red", "green", "blue"],

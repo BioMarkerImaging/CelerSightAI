@@ -17,6 +17,7 @@ class BaseOnlineTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         """Set up class-level test fixtures."""
         from celer_sight_ai.config import start_jvm
 
