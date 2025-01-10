@@ -2280,6 +2280,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     ):
         # Reads the grayscale images, combines them and saves them to disk. If images are not grayscale raise error
         import copy
+        from celer_sight_ai.io.image_reader import write_ome_tiff
 
         image_channel_list_arr = []
         channel_names_arr = []
@@ -2360,8 +2361,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         channel_images.append(img)  # raw image
 
                     combined_image = np.stack(channel_images, axis=-1)
-                    # save the image as a tiff with the channels included
-                    import tifffile
 
                     # Prepare ImageJ style metadata with channel names
                     channel_names_arr[i] = list(channel_names_arr[i])
@@ -2380,30 +2379,27 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         file_name[:indx_channel]
                         + file_name[indx_channel + len(channel_names_arr[i][0]) :]
                     )
-                    output_path = os.path.join(
-                        str(config.cache_dir), file_name + ".tif"
-                    )
+                    output_path = os.path.join(str(config.cache_dir), file_name)
                     iii = 0
-                    while os.path.exists(output_path):
+                    while os.path.exists(output_path + ".tif"):
                         import random
 
                         if iii > 1000:
                             break
                         output_path = os.path.join(
                             config.cache_dir,
-                            file_name + str(random.randint(0, 1000)) + ".tif",
+                            file_name + str(random.randint(0, 1000)),
                         )
                         iii += 1
+
+                    output_path = os.path.join(output_path + ".tif")
                     # Save the combined image as a TIFF file with metadata
-                    import bioformats
 
-                    dtype = combined_image.dtype
-                    if dtype == np.uint16:
-                        dtype = bioformats.PT_UINT16
-                    elif dtype == np.uint8:
-                        dtype = bioformats.PT_UINT8
-
-                    bioformats.write_image(output_path, combined_image, dtype)
+                    write_ome_tiff(
+                        arr=combined_image,
+                        channels=channel_names_arr[i],
+                        tif_path=output_path,
+                    )
 
                     out_urls.append(output_path)
                 if treatmetns:
@@ -2700,6 +2696,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             if len(all_folders) == 1 and len(all_files) == 0:
                 # case of 1 folder, list everything in it and recurse
                 if not isinstance(all_folders[0], list):
+                    # get all subfolders
                     all_urls = glob.glob(os.path.join(all_folders[0], "*"))
                 else:
                     all_urls = all_folders[0]
