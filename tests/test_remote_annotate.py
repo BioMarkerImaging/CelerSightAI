@@ -20,6 +20,8 @@ from parameterized import parameterized
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import dotenv
 from PyQt6.QtTest import QTest
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_online_testcase import BaseOnlineTestCase
 
 # load env vars
 dotenv.load_dotenv(os.path.join(p, ".env"))
@@ -40,7 +42,7 @@ delete the image, validate the deletion and erase any mock images created in thi
 """
 
 
-class TestRemoteAnnotate(unittest.TestCase):
+class TestRemoteAnnotate(BaseOnlineTestCase):
     def setUp(self):
         self.currentlyUsedS1Address = getServerLogAddress()
         self.mock_credentials = [

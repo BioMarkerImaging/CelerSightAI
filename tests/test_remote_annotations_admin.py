@@ -14,6 +14,8 @@ import numpy as np
 # import shapely
 from shapely.geometry import Polygon
 from parameterized import parameterized
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_online_testcase import BaseOnlineTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -109,14 +111,7 @@ def custom_test_order(test_name, num):
     return order.get(test_name, 99)
 
 
-class CelerSightRemoteAnnotationAdminTest(unittest.TestCase):
-    app = None
-
-    @classmethod
-    def setUpClass(cls):
-        # start the app
-        cls.app = qttest_utils.get_gui_main()
-        qttest_utils.wait_until_shown(cls.app.MainWindow)
+class CelerSightRemoteAnnotationAdminTest(BaseGuiTestCase, BaseOnlineTestCase):
 
     @parameterized.expand(
         [

@@ -7,19 +7,18 @@ import qttest_utils
 from unittest.mock import patch
 from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai import config
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_online_testcase import BaseOnlineTestCase
 
 logger = logging.getLogger(__name__)
 
 DELAY_TIME = 200  # in ms
 
 
-class TestLoginDuringAnalysis(unittest.TestCase):
-    def setUp(self):
-        # Start with a normal GUI session
-        self.gui_main = qttest_utils.get_gui_main(offline=False)
+class TestLoginDuringAnalysis(BaseGuiTestCase, BaseOnlineTestCase):
 
     def test_login_during_analysis(self):
-        app = self.gui_main
+        app = self.app
         qttest_utils.wait_until_shown(app.MainWindow)
         qttest_utils.to_main_window(app)
 

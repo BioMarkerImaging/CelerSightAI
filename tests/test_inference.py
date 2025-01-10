@@ -18,6 +18,7 @@ import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 import json
 from parameterized import parameterized
+from tests.base_online_testcase import BaseOnlineTestCase
 
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import dotenv
@@ -38,7 +39,7 @@ import random
 from tqdm import tqdm
 
 
-class MyTest(unittest.TestCase):
+class MyTest(BaseOnlineTestCase):
     def setUp(self):
         self.mock_credentials = []
         if os.environ.get("USERNAME_ADMIN") and os.environ.get("PASSWORD_ADMIN"):

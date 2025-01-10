@@ -6,7 +6,7 @@ from celer_sight_ai.configHandle import (
 )
 from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerLogAddress, getServerLogAddress
-
+from tests.base_online_testcase import BaseOnlineTestCase
 import json
 
 
@@ -35,7 +35,7 @@ def file_generator(file_path):
             yield data
 
 
-class TestSendLargeZippedImageAnnotated(unittest.TestCase):
+class TestSendLargeZippedImageAnnotated(BaseOnlineTestCase):
 
     def setUp(self):
         self.mock_credentials = []
