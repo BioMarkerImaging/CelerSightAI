@@ -1755,22 +1755,7 @@ def read_specialized_image(
             logger.error(f"Error loading tiff file with bioformats: {e}")
         finally:
             javabridge.detach()
-    if IS_OME_TIFF:
-        # read with pyometiff
-        arr, metadata = read_ome_tiff(tif_path)
-        if arr is None or metadata is None:
-            raise ValueError("Failed to load image")
-        # crop the image if bbox is provided
-        if bbox:
-            arr = crop_and_pad_image(arr, bbox)
 
-        dict_out.update(metadata)
-
-        # curate channels
-        dict_out = extract_more_metadata_if_available(tif_path, dict_out)
-        dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
-
-        return arr, dict_out
     try:
         with tifffile.TiffFile(tif_path) as tif:
             # get dimenions of the first image
@@ -1823,6 +1808,25 @@ def read_specialized_image(
             dict_out = extract_more_metadata_if_available(tif_path, dict_out)
             dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
             return arr, dict_out
+    if IS_OME_TIFF:
+        # read with pyometiff
+        if not IS_ULTRA_HIGH_RES:
+            # dont read image data
+            arr, metadata = read_ome_tiff(tif_path)
+            if arr is None or metadata is None:
+                raise ValueError("Failed to load image")
+            # crop the image if bbox is provided
+            if bbox:
+                arr = crop_and_pad_image(arr, bbox)
+
+            dict_out.update(metadata)
+
+            # curate channels
+            dict_out = extract_more_metadata_if_available(tif_path, dict_out)
+            dict_out["channels"], arr = standardize_channels(arr, dict_out["channels"])
+
+            return arr, dict_out
+
     if not avoid_loading_ultra_high_res_arrays_normaly or not IS_ULTRA_HIGH_RES:
         raise ValueError("Failed to load image")
     # case of "TCZYXS" being actually "TSZYXC"
@@ -1932,7 +1936,7 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
     MAX_DIMENSION = 65000  # Slightly below JPEG limit of 65500
     width = image.width
     height = image.height
-    
+
     if width <= MAX_DIMENSION and height <= MAX_DIMENSION:
         # Image is small enough to save directly
         img_path = os.path.join(temp_dir, "tmp.jpg")
@@ -1941,11 +1945,11 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
         # Need to tile the image
         n_cols = math.ceil(width / MAX_DIMENSION)
         n_rows = math.ceil(height / MAX_DIMENSION)
-        
+
         # Create a directory for tiles
         tiles_dir = os.path.join(temp_dir, "tiles")
         os.makedirs(tiles_dir, exist_ok=True)
-        
+
         # Save image as tiled pyramid TIFF instead
         img_path = os.path.join(temp_dir, "tmp.tif")
         image.tiffsave(
@@ -1956,14 +1960,14 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
             tile=True,
             tile_width=1024,
             tile_height=1024,
-            bigtiff=True
+            bigtiff=True,
         )
 
     if compress:
         # Compress with zlib without having to read the whole file to memory
         with open(img_path, "rb") as f:
             compressed = zlib.compress(f.read())
-        
+
         # Write the compressed data to a new file
         final_path = img_path.replace(os.path.splitext(img_path)[1], ".zip")
         with open(final_path, "wb") as f:
