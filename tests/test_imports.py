@@ -20,6 +20,7 @@ class importTesting(unittest.TestCase):
             config.add_open_slide_and_vips_to_sys(test_imports=True)
             print("roi file")
             import roifile
+            import pyvips
 
             print("zstandard")
             import zstandard
@@ -72,6 +73,7 @@ class importTesting(unittest.TestCase):
 
             print("zarr")
             import zarr
+            import imagecodecs
 
             if config.is_executable:
                 sys.path.append([str(os.environ["CELER_SIGHT_AI_HOME"])])
@@ -152,6 +154,7 @@ class importTesting(unittest.TestCase):
 
             print("xmltodict")
             import xmltodict
+            import networkx
 
             print("azure.storage.blob")
             from azure.storage.blob import BlobServiceClient, BlobClient

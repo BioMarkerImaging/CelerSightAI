@@ -19,7 +19,7 @@ import psutil
 # os.environ["MODEL_PROFILING"] = "true"
 
 
-class TestMyFunction(unittest.TestCase):
+class TestMagicBox(unittest.TestCase):
     def setUp(self):
         from celer_sight_ai import configHandle
 

@@ -9,6 +9,7 @@ from celer_sight_ai import config
 
 config.user_cfg["OFFLINE_MODE"] = True
 from tests.base_image_testcase import BaseImageTestCase
+from tests.base_gui_testcase import BaseGuiTestCase
 
 import logging
 from tests import qttest_utils
@@ -58,17 +59,9 @@ def custom_test_order(test_name, num):
     return order.get(test_name, 99)
 
 
-class CelerSightRemoteAnnotationAdminTest(BaseImageTestCase):
-    app = None
-
-    @classmethod
-    def setUpClass(cls):
-        # start the app
-        cls.app = qttest_utils.get_gui_main()
-        qttest_utils.wait_until_shown(cls.app.MainWindow)
-        cls.test_dir = os.path.join(
-            os.path.dirname(os.environ.get("CELER_SIGHT_AI_HOME") or ""), "tests"
-        )
+class TestImageIntensityWithGUI(BaseGuiTestCase, BaseImageTestCase):
+    def setUp(self):
+        super().setUp()  # This ensures parent class setUp methods are called
 
     @parameterized.expand(BaseImageTestCase._load_mock_image_intensity_data)
     def test_image_intensity_2D_rgb(

@@ -8,6 +8,7 @@ import pytest
 from celer_sight_ai import config
 import logging
 from tests import qttest_utils
+from tests.base_gui_testcase import BaseGuiTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +60,12 @@ os.environ["CELER_SIGHT_TESTING"] = "true"
 DELAY_TIME = 400  # in ms
 
 
-class CelerSightTestSimple(unittest.TestCase):
-    def setUp(self):
-        # import celer_sight_ai main module
-        self.gui_main = qttest_utils.get_gui_main()
+class CelerSightTestSimple(BaseGuiTestCase):
 
     def test_one(self):
         import time
 
-        app = self.gui_main
+        app = self.app
         # wait 5 seconds
         qttest_utils.wait_until_shown(app.MainWindow)
         print("SHOWN OK")
@@ -213,6 +211,7 @@ class CelerSightTestSimple(unittest.TestCase):
                 amount_of_images_to_remove -= 1
             qttest_utils.deep_diff(config.DH_data, qttest_utils.get_data(app))
             qttest_utils.record_DH_data(app)
+
         return True
 
 

@@ -180,72 +180,73 @@ class TestImageImport(BaseImageTestCase):
                 self.mock_image_data[os.path.basename(img_path)], arr_metadata
             )
 
-    # def test_ultra_high_res_preview(self):
-    #     from celer_sight_ai import config
-    #     from celer_sight_ai.gui.custom_widgets.scene import readImage
-    #     from celer_sight_ai.io.image_reader import (
-    #         open_preview_with_tiffslide_image_reader,
-    #         open_preview_with_openslide_image_reader,
-    #         get_deep_zoom_by_tiffslide,
-    #         create_pyramidal_tiff,
-    #     )
-    #     import time
+    def test_ultra_high_res_preview(self):
+        from celer_sight_ai import config
+        from celer_sight_ai.gui.custom_widgets.scene import readImage
+        from celer_sight_ai.io.image_reader import (
+            open_preview_with_tiffslide_image_reader,
+            open_preview_with_openslide_image_reader,
+            get_deep_zoom_by_tiffslide,
+            create_pyramidal_tiff,
+        )
+        import time
 
-    #     config.user_cfg["USER_WORKERS"] = False
-    #     # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
-    #     for img_path in self.mock_high_res_images.keys():
-    #         expected_val_key_pairs = self.mock_high_res_images[img_path]
-    #         print("Testing image: " + os.path.basename(img_path))
+        config.user_cfg["USER_WORKERS"] = False
+        # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
+        for img_path in self.mock_high_res_images.keys():
+            expected_val_key_pairs = self.mock_high_res_images[img_path]
+            print("Testing image: " + os.path.basename(img_path))
+            # if not "aup-1_13_2_Top Right Dish_TM_p00_0_A01f00d0" in img_path:
+            #     continue
+            try:
+                start = time.time()
+                #  test thumbnail first
+                result = readImage(
+                    os.path.join(self.ultra_high_res_root_path, img_path),
+                    for_interactive_zoom=False,
+                    for_thumbnail=True,
+                    avoid_loading_ultra_high_res_arrays_normaly=True,  # Interactive methods, quick loading etc
+                )
+                time_taken = time.time() - start
+                print(
+                    f"{os.path.basename(img_path)} Image read in {time_taken} seconds"
+                )
+                assert (
+                    time_taken < 1
+                ), f"{os.path.basename(img_path)} took {time_taken} seconds to load thumbnail"
+                if isinstance(result, type(None)) or (
+                    isinstance(result[0], type(None))
+                    and isinstance(result[1], type(None))
+                ):
+                    self.assertEqual(expected_val_key_pairs, None)
+                    continue
+                self.check_key_value_pairs(expected_val_key_pairs, result[1])
+                # test loading for interactive zoom
+                start = time.time()
+                result = readImage(
+                    os.path.join(self.ultra_high_res_root_path, img_path),
+                    for_interactive_zoom=True,
+                    for_thumbnail=True,
+                    avoid_loading_ultra_high_res_arrays_normaly=True,  # Interactive methods, quick loading etc
+                )
+                time_taken = time.time() - start
+                print(
+                    f"{os.path.basename(img_path)} Image read in {time_taken} seconds"
+                )
+                assert (
+                    time_taken < 1
+                ), f"{os.path.basename(img_path)} took {time_taken} seconds to load interactive zoom"
+                print()
+            except Exception as e:
+                print(e)
+                self.fail()
 
-    #         try:
-    #             start = time.time()
-    #             #  test thumbnail first
-    #             result = readImage(
-    #                 os.path.join(self.ultra_high_res_root_path, img_path),
-    #                 for_interactive_zoom=False,
-    #                 for_thumbnail=True,
-    #                 avoid_loading_ultra_high_res_arrays_normaly=True,  # Interactive methods, quick loading etc
-    #             )
-    #             time_taken = time.time() - start
-    #             print(
-    #                 f"{os.path.basename(img_path)} Image read in {time_taken} seconds"
-    #             )
-    #             assert (
-    #                 time_taken < 1
-    #             ), f"{os.path.basename(img_path)} took {time_taken} seconds to load thumbnail"
-    #             if isinstance(result, type(None)) or (
-    #                 isinstance(result[0], type(None))
-    #                 and isinstance(result[1], type(None))
-    #             ):
-    #                 self.assertEqual(expected_val_key_pairs, None)
-    #                 continue
-    #             self.check_key_value_pairs(expected_val_key_pairs, result[1])
-    #             # test loading for interactive zoom
-    #             start = time.time()
-    #             result = readImage(
-    #                 os.path.join(self.ultra_high_res_root_path, img_path),
-    #                 for_interactive_zoom=True,
-    #                 for_thumbnail=True,
-    #                 avoid_loading_ultra_high_res_arrays_normaly=True,  # Interactive methods, quick loading etc
-    #             )
-    #             time_taken = time.time() - start
-    #             print(
-    #                 f"{os.path.basename(img_path)} Image read in {time_taken} seconds"
-    #             )
-    #             assert (
-    #                 time_taken < 1
-    #             ), f"{os.path.basename(img_path)} took {time_taken} seconds to load interactive zoom"
-    #             print()
-    #         except Exception as e:
-    #             print(e)
-    #             self.fail()
+            im, arr_metadata = open_preview_with_openslide_image_reader(
+                os.path.join(self.ultra_high_res_root_path, img_path)
+            )
+            self.check_key_value_pairs(expected_val_key_pairs, arr_metadata)
 
-    #         im, arr_metadata = open_preview_with_openslide_image_reader(
-    #             os.path.join(self.ultra_high_res_root_path, img_path)
-    #         )
-    #         self.check_key_value_pairs(expected_val_key_pairs, arr_metadata)
-
-    #         print("Testing image: " + img_path)
+            print("Testing image: " + img_path)
 
     # def test_crop_ultra_high_res(self):
     #     from celer_sight_ai.gui.Utilities.scene import readImage

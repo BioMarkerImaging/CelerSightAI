@@ -9,8 +9,8 @@ from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerLogAddress
 import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
-
-
+import pytest
+from tests.base_online_testcase import BaseOnlineTestCase
 from parameterized import parameterized
 from dotenv import load_dotenv
 
@@ -25,7 +25,8 @@ def add(x, y):
     return x + y
 
 
-class MyTest(unittest.TestCase):
+@pytest.mark.online
+class TestCreateNewCategories(BaseOnlineTestCase):
 
     @classmethod
     def setUpClass(cls):
