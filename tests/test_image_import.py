@@ -10,6 +10,7 @@ import logging
 import tempfile
 from tests.base_image_testcase import BaseImageTestCase
 from celer_sight_ai.io.image_reader import read_specialized_image
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +181,7 @@ class TestImageImport(BaseImageTestCase):
                 self.mock_image_data[os.path.basename(img_path)], arr_metadata
             )
 
+    @pytest.mark.long
     def test_ultra_high_res_preview(self):
         from celer_sight_ai import config
         from celer_sight_ai.gui.custom_widgets.scene import readImage

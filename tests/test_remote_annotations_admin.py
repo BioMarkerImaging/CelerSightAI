@@ -113,6 +113,8 @@ def custom_test_order(test_name, num):
 
 class CelerSightRemoteAnnotationAdminTest(BaseGuiTestCase, BaseOnlineTestCase):
 
+    @pytest.mark.long
+    @pytest.mark.online
     @parameterized.expand(
         [
             (

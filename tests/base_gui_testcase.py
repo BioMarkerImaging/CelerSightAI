@@ -5,11 +5,14 @@ import numpy as np
 from glob import glob
 import logging
 from tests import qttest_utils
+from tests.base_test_case import BaseTestCase
+import pytest
 
 logger = logging.getLogger(__name__)
 
 
-class BaseGuiTestCase(unittest.TestCase):
+@pytest.mark.long
+class BaseGuiTestCase(BaseTestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod

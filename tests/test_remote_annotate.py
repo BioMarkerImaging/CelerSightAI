@@ -22,6 +22,7 @@ import dotenv
 from PyQt6.QtTest import QTest
 from tests.base_gui_testcase import BaseGuiTestCase
 from tests.base_online_testcase import BaseOnlineTestCase
+import pytest
 
 # load env vars
 dotenv.load_dotenv(os.path.join(p, ".env"))
@@ -50,6 +51,8 @@ class TestRemoteAnnotate(BaseOnlineTestCase):
         ]
         self.client = FileClient(getServerLogAddress())
 
+    @pytest.mark.long
+    @pytest.mark.online
     @parameterized.expand(
         [
             (

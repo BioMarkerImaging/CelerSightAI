@@ -17,9 +17,11 @@ import lzma
 import lz4
 import lz4.frame
 import zstandard
+import pytest
 
 
-class MyTest(BaseImageTestCase):
+@pytest.mark.long
+class TestCompressionMethods(BaseImageTestCase):
     def setUp(self):
         self.path_images_tif = "tests/fixtures/import_images"
         self.all_images_tif = glob(self.path_images_tif + "/*.tif") + glob(

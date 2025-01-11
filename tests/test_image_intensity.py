@@ -10,7 +10,7 @@ from celer_sight_ai import config
 config.user_cfg["OFFLINE_MODE"] = True
 from tests.base_image_testcase import BaseImageTestCase
 from tests.base_gui_testcase import BaseGuiTestCase
-
+import pytest
 import logging
 from tests import qttest_utils
 from unittest.mock import patch
@@ -63,6 +63,7 @@ class TestImageIntensityWithGUI(BaseGuiTestCase, BaseImageTestCase):
     def setUp(self):
         super().setUp()  # This ensures parent class setUp methods are called
 
+    @pytest.mark.long
     @parameterized.expand(BaseImageTestCase._load_mock_image_intensity_data)
     def test_image_intensity_2D_rgb(
         self,

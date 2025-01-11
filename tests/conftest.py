@@ -17,15 +17,25 @@ def pytest_addoption(parser):
     parser.addoption(
         "--online", action="store_true", default=False, help="run online tests"
     )
+    parser.addoption(
+        "--run-long", action="store_true", default=False, help="run long tests"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
-    # Skip online tests by default unless --online flag is provided
-    if not config.getoption("--online", default=False):
-        skip_online = pytest.mark.skip(reason="online test requires --online flag")
+    # Skip online tests unless --online flag is provided
+    if not config.getoption("--online"):
+        skip_online = pytest.mark.skip(reason="need --online option to run")
         for item in items:
             if "online" in item.keywords:
                 item.add_marker(skip_online)
+
+    # Skip long tests unless --run-long flag is provided
+    if not config.getoption("--run-long"):
+        skip_long = pytest.mark.skip(reason="need --run-long option to run")
+        for item in items:
+            if "long" in item.keywords:
+                item.add_marker(skip_long)
 
 
 # get parent dir

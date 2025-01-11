@@ -4,11 +4,12 @@ import unittest
 import numpy as np
 from glob import glob
 import logging
+from tests.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
 
-class BaseImageTestCase(unittest.TestCase):
+class BaseImageTestCase(BaseTestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod
@@ -57,6 +58,18 @@ class BaseImageTestCase(unittest.TestCase):
                 )
             else:
                 self.assertEqual(dict2[key], value)
+
+    @classmethod
+    def _load_mock_coloc_data(cls):
+        return [
+            (
+                "test_assets/sy441.jpg",  # image
+                {  # values
+                    "pearson": 0.656,
+                    "spearman": 0.800,
+                },
+            )
+        ]
 
     @classmethod
     def _load_mock_image_intensity_data(cls):

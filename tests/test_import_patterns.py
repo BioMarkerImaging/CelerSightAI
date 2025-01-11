@@ -63,6 +63,7 @@ class CelerSightImportPatternsTest(BaseGuiTestCase):
         self.test_dir = os.path.join(os.path.dirname(celer_sight_home), "tests")
         qttest_utils.wait_until_shown(self.app.MainWindow)
 
+    @pytest.mark.long
     @parameterized.expand(
         [
             (

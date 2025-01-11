@@ -7,12 +7,13 @@ import logging
 from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerLogAddress
 import pytest
+from tests.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.online
-class BaseOnlineTestCase(unittest.TestCase):
+class BaseOnlineTestCase(BaseTestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod

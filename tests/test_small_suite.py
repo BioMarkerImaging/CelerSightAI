@@ -62,6 +62,7 @@ DELAY_TIME = 400  # in ms
 
 class CelerSightTestSimple(BaseGuiTestCase):
 
+    @pytest.mark.long
     def test_one(self):
         import time
 

@@ -9,6 +9,7 @@ from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai import config
 from tests.base_gui_testcase import BaseGuiTestCase
 from tests.base_online_testcase import BaseOnlineTestCase
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,8 @@ DELAY_TIME = 200  # in ms
 
 class TestLoginDuringAnalysis(BaseGuiTestCase, BaseOnlineTestCase):
 
+    @pytest.mark.long
+    @pytest.mark.online
     def test_login_during_analysis(self):
         app = self.app
         qttest_utils.wait_until_shown(app.MainWindow)
