@@ -1,0 +1,28 @@
+[tool.ruff]
+# Enable formatting
+line-length = 88
+
+# Enable linting rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+# Ignore specific rules
+ignore = [
+    "F401",  # unused imports
+    "F811",  # redefinition of unused name
+]
+
+
+# Exclude files/directories
+exclude = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+]
+

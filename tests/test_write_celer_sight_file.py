@@ -1,12 +1,15 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
-import sys
-import unittest
-import pytest
-from celer_sight_ai import config
 import logging
+import os
+import unittest
+
+import pytest
 import qttest_utils
+from parameterized import parameterized
+from PyQt6.QtTest import QTest
+
+from celer_sight_ai import config
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_image_testcase import BaseImageTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -15,15 +18,18 @@ os.environ["CELER_SIGHT_TESTING"] = "true"
 DELAY_TIME = 200  # in ms
 
 
-class TestCelerSightFile:
+class TestCelerSightFile(BaseGuiTestCase, BaseImageTestCase):
     def setUp(self):
         # import celer_sight_ai main module
         self.gui_main = qttest_utils.get_gui_main(offline=True)
 
-    def test_write_read_celer_sight_file(self):
-        self.write_celer_sight_file()
+    @pytest.mark.long
+    @parameterized.expand(BaseImageTestCase._load_mock_write_load_celer_sight_file())
+    def test_write_read_celer_sight_file(self, image_path):
+        self.write_celer_sight_file(image_path)
         self.read_celer_sight_file()
 
+    @pytest.mark.long
     def write_celer_sight_file(self):
         app = self.gui_main
         qttest_utils.wait_until_shown(app.MainWindow)
@@ -54,6 +60,7 @@ class TestCelerSightFile:
         groups_dict, filename = app.save_celer_sight_file(filename_save_location)
         return True
 
+    @pytest.mark.long
     def read_celer_sight_file(self):
         app = self.gui_main
         qttest_utils.wait_until_shown(app.MainWindow)
