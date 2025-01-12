@@ -1,9 +1,9 @@
-import os
-import tempfile
-import unittest
-import numpy as np
-from glob import glob
 import logging
+import os
+from glob import glob
+
+import numpy as np
+
 from tests.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class BaseImageTestCase(BaseTestCase):
                 "fixtures/image_intensity/red_green.tif",  # image path
                 {
                     "mean": {"green": [20.230], "red": [10.170]}
-                },  # expected intensity values
+                },  # expected intensity valufves
                 ["fixtures/image_intensity/red_green_tif"],  # annotations
             ),
             (
@@ -87,6 +87,13 @@ class BaseImageTestCase(BaseTestCase):
                 ["fixtures/image_intensity/red_brightfield_tif"],
             ),
         ]
+
+    @classmethod
+    def _load_mock_write_load_celer_sight_file(cls):
+        # collect all the images from _load_mock_image_data  and _load_mock_high_res_images
+        return list(cls._load_mock_image_data().keys()) + list(
+            cls._load_mock_high_res_images().keys()
+        )
 
     @classmethod
     def _load_mock_image_data(cls):

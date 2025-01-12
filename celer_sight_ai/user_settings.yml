@@ -151,7 +151,7 @@ developer:
   OFFLINE_MODE : false # work offline
 
 
-  KEEP_EDGE_ANNOTATIONS : true
+  KEEP_EDGE_ANNOTATIONS : false
 
 
   # Admin dabase image data auditing tool

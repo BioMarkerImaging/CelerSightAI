@@ -61,6 +61,9 @@
             "type": "python",
             "program": "/Users/mchaniotakis/Code/celer_sight_ai_desktop/celer_sight_ai/Celer Sight AI.py",
             "console": "integratedTerminal",
+            // "env": {
+            //     "CELER_SIGHT_API_IP": "http://localhost:7500"
+            // },
             "args": [
                 // "--empty-local-dir",
                 // "--offline",
