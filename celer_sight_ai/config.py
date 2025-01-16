@@ -1,13 +1,10 @@
-import sys
-
+import logging
 import os
 import pathlib
-from enum import Enum
-import logging
-import threading
 import queue
-
-import logging
+import sys
+import threading
+from enum import Enum
 
 
 def stop_jvm():
@@ -18,30 +15,33 @@ def stop_jvm():
 
 
 def start_jvm():
-    javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
-    """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
-    during runtime.
-    From CellProfiler/python-bioformats.
-    """
-    rootLoggerName = javabridge.get_static_field(
-        "org/slf4j/Logger", "ROOT_LOGGER_NAME", "Ljava/lang/String;"
-    )
+    if not javabridge.get_env():  # Check if JVM is already running
+        javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
+        """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
+        during runtime.
+        From CellProfiler/python-bioformats.
+        """
+        try:  # patch the log level to warn
+            rootLoggerName = javabridge.get_static_field(
+                "org/slf4j/Logger", "ROOT_LOGGER_NAME", "Ljava/lang/String;"
+            )
 
-    rootLogger = javabridge.static_call(
-        "org/slf4j/LoggerFactory",
-        "getLogger",
-        "(Ljava/lang/String;)Lorg/slf4j/Logger;",
-        rootLoggerName,
-    )
+            rootLogger = javabridge.static_call(
+                "org/slf4j/LoggerFactory",
+                "getLogger",
+                "(Ljava/lang/String;)Lorg/slf4j/Logger;",
+                rootLoggerName,
+            )
 
-    logLevel = javabridge.get_static_field(
-        "ch/qos/logback/classic/Level", "WARN", "Lch/qos/logback/classic/Level;"
-    )
+            logLevel = javabridge.get_static_field(
+                "ch/qos/logback/classic/Level", "WARN", "Lch/qos/logback/classic/Level;"
+            )
 
-    javabridge.call(
-        rootLogger, "setLevel", "(Lch/qos/logback/classic/Level;)V", logLevel
-    )
-
+            javabridge.call(
+                rootLogger, "setLevel", "(Lch/qos/logback/classic/Level;)V", logLevel
+            )
+        except Exception as e:
+            print(f"Failed to patch log level: {e}")
 
 jvm_lock = threading.RLock()
 
@@ -76,8 +76,9 @@ else:
     # get parent path
     sys.path.append(str(p))
 
-import javabridge
 import bioformats
+import javabridge
+
 from celer_sight_ai import __version__
 
 
@@ -138,7 +139,7 @@ def unregister_url_scheme():
             )
             winreg.DeleteKey(winreg.HKEY_CURRENT_USER, r"Software\Classes\CelerSight")
             print("URL scheme unregistered successfully")
-        except WindowsError as e:
+        except OSError as e:
             print(f"Failed to unregister URL scheme: {e}")
     elif os.name == "posix":
         # Remove the plist file on macOS
@@ -172,9 +173,9 @@ def dbg_polygon(
     # Example:
     #     write_polygon_as_mask(mask_obj.get_array(), 'path/to/mask.png', (512, 512))
 
+    import cv2
     import numpy as np
     from skimage.draw import polygon
-    import cv2
 
     if is_executable:
         return False
@@ -221,7 +222,7 @@ def register_url_scheme():
                 ) as existing_key:
                     # Key exists, no need to register again
                     return
-            except WindowsError:
+            except OSError:
                 # Key doesn't exist, proceed with registration
                 pass
 
@@ -531,8 +532,8 @@ CLASS_REGISTRY_WIDTH = {}  # a register of class_id : annotation_width
 ## Config file
 from celer_sight_ai.MultiChannellImports import (
     ChannelPickerSignals,
-    userAttributesClass,
     global_vars,
+    userAttributesClass,
 )
 
 cloud_categories = (
@@ -618,6 +619,7 @@ def worker_for_register(register_name):
 
 def threaded(func):
     from functools import wraps
+
     from celer_sight_ai.core.threader import Threader
 
     @wraps(func)
@@ -656,11 +658,11 @@ def q_threaded(func):
 
 
 import cProfile
-import pstats
 import io
-from threading import Lock, Thread
-from queue import SimpleQueue
+import pstats
 import time
+from queue import SimpleQueue
+from threading import Lock, Thread
 
 group_locks = {}
 group_queues = {}
@@ -688,8 +690,8 @@ def group_task(group_name):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            import uuid
             import time
+            import uuid
 
             if group_name not in group_locks:
                 group_locks[group_name] = Lock()
@@ -856,6 +858,7 @@ os.chmod(cache_dir, 0o777)
 
 def get_cache_unique_file_path(filename):
     import uuid
+
     from celer_sight_ai import config
 
     filename = os.path.basename(filename)
@@ -907,21 +910,22 @@ def get_user_settings():
             # without copying permissions
             os.makedirs(os.path.dirname(user_settings_local_dir), exist_ok=True)
             shutil.copyfile(user_settings_path, user_settings_local_dir)
-        with open(user_settings_local_dir, "r") as f:
+        with open(user_settings_local_dir) as f:
             return yaml.load(f, Loader=yaml.FullLoader)
     else:
         if os.environ.get("CELER_SIGHT_ALTERNATIVE_SETTINGS", None):
             # This case is almost always used for testing
-            with open(os.environ.get("CELER_SIGHT_ALTERNATIVE_SETTINGS"), "r") as f:
+            with open(os.environ.get("CELER_SIGHT_ALTERNATIVE_SETTINGS")) as f:
                 return yaml.load(f, Loader=yaml.FullLoader)
         else:
             # Normal case for development
             if os.path.exists(user_settings_path):
-                with open(user_settings_path, "r") as f:
+                with open(user_settings_path) as f:
                     return yaml.load(f, Loader=yaml.FullLoader)
 
 
 import pathlib
+
 from PyQt6 import QtCore
 
 # if "FORGET_PAST_CELER_SIGHT" in os.environ.keys(): then delete all QtCore.QSettings
@@ -1110,8 +1114,9 @@ def progress_hook(bytes_downloaded: int, bytes_expected: int):
 
 
 def get_update_client():
-    from celer_sight_ai.configHandle import getServerLogAddress
     import platform
+
+    from celer_sight_ai.configHandle import getServerLogAddress
 
     logger.info("Getting update client")
 
@@ -1133,9 +1138,11 @@ def get_update_client():
         else:
             platform_version = "mac_x86"
     try:
-        from tufup.client import Client
-        from celer_sight_ai import configHandle
         import json
+
+        from tufup.client import Client
+
+        from celer_sight_ai import configHandle
 
         pre = None
         override_app_install_dir = None
@@ -1380,13 +1387,14 @@ def check_for_update():
 
 @threaded
 def update_celer_sight_ai():
-    from PyQt6 import QtWidgets
-    import sys
-    import os
-    import subprocess
-    import time
-    import platform
     import ctypes
+    import os
+    import platform
+    import subprocess
+    import sys
+    import time
+
+    from PyQt6 import QtWidgets
 
     logger.info("Starting update process")
     try:
