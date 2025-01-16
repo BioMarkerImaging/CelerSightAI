@@ -1,44 +1,42 @@
-import os
-from celer_sight_ai.configHandle import getLocal
-from PyQt6.QtCore import Qt
-import sys
 import logging
+import os
+import sys
+
+from PyQt6.QtCore import Qt
+
+from celer_sight_ai.configHandle import getLocal
 
 logger = logging.getLogger(__name__)
-import pathlib
 import os
+import pathlib
 
 os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
+import copy
+import os
 import sys
+import time
+import traceback
+from pathlib import Path
+from threading import Thread
+
+import cv2
+import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-import time
-import sys
-import os
-from celer_sight_ai.gui.custom_widgets.scene import CropItem
-import traceback
-
+from celer_sight_ai import config
 from celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended import (
     CelerSightMainWindow,
 )
-from threading import Thread
-import cv2
-import numpy as np
-import copy
-from celer_sight_ai import config
-
-
-from pathlib import Path
-from celer_sight_ai.gui.custom_widgets.scene import readImage
-
+from celer_sight_ai.gui.custom_widgets.scene import (
+    CropItem,
+    create_pyramidal_tiff_for_image_object,
+    readImage,
+)
 from celer_sight_ai.gui.designer_widgets_py_files.userSettings import (
     Ui_Dialog as settingsDialog1,
 )
 from celer_sight_ai.io.data_handler import (
     DataHandler,
-)
-from celer_sight_ai.gui.custom_widgets.scene import (
-    create_pyramidal_tiff_for_image_object,
 )
 
 
@@ -51,7 +49,7 @@ class Master_MainWindow(CelerSightMainWindow):
     photoClicked = QtCore.pyqtSignal(
         QtCore.QPoint
     )  # singal for when we draw the polygon
-    mouse_move = QtCore.pyqtSignal(QtCore.QPoint)  # not used
+    mouse_move = QtCore.pyqtSignal(QtCore.QPoint)  # not usepd
     MasterMaskLabelcomboBoxSIGNAL = QtCore.pyqtSignal(object)
     # OpenIndiImagesForConditionFINISHED = QtCore.pyqtSignal(object)
     signal = QtCore.pyqtSignal()
@@ -339,8 +337,8 @@ class Master_MainWindow(CelerSightMainWindow):
 
         # self.auto_aa_tool_gui.signal_add_FG.connect(lambda: self.viewer.aa_signal_handler(add_fg = True, add_bg = False) )
         # self.auto_aa_tool_gui.signal_add_BG.connect(lambda: self.viewer.aa_signal_handler(add_fg = False, add_bg = True))
-        from celer_sight_ai.inference_handler import InferenceHandler
         from celer_sight_ai.gui.custom_widgets.analysis_handler import Ui_AnalysisDialog
+        from celer_sight_ai.inference_handler import InferenceHandler
 
         self.AnalysisSettings = Ui_AnalysisDialog(self)
 
@@ -605,8 +603,8 @@ class Master_MainWindow(CelerSightMainWindow):
         # hide all of the annotation on screen with that class_uuid
         # get all items in the scene
         from celer_sight_ai.gui.custom_widgets.scene import (
-            PolygonAnnotation,
             BitMapAnnotation,
+            PolygonAnnotation,
         )
 
         for item in self.viewer.scene().items():
@@ -680,9 +678,8 @@ class Master_MainWindow(CelerSightMainWindow):
         uiDialog = settingsMainClass(self.MainWindow)
 
     def sendLogsToServer(self):
-        from celer_sight_ai import config
-
         import celer_sight_ai.configHandle as configHandle
+        from celer_sight_ai import config
 
         client = config.client
         client.crashLogsToServer()
@@ -985,7 +982,7 @@ class Master_MainWindow(CelerSightMainWindow):
                                 return
                             total_images_states.append([success, error_message])
 
-                        except Exception as e:
+                        except Exception:
                             import traceback
 
                             logger.error(f"Error : {error_message}")
@@ -1066,8 +1063,7 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         Sign out the user from the application
         """
-        from celer_sight_ai import config
-        from celer_sight_ai import configHandle
+        from celer_sight_ai import config, configHandle
 
         logger.info("Signing out user")
 
@@ -1172,7 +1168,7 @@ class Master_MainWindow(CelerSightMainWindow):
                     allImages.append(fusedImage.copy())
                     resizedImages.append(fusedresizedImage.copy())
                     sappliedNames.append(None)
-                except Exception as e:
+                except Exception:
                     pass
         elif MODE == 2:
             items = (
@@ -1466,6 +1462,7 @@ class Master_MainWindow(CelerSightMainWindow):
 
     def run_test_suite(self):
         import subprocess
+
         from celer_sight_ai import config
 
         logger.info("Running test suite")
@@ -1726,12 +1723,13 @@ class Master_MainWindow(CelerSightMainWindow):
             ...
 
         """
-        import skimage
         import copy
         import json
-        from tqdm import tqdm
         from glob import glob
         from itertools import groupby
+
+        import skimage
+        from tqdm import tqdm
 
         categories = []
         categories_set = False
@@ -1748,7 +1746,7 @@ class Master_MainWindow(CelerSightMainWindow):
         # for each annotation file, load all the images and annotations
         for annotation_file in annotation_files:
             # load json file
-            with open(annotation_file, "r") as f:
+            with open(annotation_file) as f:
                 annotation = json.load(f)
 
             root_dir = os.path.dirname(annotation_file)
@@ -1830,7 +1828,7 @@ class Master_MainWindow(CelerSightMainWindow):
                                 for a in anno[i]
                             ]
                         )
-                    except Exception as e:
+                    except Exception:
                         print()
 
             self.myButtonHandler.SetUpButtons(
@@ -1849,10 +1847,11 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         Function that exports the masks in a json COCO format
         """
-        import skimage
-        from shapely.geometry import Polygon
         import copy
         import json
+
+        import skimage
+        from shapely.geometry import Polygon
         from tqdm import tqdm
 
         all_categories = []
@@ -2257,8 +2256,8 @@ class Master_MainWindow(CelerSightMainWindow):
     def write_image_file(
         self, filename: str, images: list, thumbnail, metadata: dict, data_dict: dict
     ):
-        import struct
         import json
+        import struct
 
         with open(filename, "wb") as f:
             # Write Header Metadata
@@ -2381,12 +2380,14 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         Runs to save the plaba file (save as)
         """
-        from celer_sight_ai import config
+        import base64
         import json
         import struct
-        from PIL import Image
-        import base64
+
         import zstandard as zstd
+        from PIL import Image
+
+        from celer_sight_ai import config
 
         # open a file save dialog
         if not filename:
@@ -2424,7 +2425,7 @@ class Master_MainWindow(CelerSightMainWindow):
                         tot_images += 1
             config.global_signals.start_progress_bar_signal.emit(
                 {
-                    "title": f"Saving file...",
+                    "title": "Saving file...",
                     "window_title": "Saving in Progress",
                     "main_text": "",
                 }
@@ -2676,14 +2677,16 @@ class Master_MainWindow(CelerSightMainWindow):
         return
 
     def load_celer_sight_file(self, file_location=None):
-        import json
-        import struct
-        from PIL import Image
-        import shutil
-        import uuid
         import base64
-        from celer_sight_ai import configHandle
+        import json
+        import shutil
+        import struct
+        import uuid
+
         import zstandard as zstd
+        from PIL import Image
+
+        from celer_sight_ai import configHandle
 
         dctx = zstd.ZstdDecompressor()
         # open a file dialog
@@ -3026,7 +3029,7 @@ class Master_MainWindow(CelerSightMainWindow):
             currentItem = self.pg2_graphs_view.currentItem().text()
             del self.MyVisualPlotHandler.WidgetDictionary[currentItem]
             self.pg2_graphs_view.takeItem(currentItemIndex)
-        except Exception as e:
+        except Exception:
             logger.exception()
 
     def delete_canvas(self):
@@ -3041,7 +3044,7 @@ class Master_MainWindow(CelerSightMainWindow):
                 except:
                     pass
             QtWidgets.QApplication.processEvents()
-        except Exception as e:
+        except Exception:
             pass
         return
 
@@ -3060,12 +3063,13 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         # TODO: add broken axis package: https://github.com/bendichter/brokenaxes
         import seaborn as sns
+
         from celer_sight_ai.gui.custom_widgets.plot_handler import MyPlotHandler
 
         return
 
-        from matplotlib.figure import Figure
         from matplotlib import pyplot as plt
+        from matplotlib.figure import Figure
 
         sns.set()
         sns.set_style("whitegrid")
@@ -3158,16 +3162,18 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         # TODO: remove
         # initiaze all variables..
-        import pandas as pd
-        import itertools
         import copy
+        import itertools
+
+        import pandas as pd
+
         from celer_sight_ai.gui.custom_widgets.analysis_handler import (
-            add,
-            subtract,
-            divide,
-            multiply,
             SUPPORTED_CHANNEL_OPERATIONS,
             SUPPORTED_ROI_OPERATIONS,
+            add,
+            divide,
+            multiply,
+            subtract,
         )
 
         if self.all_condition_analysis_table.model():
@@ -3368,6 +3374,7 @@ class Master_MainWindow(CelerSightMainWindow):
         # TODO: remove
         # initiaze all variables..
         import itertools
+
         import pandas as pd
 
         self.all_condition_analysis_table.setModel(None)
@@ -4470,7 +4477,7 @@ class Master_MainWindow(CelerSightMainWindow):
                         ).name()
                         color = np.asarray(ImageColor.getcolor(str(hexColor), "RGB"))
                         # color = self.DH.AssetMaskListPolygon[self.current_imagenumber][x-len(self.DH.all_masks[self.current_imagenumber])].MaskColor
-                except Exception as e:
+                except Exception:
                     color = np.array([255, 255, 255])
             # if self.selected_mask != x:
             color = color / 2  # not selected is half the opacity
@@ -4653,8 +4660,8 @@ class Master_MainWindow(CelerSightMainWindow):
             object_dict (dict): _description_
         """
         from celer_sight_ai.gui.custom_widgets.scene import (
-            PolygonAnnotation,
             BitMapAnnotation,
+            PolygonAnnotation,
         )
 
         image_uuid = object_dict["image_uuid"]
@@ -4710,8 +4717,8 @@ class Master_MainWindow(CelerSightMainWindow):
           None
         """
         from celer_sight_ai.gui.custom_widgets.scene import (
-            BitMapAnnotation,
             BackgroundGraphicsItem,
+            BitMapAnnotation,
         )
 
         self.loading_tile_inference_graphic_items = []
@@ -4809,8 +4816,8 @@ class Master_MainWindow(CelerSightMainWindow):
 
     def load_all_current_image_annotations(self, img_uuid):
         from celer_sight_ai.gui.custom_widgets.scene import (
-            PolygonAnnotation,
             BitMapAnnotation,
+            PolygonAnnotation,
         )
 
         # get image object
@@ -4836,7 +4843,7 @@ class Master_MainWindow(CelerSightMainWindow):
                         score=mask_obj.score,
                         _disable_spawn_extra_items=io._disable_overlay_annotation_items,
                     )
-                except Exception as e:
+                except Exception:
                     logger.error(
                         f"Error loading polygon annotation {mask_obj.unique_id}"
                     )
@@ -5025,8 +5032,8 @@ class Master_MainWindow(CelerSightMainWindow):
     def load_main_scene_gather_image(self, signal_object={}):
         # create a thread with threader
 
-        from celer_sight_ai.core.threader import RacerThread
         from celer_sight_ai import config
+        from celer_sight_ai.core.threader import RacerThread
 
         logger.info("Reading image for scene progressively (threaded)")
         group_id = signal_object["group_id"]
@@ -5046,7 +5053,16 @@ class Master_MainWindow(CelerSightMainWindow):
             return
 
         image_idx = condition_object.images.get_index(img_uuid)
-
+        if isinstance(image_idx, type(None)) or image_idx >= len(
+            condition_object.images
+        ):
+            # load image 0 by clicking on it
+            image_idx = 0
+            if len(self.images_preview_graphicsview.visible_buttons) > 0:
+                self.images_preview_graphicsview.visible_buttons[
+                    0
+                ].button_instance.click()
+                return
         if len(condition_object.images) <= image_idx:
             logger.warning("Image number out of bounds.")
             config.global_signals.load_main_scene_signal.emit()
@@ -5066,7 +5082,7 @@ class Master_MainWindow(CelerSightMainWindow):
                         "fit_in_view": fit_in_view,
                     }
                 )
-            except Exception as e:
+            except Exception:
                 logger.debug("Loading image normally.")
                 self.load_main_scene_read_image(
                     {
@@ -5140,7 +5156,7 @@ class Master_MainWindow(CelerSightMainWindow):
             config.global_signals.load_main_scene_signal.emit()
             return
         img_idx = condition_object.images.get_index(img_uuid)
-        if len(condition_object.images) <= img_idx:
+        if isinstance(img_idx, type(None)) or len(condition_object.images) <= img_idx:
             logger.warning("Image number out of bounds.")
             config.global_signals.load_main_scene_signal.emit()
             return
@@ -5193,7 +5209,8 @@ class Master_MainWindow(CelerSightMainWindow):
             config.global_signals.load_main_scene_signal.emit()
             return
         img_id = condition_object.images.get_index(img_uuid)
-        if img_id >= len(condition_object.images):
+
+        if isinstance(img_id, type(None)) or img_id >= len(condition_object.images):
             logger.warning("Image number out of bounds.")
             config.global_signals.load_main_scene_signal.emit()
             return
@@ -5298,8 +5315,9 @@ class Master_MainWindow(CelerSightMainWindow):
         # this class will become the child of the matching parent class
         children_classes_uuids=[],
     ):
-        from celer_sight_ai import config
         import random
+
+        from celer_sight_ai import config
 
         # if not class name provided, generate a class name
         if not class_name:
@@ -5855,7 +5873,9 @@ class Master_MainWindow(CelerSightMainWindow):
                 f"Treatment {new_treatment_name} is already the current treatment"
             )
             return
-
+        # clear any selected buttons
+        self.images_preview_graphicsview.selected_buttons.clear()
+        self.images_preview_graphicsview.selected_buttons.append(0)
         self.DH.BLobj.set_current_condition(new_treatment_name)
 
         self.myButtonHandler.ShowNewCondition(Mode="IMAGE")
@@ -6318,17 +6338,13 @@ class Master_MainWindow(CelerSightMainWindow):
                     )
                 )
                 buttonz_list[iter_buttons - 1].clicked.connect(
-                    (
-                        lambda: self.viewer.setDragMode(
-                            QtWidgets.QGraphicsView.DragMode.NoDrag
-                        )
+                    lambda: self.viewer.setDragMode(
+                        QtWidgets.QGraphicsView.DragMode.NoDrag
                     )
                 )
                 buttonz_list[iter_buttons - 1].clicked.connect(
-                    (
-                        lambda _: setattr(
-                            config.global_params, "is_mask_button_selected", False
-                        )
+                    lambda _: setattr(
+                        config.global_params, "is_mask_button_selected", False
                     )
                 )
                 # lambda _ : setattr(config.global_params, 'is_mask_button_selected', False)
@@ -6368,17 +6384,13 @@ class Master_MainWindow(CelerSightMainWindow):
                     )
                 )
                 buttonz_list[iter_buttons - 1].clicked.connect(
-                    (
-                        lambda: self.viewer.setDragMode(
-                            QtWidgets.QGraphicsView.DragMode.NoDrag
-                        )
+                    lambda: self.viewer.setDragMode(
+                        QtWidgets.QGraphicsView.DragMode.NoDrag
                     )
                 )
                 buttonz_list[iter_buttons - 1].clicked.connect(
-                    (
-                        lambda _: setattr(
-                            config.global_params, "is_mask_button_selected", True
-                        )
+                    lambda _: setattr(
+                        config.global_params, "is_mask_button_selected", True
                     )
                 )
                 # self.buttonz_list[iter_buttons-1].clicked.connect((lambda _, b=(iter_buttons-1): self.is_pressed_image_handler(imagenumber=b)))
