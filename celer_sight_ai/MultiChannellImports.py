@@ -1,6 +1,7 @@
-import sys
-import lazy_import
 import os
+import sys
+
+import lazy_import
 
 config = lazy_import.lazy_module("celer_sight_ai.config")
 
@@ -9,26 +10,27 @@ if config.is_executable:
     sys.path.append([str(os.environ["CELER_SIGHT_AI_HOME"])])
 # Python file for Special imporder
 print("before importing pyqt6")
-from PyQt6 import QtCore, QtGui, QtWidgets
-
 import traceback
 
+from PyQt6 import QtCore, QtGui, QtWidgets
+
 print("Before importing draggable button")
+import logging
+import shutil
+
 from celer_sight_ai.gui.designer_widgets_py_files.testDragableButton import (
     Ui_Dialog as DialogMultichannelImporter,
 )
 
-
-import logging
-import shutil
-
 logger = logging.getLogger(__name__)
-from celer_sight_ai.configHandle import getServerLogAddress, getLogInAddress
-import requests
-import json
 import asyncio
+import json
 import time
 from enum import Enum
+
+import requests
+
+from celer_sight_ai.configHandle import getLogInAddress, getServerLogAddress
 
 
 # a class to define network result format
@@ -750,14 +752,15 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
     def FIllButtonsfromListParallel(self, MyList=None, progress_callback=None):
         "contains only the part of importing images"
         # This should be deprecated
-        from celer_sight_ai import config
-
-        import numpy as np
         import glob
-        import cv2
         import math
         import os
+
+        import cv2
+        import numpy as np
         from skimage.transform import resize
+
+        from celer_sight_ai import config
 
         ImageId = 0
         ReduceBy = 3
@@ -818,9 +821,10 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
     def FillButtonsFromList(self, MyList=None, progress_callback=None):
         # Needs to be deprecated
         import glob
-        import cv2
         import math
         import os
+
+        import cv2
         import numpy as np
 
         image_list = []
@@ -1044,8 +1048,8 @@ class CombinedDragButton(QtWidgets.QPushButton):
         self.setIconSize(size)
 
     def SetSelfImage(self, image):
-        import numpy as np
         import cv2
+        import numpy as np
 
         # self.Image = image.copy()
         self.HovedImage = self.GetBorders(self.Image.copy())
@@ -1239,8 +1243,8 @@ class CombinedDragButton(QtWidgets.QPushButton):
         return (DestinationCol, DestinationRow)
 
     def enterEvent(self, event):
-        import numpy as np
         import cv2
+        import numpy as np
 
         logger.info("hover enter works 1")
 
@@ -1307,7 +1311,7 @@ class CombinedDragButton(QtWidgets.QPushButton):
         super(CombinedDragButton, self).mouseReleaseEvent(event)
 
 
-class MasterButtonHandler(object):
+class MasterButtonHandler:
     def __init__(self):
         self.ListOfButtonsHovering = []
 
@@ -1363,8 +1367,8 @@ class DragButton(QtWidgets.QPushButton):
         self.MySignal = signal
 
     def SetSelfImage(self, image, imgPath=None):
-        import numpy as np
         import cv2
+        import numpy as np
 
         # self.Image = image.copy()
         self.imgPath = imgPath
@@ -1898,8 +1902,8 @@ class DragButton(QtWidgets.QPushButton):
             config.global_signals.IndiLayoutChangedSignal.emit()
 
     def enterEvent(self, event):
-        import numpy as np
         import cv2
+        import numpy as np
 
         logger.info("hover enter works 2")
 
@@ -2090,8 +2094,8 @@ class ChannelViewer(QtWidgets.QGraphicsView):
                 # self.setScene(self._scene)
 
     def setBothPhotosViewer(self, image1, image2):
-        import numpy as np
         import cv2
+        import numpy as np
 
         self._scene.clear()
         # if self.Image1 == None and self.Image2 == None:
@@ -2231,8 +2235,8 @@ def rect_with_rounded_corners(image, r, t, c, backroundColor=(0, 0, 0)):
     :return: new image as NumPy array with rounded corners
     """
 
-    import numpy as np
     import cv2
+    import numpy as np
 
     c += (255,)
 
