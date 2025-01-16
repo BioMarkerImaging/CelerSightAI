@@ -1,43 +1,44 @@
-import os
-from concurrent import futures
-from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai.core import LogTool
-from celer_sight_ai import config
-import functools
-import threading
-import json
-import time
-import cv2
-from typing import Dict, List, Tuple, Union, Any
 import asyncio
+import functools
+import json
+import os
+import pathlib
 import random
 import string
-import pathlib
-from typing import Callable
+import threading
+import time
+from concurrent import futures
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+import cv2
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
+from celer_sight_ai.core import LogTool
 
 CDIR = str(pathlib.Path(__file__).parent.absolute())
 CHUNK_SIZE = 1024 * 1024  # 1 MB
-from celer_sight_ai.configHandle import getLocal
-from celer_sight_ai.core.threader import Threader
-import logging
-from requests.exceptions import HTTPError
-
-
 import json
+import logging
 import os
 import time
-import logging
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from PyQt6 import QtCore
+from requests.exceptions import HTTPError
+
 from celer_sight_ai import config, configHandle
+from celer_sight_ai.configHandle import getLocal
+from celer_sight_ai.core.threader import Threader
 
 logger = logging.getLogger(__name__)
-import celer_sight_ai.configHandle as configHandle
 import threading
+
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+
+import celer_sight_ai.configHandle as configHandle
 
 
 class AuthenticationError(Exception):
@@ -227,9 +228,9 @@ class FileClient:
                 return True
 
             # Decode the payload (middle part)
-            from base64 import b64decode
             import json
             import time
+            from base64 import b64decode
 
             # Add padding if needed
             payload = parts[1]
@@ -287,7 +288,7 @@ class FileClient:
             try:
                 return func(self, *args, **kwargs)
             # if the error is 401, which is authentication error
-            except AuthenticationError as e:
+            except AuthenticationError:
                 # If an authentication error occurred, set self.jwt to None and attempt to log in again
                 self.jwt = None
                 self.session = requests.Session()
@@ -522,8 +523,9 @@ class FileClient:
 
     def connect_patreon(self, click_state=None):
         """Connect to Patreon via OAuth2"""
-        from celer_sight_ai.configHandle import get_connect_patreon_address
         import webbrowser
+
+        from celer_sight_ai.configHandle import get_connect_patreon_address
 
         try:
             # Get the authorization URL from the server
@@ -734,10 +736,11 @@ class FileClient:
     ):
         # save it on a temporary directory and transfer after
         import os
-        import tempfile
         import shutil
+        import tempfile
         import time
-        from azure.storage.blob import BlobServiceClient, BlobClient
+
+        from azure.storage.blob import BlobClient, BlobServiceClient
 
         blob_client = BlobClient.from_blob_url(blob_url=sas_url)
 
@@ -819,11 +822,13 @@ class FileClient:
 
             shutil.move(destination, destination_name)  # from temp dir to destination
 
-    def download_image_file_with_progress(self, url, image_uuid, with_dialog=False):
+    def download_image_file_with_progress(
+        self, url, image_uuid, with_dialog=False, return_response=False
+    ):
         # save it on a temporary directory and transfer after
         import os
-        import tempfile
         import shutil
+        import tempfile
 
         with tempfile.TemporaryDirectory() as temp_dir:
             response = self.session.get(url, stream=True)
@@ -877,17 +882,21 @@ class FileClient:
             shutil.move(destination, file_path)  # from temp dir to cache dir
             if with_dialog:
                 config.global_signals.loading_dialog_signal_close.emit()
+        if return_response:
+            return file_path, response
         return file_path
 
     @config.threaded
     def download_category_images(self):
         # provided a list of category uuids, download the images required
         # for the categories
-        from celer_sight_ai import config
         import base64
-        import numpy as np
-        import cv2
         import glob
+
+        import cv2
+        import numpy as np
+
+        from celer_sight_ai import config
 
         category_icons_path = os.path.join(
             configHandle.getLocal(), "experiment_configs/category_image_cache"
@@ -984,9 +993,10 @@ class FileClient:
         Update the cloud category displayed (thumbnail) image
         Convert the image data to base64 encoded image data jpg
         """
-        from celer_sight_ai import config
-        import io
         import base64
+        import io
+
+        from celer_sight_ai import config
 
         url = configHandle.get_update_category_image_address()
 
@@ -1043,7 +1053,23 @@ class FileClient:
         return r.json()
 
     @login_required
-    def insert_remote_annotation(self, data: Dict = {}):
+    @config.threaded
+    def delete_remote_images(self, image_uuids: list[str]):
+        try:
+            url = configHandle.get_delete_remote_image_address()
+            for image_uuid in image_uuids:
+                r = self.session.delete(url, json={"image_uuid": image_uuid})
+                r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            logger.error(f"Error deleting remote image: {e}")
+            config.global_signals.notificationSignal.emit(
+                f"Failed to delete remote image: {e}"
+            )
+            return False
+
+    @login_required
+    def insert_remote_annotation(self, data: dict = {}):
         logger.info("Sending annotation to remote")
         url = configHandle.get_insert_remote_annotation()
         # send request through data
@@ -1053,7 +1079,7 @@ class FileClient:
         return r.json()["annotation_uuid"]
 
     @login_required
-    def get_remote_annotations_for_image(self, data: dict = None):
+    def get_remote_annotations_for_image(self, data: dict = {}):
         logger.info("Getting remote annotations for image")
         url = configHandle.get_remote_annotations_for_image_address()
         # send request through data
@@ -1064,26 +1090,65 @@ class FileClient:
 
     @config.threaded
     @login_required
-    def update_remote_annotation(self, data: Dict = {}):
+    def update_remote_annotation(self, data: dict = {}) -> tuple[bool, Optional[str]]:
         """
-        Data should look like this:
-        "annotation_uuid" : str,
-        "image_uuid" : str,
-        "category" :str,
-        "supercategory" :str,
+        Updates an existing annotation on the remote server.
 
-        "data" : list,
-        "audited": bool
+        Args:
+            data: Dictionary containing annotation data with the following fields:
+                - annotation_uuid (str): Unique identifier for the annotation
+                - image_uuid (str): Unique identifier for the image
+                - category (str): Category name
+                - supercategory (str): Supercategory name
+                - data (list): Annotation coordinates/data
+                - audited (bool): Whether annotation has been audited
+
+        Returns:
+            Tuple[bool, Optional[str]]: Success status and error message if any
         """
-        logger.info("Updating remote annotation")
-        url = configHandle.get_update_remote_annotation_address()
-        r = self.session.post(url, json=data)
-        r.raise_for_status()
-        logger.info(f"Update remote annotation response {r}")
-        return
+        logger.info(f"Updating remote annotation {data.get('annotation_uuid')}")
+
+        # Validate required fields
+        required_fields = [
+            "annotation_uuid",
+            "image_uuid",
+            "category",
+            "supercategory",
+            "data",
+        ]
+        missing_fields = [f for f in required_fields if f not in data]
+        if missing_fields:
+            error_msg = f"Missing required fields: {', '.join(missing_fields)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+        try:
+            url = configHandle.get_update_remote_annotation_address()
+            r = self.session.post(url, json=data, timeout=30)  # Add timeout
+            r.raise_for_status()
+
+            logger.info(
+                f"Successfully updated annotation {data.get('annotation_uuid')}"
+            )
+            return True, None
+
+        except requests.Timeout:
+            error_msg = "Request timed out while updating annotation"
+            logger.error(error_msg)
+            return False, error_msg
+
+        except requests.HTTPError as e:
+            error_msg = f"HTTP error occurred: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+        except Exception as e:
+            error_msg = f"Unexpected error updating annotation: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
 
     @login_required
-    def delete_remote_annotation(self, data: Dict = {}):
+    def delete_remote_annotation(self, data: dict = {}):
         """
         Data should look like this:
             "supercategory": str,
@@ -1100,8 +1165,13 @@ class FileClient:
     @login_required
     def get_remote_image_high(self, image_uuid):
         api_addr = f"{configHandle.get_remote_image_high_address()}/{image_uuid}"
-        destination_path = self.download_image_file_with_progress(api_addr, image_uuid)
-        return destination_path
+        destination_path, r = self.download_image_file_with_progress(
+            api_addr, image_uuid, return_response=True
+        )
+        width = r.headers.get("X-Image-Width")
+        height = r.headers.get("X-Image-Height")
+        image_shape = {"SizeX": width, "SizeY": height}
+        return destination_path, image_shape
 
     @login_required
     def get_remote_image(self, image_url=None, quality="low"):
@@ -1145,8 +1215,8 @@ class FileClient:
             img = cv2.resize(img, (int(image_width), int(image_height)))
         data = {}
         data["image_data"] = img
-        data["width"] = int(image_width)
-        data["height"] = int(image_height)
+        data["size_x"] = int(image_width)
+        data["size_y"] = int(image_height)
         if headers.get("X-Is-UltraHighRes") == "True":
             data["is_ultra_high_res"] = True
         else:
@@ -1155,8 +1225,9 @@ class FileClient:
 
     @login_required
     def get_available_models(self, username=None):
-        from celer_sight_ai.configHandle import get_available_models_address
         import requests
+
+        from celer_sight_ai.configHandle import get_available_models_address
 
         if not username:
             username = config.user_attributes.username
@@ -1188,7 +1259,7 @@ class FileClient:
         try:
             r = self.session.post(addr, json=data)
             r.raise_for_status()
-        except Exception as e:
+        except Exception:
             return False, str(r.text)
         return True, ""
 
@@ -1424,8 +1495,8 @@ class FileClient:
         event : threading.Event, optional
         """
         from celer_sight_ai.io.image_reader import (
-            generate_complete_spiral_tiles,
             crop_and_pad_image,
+            generate_complete_spiral_tiles,
         )
 
         max_retries = 3
@@ -1436,6 +1507,7 @@ class FileClient:
         image_array = None
 
         import requests
+
         from celer_sight_ai import config
 
         # if inference_user_settings is none, load the default
@@ -1443,7 +1515,7 @@ class FileClient:
             import yaml
 
             # read yml file from disk to send model settings for inference
-            with open("model_configs/default_model.yml", "r") as f:
+            with open("model_configs/default_model.yml") as f:
                 inference_user_settings = yaml.load(f, Loader=yaml.FullLoader)
         if not supercategory:
             supercategory = config.supercategory
@@ -1520,21 +1592,23 @@ class FileClient:
     ):
         # gather all masks and compute COCO annotation in a dictionary
         import base64
+        import io
+        import tempfile
         import zlib
+        from pathlib import Path
+
+        import numpy as np
         import zstandard
+        from PIL import Image
+        from requests import Request
+        from requests_toolbelt.multipart.encoder import MultipartEncoder
+
         from celer_sight_ai.configHandle import (
             get_send_large_zipped_image_annotated_address,
         )
-        from pathlib import Path
-        import numpy as np
-        from PIL import Image
-        import io
-        import tempfile
         from celer_sight_ai.io.image_reader import (
             create_large_compressed_image_from_ultra_high_res_tiled_image,
         )
-        from requests_toolbelt.multipart.encoder import MultipartEncoder
-        from requests import Request
 
         with tempfile.TemporaryDirectory() as tempdir:
             dict_to_send = {}
@@ -1738,11 +1812,13 @@ class FileClient:
         """
         # gather all masks and compute COCO annotation in a dictionary
         import base64
+        import io
         import zlib
-        from celer_sight_ai.configHandle import get_send_image_annotated_address
+
         import numpy as np
         from PIL import Image
-        import io
+
+        from celer_sight_ai.configHandle import get_send_image_annotated_address
 
         # for the during annotation correction, images will be converted to 8bit
         # for speed purposes
@@ -1810,10 +1886,11 @@ class FileClient:
     def crashLogsToServer(self):
         try:
             import requests
+
             from celer_sight_ai.configHandle import get_send_crash_logs_address
 
             myLogFiletxt = os.path.join(getLocal(), "celer_sight.log")
-            myLOGfile = open(myLogFiletxt, "r")
+            myLOGfile = open(myLogFiletxt)
             stringLog = myLOGfile.read()
 
             if not config.user_attributes.username:
