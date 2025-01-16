@@ -1,26 +1,26 @@
+import os
 import sys
 
-import os
-from celer_sight_ai import config
+import cv2
 
+from celer_sight_ai import config
 from celer_sight_ai.config import (
+    BUTTON_COLS,
     BUTTON_HEIGHT,
-    BUTTON_WIDTH,
-    BUTTON_SPACING,
     BUTTON_PADDING_LEFT,
     BUTTON_PADDING_TOP,
-    BUTTON_COLS,
+    BUTTON_SPACING,
     BUTTON_THUMBNAIL_MIN_SIZE,
+    BUTTON_WIDTH,
 )
-import cv2
 
 if config.is_executable:
     sys.path.append(str(os.environ["CELER_SIGHT_AI_HOME"]))
-from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai import config
-
-
 import logging
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 from celer_sight_ai.gui.custom_widgets.scene import readImage
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,6 @@ logger.info("first part addbutton")
 from celer_sight_ai.gui.designer_widgets_py_files.MaskButtonWidgetSofia import (
     Ui_Form as MaskWidget,
 )
-
 from celer_sight_ai.io.image_reader import (
     post_proccess_image,
 )
@@ -55,7 +54,7 @@ class AddButtonHandler(QtWidgets.QWidget):
     """
 
     def __init__(self, parent):
-        super(AddButtonHandler, self).__init__(parent)
+        super(QtWidgets.QWidget, self).__init__(parent)
         self.DictThumbnail = {}  # dictionary for all tumbnails
         self.DictVisibility = {}  # Dictionary that "Hides" unsused images
         self.DictIncludeInAnalysis = (
@@ -69,6 +68,7 @@ class AddButtonHandler(QtWidgets.QWidget):
         self.num_elem_width = 3
         self._CurrentCondition = ""
         self.SelectedAssetButton = -1
+
         self.MainWindow = parent
         config.global_signals.loadedImageToRam.connect(self.setButtonLoaded)
         config.global_signals.spawn_button_from_image_url_signal.connect(
@@ -437,9 +437,11 @@ class AddButtonHandler(QtWidgets.QWidget):
                     logger.info(f"Buton did not load all the way : {e}")
 
     def append_video_object_to_data_handler(self, signal_object):
-        from celer_sight_ai.gui.custom_widgets.scene import readImage, image_to_uint8
-        import numpy as np
         import time
+
+        import numpy as np
+
+        from celer_sight_ai.gui.custom_widgets.scene import image_to_uint8, readImage
 
         img_id = signal_object.get("image_idx")
         cond_id = signal_object.get("condition_id")
@@ -478,7 +480,7 @@ class AddButtonHandler(QtWidgets.QWidget):
             )
             # get remote polygons
             remote_annos = config.client.get_remote_annotations_for_image(
-                {"image_uuid": img_idx}
+                {"image_uuid": image_object.unique_id}
             )
             config.global_signals.create_annotations_objects_signal.emit(
                 [
@@ -589,9 +591,10 @@ class AddButtonHandler(QtWidgets.QWidget):
         """
         This function is responsible for addnig a layout and setting up Assetbuttons
         """
-        from celer_sight_ai.gui.custom_widgets.scene import is_video_file
         import numpy as np
+
         from celer_sight_ai import config
+        from celer_sight_ai.gui.custom_widgets.scene import is_video_file
 
         # if condition already exists and there are images set for it, dont  set_common_name
         # if the text condition or treatment exists within the treatment name , also rename acording to the file filename
