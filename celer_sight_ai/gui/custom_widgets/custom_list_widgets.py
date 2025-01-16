@@ -1,23 +1,23 @@
+import logging
 import os
 import sys
 import typing
-from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai import config
+import uuid
 
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
-    QWidget,
-    QLabel,
-    QListWidgetItem,
-    QVBoxLayout,
-    QListWidget,
     QApplication,
     QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
-import uuid
-import logging
+
+from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 
@@ -202,10 +202,9 @@ class CustomClassListWidget(QtWidgets.QListWidget):
         from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
             gather_cfgs,
             read_all_experiment_cfgs,
-            gather_default_classes,
         )
 
-        cfgs_paths = gather_default_classes()
+        cfgs_paths = read_all_experiment_cfgs()
         cfgs = [read_all_experiment_cfgs(c) for c in cfgs_paths]
         for cfg in cfgs:
             if cfg.get("supercategory") == supercategory:
@@ -216,17 +215,14 @@ class CustomClassListWidget(QtWidgets.QListWidget):
     def get_config_by_class_uuid(self, class_uuid):
         """Checks to see if a combination of supercategory and category exist in the predefined configs
         if so, it returns the config as a dictionary"""
-        from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
-            gather_cfgs,
-            read_all_experiment_cfgs,
-            gather_default_classes,
+        from celer_sight_ai.gui.custom_widgets.category_and_contribution_widgets import (
+            read_default_config_classes,
         )
 
-        cfgs_paths = gather_default_classes()
-        cfgs = [read_all_experiment_cfgs(c) for c in cfgs_paths]
-        for cfg in cfgs:
-            if cfg.get("uuid") == class_uuid:
-                return cfg
+        cfgs = read_default_config_classes()
+        for cfg_uuid in cfgs:
+            if cfgs[cfg_uuid].get("uuid") == class_uuid:
+                return cfgs[cfg_uuid]
         return None
 
     def get_current_row_class_name(self):
@@ -249,7 +245,7 @@ class CustomClassListWidget(QtWidgets.QListWidget):
         return self.itemWidget(self.item(item_row))
 
     def delete_all_classes(self):
-        logger.info(f"Deleting all classes")
+        logger.info("Deleting all classes")
         while self.count() > 0:
             try:
                 # get one key item from the dict self.classes
@@ -265,7 +261,7 @@ class CustomClassListWidget(QtWidgets.QListWidget):
                     cc = self.classes[c].children_class_uuids[0]
                     self.removeClass(self.classes[cc])
                 self.removeClass(c)
-            except Exception as e:
+            except Exception:
                 self.clear()
                 print()
 
@@ -289,7 +285,7 @@ class CustomClassListWidget(QtWidgets.QListWidget):
                 if parent_class_name and parent_class_uuid:
                     self.classes[c].parent_class_uuid = parent_class_uuid
                     # assign the children node for that parent
-                    if not c in self.classes[parent_class_uuid].children_class_uuids:
+                    if c not in self.classes[parent_class_uuid].children_class_uuids:
                         self.classes[parent_class_uuid].children_class_uuids.append(c)
                 else:
                     self.classes[c].parent_class_uuid = None

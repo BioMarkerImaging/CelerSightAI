@@ -8,29 +8,28 @@ import os
 if "CELER_SIGHT_AI_HOME" in os.environ:
     os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
 
+import os
+import sys
+
+from celer_sight_ai import config
 from celer_sight_ai.gui.designer_widgets_py_files.aboutSection import (
     Ui_Form as aboutSectionUiForm,
 )
-import sys
-
-import os
-from celer_sight_ai import config
-
 
 if config.is_executable:
     sys.path.append([str(os.environ["CELER_SIGHT_AI_HOME"])])
 
-from PyQt6 import QtCore, QtGui, QtWidgets
-
 import ctypes
-
 import logging
+
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 logger.info("starting to import UiBlocks")
 
 if os.name == "nt":
     from ctypes import wintypes
+
     import win32api
     import win32con
     import win32gui
@@ -58,8 +57,8 @@ import numpy as np
 logger.info("imported numpy")
 from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
     QuickToolButton,
-    myRichTextEdit,
     mainButtonsLeftScreen,
+    myRichTextEdit,
 )
 
 logger.info("imported QuickToolButton, myRichTextEdit, mainButtonsLeftScreen")
@@ -76,7 +75,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.disabled = False
 from celer_sight_ai import config
-
 
 if os.name == "nt":
 
@@ -106,7 +104,7 @@ def dwm_composition_enabled():
             return bool(enabled.value)
         else:
             raise Exception(
-                "DwmIsCompositionEnabled returned a non-zero value: {}".format(result)
+                f"DwmIsCompositionEnabled returned a non-zero value: {result}"
             )
 
     except Exception as e:
@@ -821,8 +819,8 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # place the modern qcombobox in the data section
         from celer_sight_ai.gui.custom_widgets.modern_qcombobox_widgets import (
-            ModernSearchableQComboBox,
             CustomComboBoxWithIcons,
+            ModernSearchableQComboBox,
         )
 
         old_combobox = self.Results_pg2_AnalysisTypeComboBox
@@ -1421,7 +1419,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def update_user_info(self):
         logger.info("Updating user info")
-        from celer_sight_ai import config, __version__
+        from celer_sight_ai import __version__, config
 
         cloud_credentials = config.cloud_user_variables
 
@@ -1745,9 +1743,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return max(0, min(x, 255))
 
     def RGB_to_HEX(self, r, g, b):
-        return "#{0:02x}{1:02x}{2:02x}".format(
-            self.clamp(r), self.clamp(g), self.clamp(b)
-        )
+        return f"#{self.clamp(r):02x}{self.clamp(g):02x}{self.clamp(b):02x}"
 
     def ChangeAnalysisSettings(self):
         # TODO add the rest of organisms here
@@ -2187,7 +2183,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.viewer.ML_brush_tool_draw_training_mode == "NORMAL"
 
     def setCellsRF_MODE(self, mode="FG"):
-        logger.info("rf mode is ".format(mode))
+        logger.info("rf mode is ")
         if mode == "FG":
             self.viewer.ML_brush_tool_draw_foreground_add = True
             self.viewer.ML_brush_tool_draw_background_add = False
@@ -2746,7 +2742,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             orange = "orange1.stylesheet"
             blue = "blue1.stylesheet"
-            with open(orange, "r") as fh:
+            with open(orange) as fh:
                 self.OrangeStylesheet = fh.read()
                 self.MainWindow.setStyleSheet(self.OrangeStylesheet)
                 self.SelectedMaskDialog.setStyleSheet(self.OrangeStylesheet)
@@ -2757,15 +2753,15 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         function that sets up our widgets for plot and jitter, box bar etc...
         """
+        from celer_sight_ai.gui.custom_widgets.plot_handler import (
+            PlotViewerHandler,
+            specificPlotWidget,
+        )
         from celer_sight_ai.gui.custom_widgets.swarm_plot_settings_widget_v2 import (
             Swarm_Ui_Form,
         )
         from celer_sight_ai.gui.custom_widgets.violin_plot_settings_widget_v2 import (
             Violin_Ui_Form,
-        )
-        from celer_sight_ai.gui.custom_widgets.plot_handler import (
-            PlotViewerHandler,
-            specificPlotWidget,
         )
 
         # Violin Plot
@@ -3357,9 +3353,10 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         TODO: change the name f the function, its named the sane ass in the Add btnClass.py
         """
         import os
+
         from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
-            RepeatTimer,
             Animation_Button,
+            RepeatTimer,
         )
 
         self.add_images_btn = self.ReplaceWidget(self.add_images_btn, Animation_Button)
@@ -3482,6 +3479,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setUpTabButtons(self):
         import os
+
         from celer_sight_ai.gui.custom_widgets.animate_qpushbutton import (
             RepeatTimer,
             TabAnimationButton,
@@ -3628,7 +3626,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def RestoreCursorViewerAndMain(self):
         try:
             self.CustomCursor.RestoreCursor()
-        except Exception as e:
+        except Exception:
             pass
 
     def EnhanceQGroupBox(self, InstanceToEnhance):
