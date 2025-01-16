@@ -1,9 +1,7 @@
+import os
 import sys
 
-import os
 from celer_sight_ai import config
-
-import os
 
 os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
 import ssl
@@ -13,32 +11,33 @@ ssl._create_default_https_context = ssl._create_unverified_context
 import logging
 
 logger = logging.getLogger(__name__)
-import cv2
-import os
-import numpy as np
 import json
-from PyQt6 import QtGui, QtCore, QtWidgets
-import time
-from celer_sight_ai import config
-import random
-from typing import Tuple, List
-from celer_sight_ai.historyStack import (
-    AddPolygonCommand,
-    AddBitMapCommand,
-    DeleteMaskCommand,
-    DeleteHoleCommand,
-)
-
 import logging
+import os
+import random
+import time
+from typing import List, Tuple
+
+import cv2
+import numpy as np
+from PyQt6 import QtCore, QtGui, QtWidgets
 from shapely.geometry import Polygon
+
+from celer_sight_ai import config
+from celer_sight_ai.historyStack import (
+    AddBitMapCommand,
+    AddPolygonCommand,
+    DeleteHoleCommand,
+    DeleteMaskCommand,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def calculate_polygon_width(vertices):
     import numpy as np
-    from skimage.draw import polygon
     from scipy.ndimage import distance_transform_edt
+    from skimage.draw import polygon
 
     # Calculate the bounds of the polygon
     min_row, min_col = np.min(vertices, axis=0)
@@ -80,8 +79,8 @@ def calculate_polygon_width(vertices):
 
 
 class InferenceHandler:
-    import os
     import math
+    import os
 
     def __init__(self, MainWindowRef=None, input_image=None):
         self.MainWindowRef = MainWindowRef
@@ -306,7 +305,7 @@ class InferenceHandler:
                 seconds -= value * count
                 if value == 1:
                     name = name.rstrip("s")
-                result.append("{} {}".format(value, name))
+                result.append(f"{value} {name}")
         return ", ".join(result[:granularity])
 
     def cancel_inference(self):
@@ -674,14 +673,15 @@ class InferenceHandler:
         In this function we multithread send, inference and receive from the server
         provided_images : list of uuids
         """
-        from celer_sight_ai.core.threader import workerInference
+        import copy
         from functools import partial
+
+        from celer_sight_ai.core.threader import workerInference
         from celer_sight_ai.io.data_handler import (
-            get_tile_range_from_annotation_size,
             find_minimum_groups,
+            get_tile_range_from_annotation_size,
             group_ranges_to_tile_size,
         )
-        import copy
 
         self.is_inference_completed = False
         try:
@@ -723,7 +723,7 @@ class InferenceHandler:
                     )  # (w,h)
                     average_annotation_size = (
                         ((img_size[0] + img_size[1]) / 2)
-                        * ((min_percentage + max_percentage))
+                        * (min_percentage + max_percentage)
                         / 2
                     )
                 class_mask_sizes_in_tile[class_uuid] = (
@@ -757,7 +757,7 @@ class InferenceHandler:
                 f"Total images for inference {self.MainWindowRef.DH.BLobj.getTotalImages()}"
             )
 
-        except Exception as e:
+        except Exception:
             import traceback
 
             logger.debug(
@@ -1187,18 +1187,20 @@ class InferenceHandler:
             if not class_config:
                 config.global_signals.notificationSignal.emit("Class of ROI not found")
                 return
-            main_class = class_config["classes"][0]
+
             self.MainWindowRef.custom_class_list_widget.addClass(
-                class_name=main_class["class_name"],
-                parent_class_uuid=main_class["parent_class"],
-                class_uuid=main_class["uuid"],
+                class_name=class_config["category"],
+                parent_class_uuid=class_config.get("parent_class", None),
+                class_uuid=class_config["uuid"],
             )
-            class_items = [[main_class["class_name"], main_class["uuid"]]]
+            class_items = [[class_config["category"], class_config["uuid"]]]
             config.global_signals.notificationSignal.emit(
-                "Class added: " + main_class["class_name"]
+                "Class added: " + class_config["category"]
             )
-        class_name = class_items[0][0]  # text
-        class_id = class_items[0][1]  # uuid
+        else:
+            # normal case
+            class_name = class_items[0][0]  # text
+            class_id = class_items[0][1]  # uuid
 
         # if image id is str, then its its a uuid, convert it to int # TODO: this is a hack, fix it
         image_object = self.MainWindowRef.DH.BLobj.get_image_object_by_uuid(image_uuid)
