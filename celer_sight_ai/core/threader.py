@@ -1,11 +1,12 @@
-import threading
-from celer_sight_ai import config
-
-import time
-from PyQt6 import QtCore
-import logging
-import traceback
 import copy
+import logging
+import threading
+import time
+import traceback
+
+from PyQt6 import QtCore
+
+from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 
@@ -151,11 +152,13 @@ class workerInference:
                             .images
                         )
                     ):
-                        io = self.MainWindow.DH.BLobj.groups[group_name].conds[Condition].images[x]
+                        io = (
+                            self.MainWindow.DH.BLobj.groups[group_name]
+                            .conds[Condition]
+                            .images[x]
+                        )
                         config.global_signals.check_and_end_inference_animation_signal.emit(
-                            {
-                                "image_uuid" : io.unique_id
-                            }
+                            {"image_uuid": io.unique_id}
                         )
             # emit that we got an error
             logger.error("exception durign threaded app")
