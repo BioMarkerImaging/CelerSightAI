@@ -6,27 +6,30 @@ import onnxruntime
 logger.info("Imported Onnxruntime")
 
 # from pyupdater.client import Client
-from celer_sight_ai import config
-
-from PyQt6 import QtGui, QtCore, QtWidgets
 import os
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 
 logger.info("Imported config and Qt")
 # import onnx
 
 # import onnxruntime
-import numpy as np
 import cv2
+import numpy as np
 from PIL import Image
 
 logger.info("Before skimage import")
-from skimage.transform import resize
 import sys
+from typing import Any, Literal, Optional, Tuple, Union
+
+import numpy as np
+import numpy.typing as npt
+from skimage.transform import resize
+
 import celer_sight_ai.configHandle as configHandle
 from celer_sight_ai import config
-from typing import Literal, Optional, Union, Tuple, Any
-import numpy.typing as npt
-import numpy as np
 
 # sys.path.insert(0, '.')
 # sys.path.insert(0, '..')
@@ -207,7 +210,7 @@ class SamPredictorONNX:
         )
 
     def load_models(self, force_provider=None):
-        logger.debug(f"Loading models")
+        logger.debug("Loading models")
         # get filename including version from the full path
         root_dir_encoder = os.path.dirname(self.encoder_path)
         encoder_filename = os.path.basename(self.encoder_path)
@@ -1246,7 +1249,7 @@ class SamPredictorONNX:
                 ):
                     color_invalid = True
                     logger.debug("Invalid Color")
-            except Exception as e:
+            except Exception:
                 pass
         if size_invalid or area_invalid or color_invalid:
             return False
@@ -1580,7 +1583,7 @@ class SamPredictorONNX:
         return mask
 
 
-class sdknn_tool(object):
+class sdknn_tool:
     """
     Class for handling mainly onnxmodels
     """
@@ -1849,12 +1852,14 @@ class sdknn_tool(object):
         celer_sight_object,
         bounding_box: list,
         tile_bbox: list = [],
-    ) -> Tuple[np.ndarray, int, int]:
+    ) -> tuple[np.ndarray, int, int]:
         """
         bounds a list condtianin (up) , (right) ,(down) ,(left)
         """
-        import cv2
         import os
+
+        import cv2
+
         from celer_sight_ai.config import MagicToolModes
 
         if self.MainWindow.ai_model_combobox.current_mode in [
@@ -2012,14 +2017,13 @@ class GoogleDriveDownloader:
         -------
         None
         """
-        import requests
-        import requests
-        import zipfile
         import warnings
-        from sys import stdout
+        import zipfile
         from os import makedirs
-        from os.path import dirname
-        from os.path import exists
+        from os.path import dirname, exists
+        from sys import stdout
+
+        import requests
 
         destination_directory = dirname(dest_path)
         if not exists(destination_directory):
@@ -2065,9 +2069,7 @@ class GoogleDriveDownloader:
                     print("Done.")
                 except zipfile.BadZipfile:
                     warnings.warn(
-                        'Ignoring `unzip` since "{}" does not look like a valid zip file'.format(
-                            file_id
-                        )
+                        f'Ignoring `unzip` since "{file_id}" does not look like a valid zip file'
                     )
 
     @staticmethod
@@ -2105,7 +2107,7 @@ class GoogleDriveDownloader:
     def sizeof_fmt(num, suffix="B"):
         for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
             if abs(num) < 1024.0:
-                return "{:.1f} {}{}".format(num, unit, suffix)
+                return f"{num:.1f} {unit}{suffix}"
             num /= 1024.0
         return "{:.1f} {}{}".format(num, "Yi", suffix)
 
