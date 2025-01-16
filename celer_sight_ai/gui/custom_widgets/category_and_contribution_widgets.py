@@ -1,6 +1,8 @@
-from PyQt6 import QtWidgets, QtCore, QtGui
-from celer_sight_ai import config
 import logging
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +177,7 @@ class NewCategoryWidget(QtWidgets.QWidget):
             QtGui.QFont("Arial", NORMAL_FONT_SIZE, QtGui.QFont.Weight.Normal)
         )
         self.category_name_input.setStyleSheet(
-            f"""
+            """
             color: rgb(120, 120, 120);
             """
         )
@@ -228,7 +230,7 @@ class NewCategoryWidget(QtWidgets.QWidget):
         self.parent_category_dropdown.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Minimum
         )
-        self.category_items = self.read_default_config_classes()
+        self.category_items = read_default_config_classes()
 
         # Create horizontal layout for parent category label and dropdown
         parent_category_layout = QtWidgets.QHBoxLayout()
@@ -428,10 +430,11 @@ class NewCategoryWidget(QtWidgets.QWidget):
 
     def save_category(self):
         logger.info("Saving category")
-        from celer_sight_ai import configHandle
-        from datetime import datetime
         import json
         import os
+        from datetime import datetime
+
+        from celer_sight_ai import configHandle
 
         category_type = self.category_type_dropdown.currentText()
         supercategory = config.supercategory
@@ -477,7 +480,6 @@ class NewCategoryWidget(QtWidgets.QWidget):
             ):
                 with open(
                     os.path.join(configHandle.getLocal(), config.LOCAL_CATEGORIES_FILE),
-                    "r",
                 ) as f:
                     current_local_categories = json.load(f)
             else:
@@ -538,24 +540,6 @@ class NewCategoryWidget(QtWidgets.QWidget):
             self.next_button.setText("Next")
             self.back_button.setEnabled(False)
 
-    def read_default_config_classes(self):
-        import json
-        from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
-            gather_cfgs,
-        )
-
-        all_cfgs = gather_cfgs()
-        all_categories = {}
-        for c in all_cfgs:
-            if len(c["classes"]) == 1:
-                # only one classes will be displayed
-                all_categories[c["classes"][0]["uuid"]] = {
-                    "supercategory": c["supercategory"],
-                    "category": c["classes"][0]["class_name"],
-                    "uuid": c["classes"][0]["uuid"],
-                }
-                # otherwise its an experiment (multiple classes)
-        return all_categories
 
     def on_supercategory_change(self):
         self.parent_category_dropdown.clear()
@@ -578,6 +562,25 @@ class NewCategoryWidget(QtWidgets.QWidget):
         self.parent_category_dropdown.setCurrentText(" - ")
         # disable the category type dropdown, as only the current supercategory is allowed
 
+
+def read_default_config_classes():
+
+    from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
+        gather_cfgs,
+    )
+
+    all_cfgs = gather_cfgs()
+    all_categories = {}
+    for c in all_cfgs:
+        if len(c["classes"]) == 1:
+            # only one classes will be displayed
+            all_categories[c["classes"][0]["uuid"]] = {
+                "supercategory": c["supercategory"],
+                "category": c["classes"][0]["class_name"],
+                "uuid": c["classes"][0]["uuid"],
+            }
+            # otherwise its an experiment (multiple classes)
+    return all_categories
 
 if __name__ == "__main__":
     import sys
