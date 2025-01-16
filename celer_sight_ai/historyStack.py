@@ -1,19 +1,18 @@
-import sys
-
 import os
+import sys
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from celer_sight_ai import config
-from typing import List, Dict, Tuple, Any, Union, Optional
 
 if config.is_executable:
     sys.path.append([str(os.environ["CELER_SIGHT_AI_HOME"])])
-from PyQt6 import QtWidgets, QtCore, QtGui
-import random
-
 # from celer_sight_ai.gui.Utilities.scene import PolygonAnnotation
 # import QtAssets.Utilities.scene as scene
-
 import logging
+import random
+
 import numpy as np
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -327,12 +326,13 @@ class AddPolygonCommand(QtGui.QUndoCommand):
 class GripItemMoveCommand(QtGui.QUndoCommand):
     def __init__(
         self,
-        polygon_item: QtWidgets.QGraphicsPathItem = None,
-        grip_items_indexes: List = [],
-        grip_new_items_pos: List = [],
-        grip_old_items_pos: List = [],
-        mask_uuid: str = None,
-        condition_uuid: str = None,
+        image_uuid: str,
+        polygon_item: QtWidgets.QGraphicsPathItem,
+        grip_items_indexes: list[int],
+        grip_new_items_pos: list[list[float]],
+        grip_old_items_pos: list[list[float]],
+        mask_uuid: str,
+        condition_uuid: str,
         group_name: str = None,  # TODO: support this in the future
         MainWindow: QtWidgets.QMainWindow = None,
     ) -> None:
@@ -344,6 +344,7 @@ class GripItemMoveCommand(QtGui.QUndoCommand):
         self.condition_uuid = condition_uuid
         self.MainWindow = MainWindow
         self.polygon_item = polygon_item
+        self.image_uuid = image_uuid
 
     def redo(self) -> None:
         # set the position to the new item pos
@@ -399,6 +400,7 @@ class GripItemMoveCommand(QtGui.QUndoCommand):
                     ].text()
 
                     d = {
+                        "image_uuid": self.image_uuid,
                         "annotation_uuid": self.mask_uuid,
                         "data": self.MainWindow.numpy_to_python(
                             mask_obj.get_array_for_storing()
