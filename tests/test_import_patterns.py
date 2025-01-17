@@ -1,19 +1,20 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
 import os
 import sys
 import unittest
-import pytest
-from celer_sight_ai import config
-import logging
-from tests import qttest_utils
 from unittest.mock import patch
+
 import numpy as np
+import pytest
+from parameterized import parameterized
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
 
 # import shapely
 from shapely.geometry import Polygon
-from parameterized import parameterized
+
+from celer_sight_ai import config
+from tests import qttest_utils
 from tests.base_gui_testcase import BaseGuiTestCase
 
 logger = logging.getLogger(__name__)
@@ -25,26 +26,6 @@ normal_image = "daf-2_D2_aup-1i_26.tif"
 
 
 DELAY_TIME = 200
-
-
-def run_single_test_suite():
-    loader = unittest.TestLoader()
-    loader.sortTestMethodsUsing = custom_test_order
-    suite = loader.loadTestsFromTestCase(CelerSightRemoteAnnotationAdminTest)
-    runner = unittest.TextTestRunner()
-    result = runner.run(suite)
-    return result.wasSuccessful()
-
-
-# Function to run the test suite multiple times
-def run_tests_multiple_times(num_runs):
-    for i in range(num_runs):
-        print(f"Run {i + 1}/{num_runs}")
-        if not run_single_test_suite():
-            print(f"Errors or failures encountered in run {i + 1}")
-            break
-    else:
-        print("All test runs completed successfully")
 
 
 def custom_test_order(test_name, num):
@@ -63,7 +44,6 @@ class CelerSightImportPatternsTest(BaseGuiTestCase):
         self.test_dir = os.path.join(os.path.dirname(celer_sight_home), "tests")
         qttest_utils.wait_until_shown(self.app.MainWindow)
 
-    @pytest.mark.long
     @parameterized.expand(
         [
             (
@@ -102,11 +82,13 @@ class CelerSightImportPatternsTest(BaseGuiTestCase):
             ),
         ]
     )
+    @pytest.mark.long
     def test_import_pattern(
         self, image_paths, expected_loaded_image_amount, expected_channels, action
     ):
-        from celer_sight_ai import configHandle, config
         import time
+
+        from celer_sight_ai import config, configHandle
 
         # start ui
         app = self.app

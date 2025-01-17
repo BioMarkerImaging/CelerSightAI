@@ -1,39 +1,41 @@
+import json
+import logging
+import os
 import typing
-from PyQt6.QtCore import QEvent, QObject, Qt
+from datetime import datetime, timedelta
+
+import cv2
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QApplication,
-    QWidget,
-    QVBoxLayout,
-    QGridLayout,
-    QPushButton,
-    QLineEdit,
     QButtonGroup,
+    QGridLayout,
     QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-from celer_sight_ai.gui.custom_widgets.stylized_widget import StylableWidget
-import cv2
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
-import os
+
 from celer_sight_ai import config
-import json
-import logging
-from datetime import datetime, timedelta
+from celer_sight_ai.gui.custom_widgets.stylized_widget import StylableWidget
 
 logger = logging.getLogger(__name__)
 
 
-def read_all_experiment_cfgs(p=None):
-    import json
+# def read_all_experiment_cfgs(p=None):
+#     import json
 
-    """
-    Reads the contentds of the config file (json)
-    """
-    with open(p, "r") as f:
-        cfg = json.load(f)
-    return cfg
+#     """
+#     Reads the contentds of the config file (json)
+#     """
+#     with open(p, "r") as f:
+#         cfg = json.load(f)
+#     return cfg
 
 
 def validate_cfg(d: dict = {}) -> bool:
@@ -51,7 +53,7 @@ def validate_cfg(d: dict = {}) -> bool:
         print("Some classes have the same name (not allowed)")
         return False
 
-    if not "supercategory" in d:
+    if "supercategory" not in d:
         print("No supercategory found")
         return False
     for c in classes:
@@ -119,6 +121,7 @@ def gather_cfgs(supercategory: str | None = None) -> list:
     """
     import glob
     import os
+
     from celer_sight_ai import configHandle
 
     # get current parent / parent dir
@@ -129,7 +132,7 @@ def gather_cfgs(supercategory: str | None = None) -> list:
     cloud_categories_path = os.path.join(p, config.CLOUD_CATEGORIES_FILE)
 
     if os.path.exists(cloud_categories_path):
-        with open(cloud_categories_path, "r") as f:
+        with open(cloud_categories_path) as f:
             cloud_categories = json.load(f)
     else:
         cloud_categories = []
@@ -137,7 +140,7 @@ def gather_cfgs(supercategory: str | None = None) -> list:
     all_experiement_configs.extend(cloud_categories)
     # get local experiement configs
     if os.path.exists(os.path.join(p, config.LOCAL_CATEGORIES_FILE)):
-        with open(os.path.join(p, config.LOCAL_CATEGORIES_FILE), "r") as f:
+        with open(os.path.join(p, config.LOCAL_CATEGORIES_FILE)) as f:
             local_categories = json.load(f)
     else:
         local_categories = []
@@ -263,7 +266,7 @@ class SquareButton(QPushButton):
 
         # open config
         if isinstance(self.cfg, str):  # can be a path or a str
-            with open(self.cfg, "r") as f:
+            with open(self.cfg) as f:
                 # read json
                 cfg = json.load(f)
         else:
@@ -330,7 +333,7 @@ class SquareButton(QPushButton):
         if self.with_model_type_selection:
             self.model_button.show()
         texture = cv2.imread(
-            f"data/icons/model_class_background_3.png",
+            "data/icons/model_class_background_3.png",
             -1,
         )
         if isinstance(texture, type(None)):
@@ -775,15 +778,13 @@ class RegionWideButton(StylableWidget):
         context_menu.exec(self.mapToGlobal(position))
 
     def delete_item(self):
-        from celer_sight_ai import config
-        from celer_sight_ai import configHandle
+        from celer_sight_ai import config, configHandle
 
         # if its a local item just the delete the class from the file
         if self.cfg.get("type", None) == "local":
             if os.path.exists(configHandle.getLocal(), config.LOCAL_CATEGORIES_FILE):
                 with open(
                     os.path.join(configHandle.getLocal(), config.LOCAL_CATEGORIES_FILE),
-                    "r",
                 ) as f:
                     data = json.load(f)
                 for cfg_item in data:
@@ -1078,14 +1079,15 @@ class FilterableIconTable(QWidget):
             )
 
         # Refresh local categories by re-reading from disk
-        from celer_sight_ai import configHandle
         import os
+
+        from celer_sight_ai import configHandle
 
         local_categories_path = os.path.join(
             configHandle.getLocal(), config.LOCAL_CATEGORIES_FILE
         )
         if os.path.exists(local_categories_path):
-            with open(local_categories_path, "r") as f:
+            with open(local_categories_path) as f:
                 config.local_categories = json.load(f)
 
         self.spawn_buttons()
@@ -1431,7 +1433,7 @@ class FilterableClassList(FilterableIconTable):
 class FilterableClassListItem(QPushButton):
     def __init__(self, cfg, size=250, parent=None):
         # open config
-        with open(cfg, "r") as f:
+        with open(cfg) as f:
             # read json
             cfg = json.load(f)
         self.text_item = cfg["text"]
