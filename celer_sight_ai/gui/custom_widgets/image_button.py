@@ -1,10 +1,14 @@
-from PyQt6 import QtCore, QtGui, QtWidgets
-from celer_sight_ai import config
+import logging
 
 import numpy as np
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 from celer_sight_ai.gui.designer_widgets_py_files.AssetButtonWidget import (
     Ui_Form as AssetButtonWidgetUI,
 )
+
+logger = logging.getLogger(__name__)
 
 AssetButtonStyleSheet = """
 QPushButton:checked{
@@ -90,7 +94,7 @@ class ButtonAssetClass(QtWidgets.QPushButton):
     # endInferenceSingal = QtCore.pyqtSignal()
 
     def __init__(self, MainWindow=None, ButtonHolder=None):
-        super(ButtonAssetClass, self).__init__()
+        super(QtWidgets.QPushButton, self).__init__()
         self.ButtonHolder = ButtonHolder
         self.MainWindow = MainWindow
         self.during_animation = (
@@ -243,7 +247,6 @@ class ButtonAssetClass(QtWidgets.QPushButton):
         )
         self.MainWindow.viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
         self.MainWindow.viewer.setFocus()
-        self.MainWindow.images_preview_graphicsview.uncheck_all_buttons_except_current()
 
     def handle_button_toggled(self, state):
         if state:
@@ -267,10 +270,10 @@ class ButtonAssetClass(QtWidgets.QPushButton):
         labelNumber.setMinimumSize(QtCore.QSize(100, 100))
         labelNumber.setText(str(number))
         # if its current_imagenumber is the same as the buttons number, set to white label
-        if self.MainWindow.current_imagenumber == number - 1:
-            labelNumber.setStyleSheet("color: rgba(255, 255, 255 , 170);")
-        else:
-            labelNumber.setStyleSheet("color: rgba(255, 255, 255 , 30);")
+        # if self.MainWindow.current_imagenumber == number - 1:
+        #     labelNumber.setStyleSheet("color: rgba(255, 255, 255 , 170);")
+        # else:
+        labelNumber.setStyleSheet("color: rgba(255, 255, 255 , 30);")
 
     def set_label_color(self, checked=None):
         if checked is None:
@@ -284,19 +287,59 @@ class ButtonAssetClass(QtWidgets.QPushButton):
 
     def onChecked(self):
         """
-        When the button is checked, it sets the current button, and changes the label color
+        When the button is checked, it handles selection based on modifier keys:
+        - No modifier: Single selection
+        - Shift: Range selection from last selected to current
+        - Ctrl/Cmd: Toggle selection without affecting other selections
         """
-        self.setCurrentButton()
+        # Get the current keyboard modifiers
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+
+        if modifiers == QtCore.Qt.KeyboardModifier.ShiftModifier:
+            # Shift click - select range
+            self.MainWindow.images_preview_graphicsview.handle_range_selection(
+                self.ButtonHolder.image_number
+            )
+        elif modifiers == QtCore.Qt.KeyboardModifier.ControlModifier:
+            # if this item is already selected, deselect it
+            if (
+                self.ButtonHolder.image_number
+                in self.MainWindow.images_preview_graphicsview.selected_buttons
+            ):
+                self.onUnchecked()
+            # else select it
+            else:
+                self.set_checked_to_true()
+                self.MainWindow.images_preview_graphicsview.selected_buttons.append(
+                    self.ButtonHolder.image_number
+                )
+        else:
+            # Normal click - single selection
+            self.MainWindow.images_preview_graphicsview.uncheck_all_buttons_except_current()
+            self.MainWindow.images_preview_graphicsview.selected_buttons.clear()
+            self.MainWindow.images_preview_graphicsview.selected_buttons.append(
+                self.ButtonHolder.image_number
+            )
+            self.setCurrentButton()
+            self.set_checked_to_true()
+        return
+
+    def set_checked_to_true(self):
         self.set_label_color(True)
         self.hasBeenChecked = True
-        return
+
+    def set_checked_to_false(self):
+        self.set_label_color(False)
+        self.hasBeenChecked = False
 
     def onUnchecked(self):
         """
         When the button is unchecked, it changes the label color
         """
-        self.set_label_color(False)
-        self.hasBeenChecked = False
+        self.set_checked_to_false()
+        self.MainWindow.images_preview_graphicsview.selected_buttons.remove(
+            self.ButtonHolder.image_number
+        )
         return
 
     def rearrange_buttons(self, adjust_image_number=True):
@@ -363,6 +406,7 @@ class ButtonAssetClass(QtWidgets.QPushButton):
         group_name=None,
         treatment_name=None,
         image_number=None,
+        delete_remote=False,  # deletes the remote image as well, requires the image to be remote
     ):
         """
         It deletes the image from the data structure, and then it changes the ID number of all the other
@@ -382,6 +426,17 @@ class ButtonAssetClass(QtWidgets.QPushButton):
             == self.MainWindow.DH.BLobj.get_current_image_number()
         ):
             reload_image = True
+
+        if delete_remote:
+            # check if image is remote
+            try:
+                if self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+                    self.ButtonHolder.image_uuid
+                ).is_remote():
+                    config.client.delete_remote_image(self.ButtonHolder.image_uuid)
+            except Exception as e:
+                logger.error(f"Error deleting remote image: {e}")
+
         # remove button from visible buttons
         self.MainWindow.images_preview_graphicsview.visible_buttons.pop(
             self.MainWindow.images_preview_graphicsview.visible_buttons.index(
