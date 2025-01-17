@@ -7,18 +7,17 @@ import sys
 import typing
 
 from PyQt6.QtWidgets import QGraphicsSceneMouseEvent
-from celer_sight_ai import config
 
+from celer_sight_ai import config
 from celer_sight_ai.config import (
-    BUTTON_WIDTH,
+    BUTTON_COLS,
     BUTTON_HEIGHT,
     BUTTON_SPACING,
-    BUTTON_COLS,
-    IMAGE_PREVIEW_TOP_PAD,
+    BUTTON_WIDTH,
     IMAGE_PREVIEW_BOTTOM_PAD,
     IMAGE_PREVIEW_BUFFER,
+    IMAGE_PREVIEW_TOP_PAD,
 )
-
 
 if config.is_executable:
     sys.path.append(str(os.environ["CELER_SIGHT_AI_HOME"]))
@@ -38,18 +37,19 @@ from skimage.morphology import medial_axis, skeletonize, thin
 logger.info("skimage morphology imported")
 
 import os
-import skimage.draw
+
 import skimage
+import skimage.draw
 
 logger.info("Skimage imported")
 from PIL.ImageColor import getrgb as GetRGB_FromHex
 
 logger.info("PiL imported")
-import numpy as np
 import cv2
-from celer_sight_ai import config
-
+import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 
 print("Importing read_specialized_image")
 from celer_sight_ai.io.image_reader import read_specialized_image
@@ -60,14 +60,14 @@ try:
     from skimage.draw import circle_perimeter_aa
 
 except:
-    from skimage.draw import circle
-    from skimage.draw import circle_perimeter_aa
+    from skimage.draw import circle, circle_perimeter_aa
 
 # from celer_sight_ai.gui.Utilities.shape import Shape
 # from celer_sight_ai.gui.Utilities.lib import distance
-from enum import IntEnum, auto
-from shapely.geometry import Polygon
 import mimetypes
+from enum import IntEnum, auto
+
+from shapely.geometry import Polygon
 
 
 def is_video_file(filename):
@@ -151,9 +151,10 @@ def readImage(
     bbox : [x,y,w,h] region of cropped image data to extract
     returns image, channels , dict
     """
-    import tifffile
     import numpy as np
+    import tifffile
     import xmltodict
+
     from celer_sight_ai import config
 
     logger.debug(
@@ -181,8 +182,8 @@ def readImage(
         # tiff is included here, read_specialized_image will handle ultra high res images
         logger.debug(f"Importing image from {path} : tiff")
         from celer_sight_ai.io.image_reader import (
-            interactive_untiled_tiff_preview,
             extract_tile_data_from_tiff,
+            interactive_untiled_tiff_preview,
         )
 
         # First we attempt to read the image normally, if the image is ultra high res, handle later
@@ -228,11 +229,11 @@ def readImage(
         and is_pyramidal
     ):
         from celer_sight_ai.io.image_reader import (
-            open_preview_with_tiffslide_image_reader,
-            open_preview_with_openslide_image_reader,
-            get_deep_zoom_by_tiffslide,
             get_deep_zoom_by_openslide,
+            get_deep_zoom_by_tiffslide,
             get_exact_tile_with_openslide,
+            open_preview_with_openslide_image_reader,
+            open_preview_with_tiffslide_image_reader,
         )
 
         if (
@@ -306,8 +307,8 @@ def readImage(
         if bbox:
             # bbox should be in the format [x,y,w,h]
             from celer_sight_ai.io.image_reader import (
-                generate_complete_spiral_tiles,
                 crop_and_pad_image,
+                generate_complete_spiral_tiles,
             )
 
             im = crop_and_pad_image(im, bbox)
@@ -387,7 +388,7 @@ def create_pyramidal_tiff_for_image_object(image_object):
 def find_treatment_patterns_within_filepaths(filepaths):
     import re
     from collections import defaultdict
-    from os.path import splitext, basename
+    from os.path import basename, splitext
 
     # remove trailing "_" or " " or "-" or "." from the filenames
     filepaths_stripped = [
@@ -603,6 +604,10 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         self.button_container = []
         self.visible_buttons = []
         self.visible_buttons_ids = []
+        self.selected_buttons = [0]  # list of all buttons selected
+        # use shift + click to select multiple buttons
+        # use ctrl + click to select multiple buttons or deselect a button
+
         self.previous_update_pos = None  # update prediodically when scrolling, with spacing of sel.update_spacing
         config.global_signals.ensure_current_image_button_visible_signal.connect(
             self.ensure_current_image_button_visible
@@ -632,9 +637,39 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         # self.scene().setBackgroundBrush(QtCore.Qt.GlobalColor.black)
         self._is_updating_buttons = False
 
+    def handle_range_selection(self, button_number):
+        """
+        Handles range selection between the last selected image and the current one
+        """
+        # If no buttons are currently selected, treat this as a single selection
+        if not self.selected_buttons:
+            self.selected_buttons.append(button_number)
+            return
+        # get button idx
+        start_button_idx = self.visible_buttons_ids.index(self.selected_buttons[0])
+        # Get the range boundaries
+        start = min(self.selected_buttons[-1], button_number)
+        end = max(self.selected_buttons[-1], button_number)
+
+        # Clear previous selections
+        self.uncheck_all_buttons_except_current()
+        self.selected_buttons.clear()
+
+        # Select all buttons in the range
+        for image_number in range(start, end + 1):
+            # Add to selected buttons list
+            self.selected_buttons.append(image_number)
+
+            # Find and check the button
+            for button in self.visible_buttons:
+                if button.image_number == image_number and button.button_instance:
+                    button.button_instance.setChecked(True)
+                    button.button_instance.set_label_color(True)
+
     def reset_state(self):
         self.clear_out_visible_buttons()
         self._is_updating_buttons = False
+        self.selected_buttons = [0]
 
     def set_updating_buttons(self, value):
         self._is_updating_buttons = value
@@ -740,12 +775,11 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         return (BUTTON_WIDTH * (BUTTON_COLS)) + ((BUTTON_COLS + 1) * BUTTON_SPACING)
 
     def uncheck_all_buttons_except_current(self):
-        [
-            i.button_instance.set_checked_to_false()
-            for i in self.visible_buttons
-            if i.image_number != self.MainWindow.current_imagenumber
-            and i.button_instance
-        ]
+        for i in self.selected_buttons:
+            # get button instance through uuid
+            button_object = self.MainWindow.DH.BLobj.get_button_by_image_number(i)
+            if button_object and button_object.button_instance:
+                button_object.button_instance.set_checked_to_false()
 
     def clear_out_visible_buttons(self):
         # When changing conditions, delete all the buttons of the current condition
@@ -810,6 +844,11 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                 current_condition_widget = (
                     self.MainWindow.get_current_treatment_widget()
                 )
+                if isinstance(current_condition_widget, type(None)):
+                    logger.warning(
+                        "No current condition widget found, skipping update_visible_buttons"
+                    )
+                    return
             all_conds = self.MainWindow.DH.BLobj.groups["default"].conds
             if current_condition_widget.text() in all_conds:
                 current_condition_object = all_conds[current_condition_widget.text()]
@@ -964,10 +1003,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         """
         menu = QtWidgets.QMenu()
         event_pos = self.mapToGlobal(event.pos())
-        DeleteAction = QtGui.QAction("Delete", None)
-        DeleteAction.triggered.connect(
-            lambda: self.delete_image(proxy_item, widget_item)
-        )
+
         proxy_item = self.scene().itemAt(
             self.mapToScene(event.pos()), QtGui.QTransform()
         )
@@ -984,11 +1020,61 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
             self.MainWindow.DH.BLobj.get_all_classes()
         )  # Assuming this method exists
 
+        if len(self.selected_buttons) > 1:
+            image_objects = []
+            for button_idx in self.selected_buttons:
+                image_objects.append(
+                    self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+                        self.MainWindow.DH.BLobj.get_button_by_image_number(
+                            button_idx
+                        ).image_uuid
+                    )
+                )
+            image_objects = [i for i in image_objects if i is not None]
+        else:
+            image_objects = [io]
+
+        if len(self.selected_buttons) > 1:
+            # Get proxy items for all selected buttons
+            all_proxies = []
+            all_widgets = []
+            for button_idx in self.selected_buttons:
+                # Find the proxy item and widget for each selected button
+                button = self.MainWindow.DH.BLobj.get_button_by_image_number(button_idx)
+                if button and button.button_instance_proxy:
+                    all_proxies.append(button.button_instance_proxy)
+                    all_widgets.append(button.button_instance)
+
+            DeleteAction = QtGui.QAction("Delete All Selected", None)
+            DeleteAction.triggered.connect(
+                lambda: self.delete_images(all_proxies, all_widgets)
+            )
+        else:
+            DeleteAction = QtGui.QAction("Delete", None)
+            DeleteAction.triggered.connect(
+                lambda: self.delete_image(proxy_item, widget_item)
+            )
+
+        if io.is_remote:
+            if len(self.selected_buttons) > 1:
+                delete_remote_action = menu.addAction("Delete All Remote Images")
+                # get all uuids of the selected buttons
+                image_uuids = []
+                image_uuids = list(set([i.unique_id for i in image_objects]))
+                delete_remote_action.triggered.connect(
+                    lambda: config.client.delete_remote_images(image_uuids)
+                )
+            else:
+                delete_remote_action = menu.addAction("Delete Remote Image")
+                delete_remote_action.triggered.connect(
+                    lambda: config.client.delete_remote_images([io.unique_id])
+                )
         roi_menu = menu.addMenu("Get ROI for...")
         roi_all_action = roi_menu.addAction("All")
         roi_all_action.triggered.connect(
             lambda: self.MainWindow.MyInferenceHandler.DoInferenceAllImagesOnlineThreaded(
-                provided_classes=[i for i in classes], provided_image_objects=[io]
+                provided_classes=[i for i in classes],
+                provided_image_objects=image_objects,
             )
         )
 
@@ -996,7 +1082,8 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
             action = roi_menu.addAction(classes[some_class].text())
             action.triggered.connect(
                 lambda: self.MainWindow.MyInferenceHandler.DoInferenceAllImagesOnlineThreaded(
-                    provided_classes=[some_class], provided_image_objects=[io]
+                    provided_classes=[some_class],
+                    provided_image_objects=image_objects,
                 )
             )
 
@@ -1010,6 +1097,10 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         widget.deleteCurrentImage()
 
         return
+
+    def delete_images(self, proxies, widgets):
+        for proxy, widget in zip(proxies, widgets):
+            self.delete_image(proxy, widget)
 
     def displace_image_preview_widgets_after_delete(self):
         pass
@@ -1259,10 +1350,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     def __init__(self, MainWindow=None):
         super(PhotoViewer, self).__init__()
         # super(Ui_MainWindow, self).__init__()
+        from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+
         from celer_sight_ai import config
         from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
-
-        from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
         gl_widget = QOpenGLWidget()
         self.setViewport(gl_widget)
@@ -1844,8 +1935,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         # image_object._during_scene_update = True
         try:
             from celer_sight_ai.io.image_reader import (
-                get_deep_zoom_by_tiffslide,
                 get_deep_zoom_by_openslide,
+                get_deep_zoom_by_tiffslide,
             )
 
             get_deep_zoom_by_openslide(
@@ -1882,8 +1973,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         Returns:
         None
         """
-        from celer_sight_ai.io.image_reader import DEEPZOOM_TILE_SIZE
         import heapq
+
+        from celer_sight_ai.io.image_reader import DEEPZOOM_TILE_SIZE
 
         logger.info("Adding deepview images to scene")
         image_objects = object.get("image_data", None)
@@ -2210,11 +2302,12 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
                     combined_image = np.stack(images_data, axis=-1)
                     # save the image as a tiff with the channels included
-                    import tifffile
+                    import os
 
                     # generate a uuid that does not exist in config.cache_dir
                     import uuid
-                    import os
+
+                    import tifffile
 
                     file_name = os.path.basename(image_channel_list_arr[i][ii][0])
                     indx_channel = file_name.lower().index(
@@ -2242,6 +2335,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
                     # save image to disk at a temp location
                     import uuid
+
                     import bioformats
 
                     dtype = combined_image.dtype
@@ -2280,6 +2374,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     ):
         # Reads the grayscale images, combines them and saves them to disk. If images are not grayscale raise error
         import copy
+
         from celer_sight_ai.io.image_reader import write_ome_tiff
 
         image_channel_list_arr = []
@@ -2367,8 +2462,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                     metadata = {"cs_channels": channel_names_arr[i], "axes": "YXC"}
 
                     # generate a uuid that does not exist in config.cache_dir
-                    import uuid
                     import os
+                    import uuid
 
                     file_name = os.path.basename(image_channel_list_arr[i][0][ii])
                     indx_channel = file_name.lower().index(
@@ -2420,11 +2515,12 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             - matched_channel_paths (list): A list of matched channel paths.
             - filtered_patterns_with_same_count (set): A set of filtered patterns with the same count.
         """
-        from collections import defaultdict
-        from natsort import natsorted
-        from functools import partial
-        import re
         import glob
+        import re
+        from collections import defaultdict
+        from functools import partial
+
+        from natsort import natsorted
 
         FOUND_CHANNELS_AS_IMAGES = False
         matched_channel_paths = list()
@@ -2503,8 +2599,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         accept any action
         """
 
-        from functools import partial
         import glob
+        from functools import partial
 
         # case of urls as dict --> already determined treatments names and paths
         if isinstance(urls, dict):
@@ -2570,7 +2666,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         cv2.imwrite(frame_path, frame)
                         frame_counter += 1
 
-                except Exception as e:
+                except Exception:
                     cap.release()
                     config.global_signals.errorSignal.emit(
                         "Error opening video stream or file"
@@ -2639,7 +2735,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                             )
                         return
 
-                if channel_pattern:
+                if channel_pattern and len(img_file_list) > 1:
                     (
                         FOUND_CHANNELS_AS_IMAGES,
                         matched_channel_paths,
@@ -2906,7 +3002,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         if not self.rect().isNull():
             if self.hasPhoto():
                 if not image_object.SizeX or not image_object.SizeY:
-                    logger.warning(f"Could not fit image in view, image size is null")
+                    logger.warning("Could not fit image in view, image size is null")
                     return
                 x_padding = image_object.SizeX * 0.25
                 y_padding = image_object.SizeY * 0.25
@@ -3019,7 +3115,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         # If the current image is ulra high res, update the tiles
         # visible within the viewport
         # if there is an image
-        if self.MainWindow.current_imagenumber == None:
+        if (
+            self.MainWindow.current_imagenumber == None
+            or self.MainWindow.current_imagenumber == -1
+        ):
             return
         current_condition = self.MainWindow.DH.BLobj.get_current_condition()
         if not current_condition:
@@ -3179,7 +3278,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         return np.ones(gray.shape, dtype=np.uint8)
 
     def getSharpFallOff(self, value, radius, dt):
-        return (-((value / radius)) + 1) * dt
+        return (-(value / radius) + 1) * dt
 
     def movePointsBrushToolMagic1(self, dtx, dty, pointsList):
         """
@@ -3254,8 +3353,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     def draw_bounding_box_stop_THREADED(self, pos):
         # Set up multiprocess
-        from celer_sight_ai.core.Workers import Worker
         from celer_sight_ai import config
+        from celer_sight_ai.core.Workers import Worker
 
         # if no class exists, throw error and abort
         current_class_widget = (
@@ -3353,6 +3452,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         runs the first time we release the mouse after the aa_draw
         """
         import numpy as np
+
         from celer_sight_ai import config
 
         logger.debug("draw_bounding_box_stop")
@@ -3379,8 +3479,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
         # Make the click tool same size/raidus:
         from celer_sight_ai.io.image_reader import (
-            get_optimal_crop_bbox,
             generate_complete_spiral_tiles,
+            get_optimal_crop_bbox,
         )
 
         # get image object
@@ -3405,7 +3505,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         )  # bbox is [x1, y1, x2, y2]
         bbox_tile = list(bbox_tile)
 
-        # if the bounding box is out of bounds, adjust it to be within bounds
+        # # if the bounding box is out of bounds, adjust it to be within bounds
         if image_object.SizeX - bbox_tile[3] < 0:
             difference = bbox_tile[3] - image_object.SizeY
             bbox_tile[3] = int(bbox_tile[3] - difference)
@@ -3416,7 +3516,18 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             bbox_tile[2] = int(bbox_tile[2] - difference)
             # adjust left
             bbox_tile[0] = int(max(0, bbox_tile[0] - difference))
+        # # Get width/height
+        # width = bbox_tile[2] - bbox_tile[0]
+        # height = bbox_tile[3] - bbox_tile[1]
 
+        # # If bbox extends beyond image bounds
+        # if bbox_tile[0] + width > image_object.SizeX:
+        #     width = image_object.SizeX - bbox_tile[0]
+        # if bbox_tile[1] + height > image_object.SizeY:
+        #     height = image_object.SizeY - bbox_tile[1]
+
+        # size = max(width, height)
+        # width = height = size
         # make sure that the bbox is square (use the largest dimension)
         bbox_tile[2] = bbox_tile[3] = max(bbox_tile[2], bbox_tile[3])
 
@@ -3430,6 +3541,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             bbox=bbox_tile,  # [bbox_tile[0], bbox_tile[1], bbox_tile[2] - bbox_tile[0], bbox_tile[3] - bbox_tile[1]], # bbox : [x,y,w,h]
             avoid_loading_ultra_high_res_arrays_normaly=True,
         )
+        # check for failed bbox operation
+        if isinstance(seg_image_prior, type(None)):
+            return
         # add brightness and contrast to match the scene
         seg_image_prior = self.MainWindow.handle_adjustment_to_image(seg_image_prior)
         # if the bounding box is less than config.MAGIC_BOX_2_IDEAL_SIZE then we need to infer using tiles
@@ -4154,8 +4268,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         print("double click!")
         if self.SkGb_during_drawing == True:
             self.placeSkGbFinish(self.mapToScene(event.position().toPoint()))
-        logger.info("im drawing state is {0}".format(self.i_am_drawing_state))
-        logger.info("im drawing state is {0}".format(self.MainWindow.counter_tmp))
+        logger.info(f"im drawing state is {self.i_am_drawing_state}")
+        logger.info(f"im drawing state is {self.MainWindow.counter_tmp}")
         if self.i_am_drawing_state == True:
             if self.MainWindow.counter_tmp >= 3:
                 self.completeDrawingPolygon("complete")
@@ -4186,12 +4300,15 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             # for all selected items.
             from celer_sight_ai.historyStack import GripItemMoveCommand
 
+            # get the current image uuid
+            image_uuid = self.MainWindow.DH.BLobj.get_current_image_object().unique_id
             selected_items = self._scene.selectedItems()
             # get only grip items
             selected_items = [i for i in selected_items if type(i) == GripItem]
             if len(selected_items):
                 self.MainWindow.undoStack.push(
                     GripItemMoveCommand(
+                        image_uuid=image_uuid,
                         polygon_item=selected_items[
                             0
                         ].m_annotation_item,  #  has to be the same item
@@ -4213,9 +4330,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self.MAGIC_BRUSH_DURING_DRAWING = False
 
         print(
-            "On release function states are {} and {}".format(
-                self.ML_brush_tool_object_state, self.ML_brush_tool_draw_is_active
-            )
+            f"On release function states are {self.ML_brush_tool_object_state} and {self.ML_brush_tool_draw_is_active}"
         )
         if (
             self.ML_brush_tool_object_state == True
@@ -4370,7 +4485,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             bottomRight = self.mapToScene(
                 self.viewport().width(), self.viewport().height()
             )
-            if not self.h_guide_magic_tool in self.scene().items():
+            if self.h_guide_magic_tool not in self.scene().items():
                 self.scene().addItem(self.h_guide_magic_tool)
                 self.scene().addItem(self.v_guide_magic_tool)
             self.h_guide_magic_tool.setLine(
@@ -4605,7 +4720,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                             posNow.x(), posNow.y(), self.mgcClickWidth, mode="box"
                         )
                     # self._scene.addItem(self.magic_brush_cursor)
-                if not self.magic_brush_cursor in self._scene.items():
+                if self.magic_brush_cursor not in self._scene.items():
                     self._scene.addItem(self.magic_brush_cursor)
 
                 self.magic_brush_cursor.moveToC(posNow.x(), posNow.y())
@@ -4920,8 +5035,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         from celer_sight_ai import config
 
         raise NotImplementedError
-        import skimage
         import cv2
+        import skimage
 
         print("def placeSkGbFinish")
         from celer_sight_ai.gui.Utilities.QitemTools import (
@@ -5411,6 +5526,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
             if self.ML_brush_tool_object_state == True:
                 import skimage
+
                 from celer_sight_ai import config
 
                 image_object = (
@@ -5548,7 +5664,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         distanceActual = np.linalg.norm(
             np.array([endX, endY]) - np.array([startX, startY])
         )
-        if ((distanceActual * ((self._zoom / 10 + 1)))) <= (
+        if (distanceActual * (self._zoom / 10 + 1)) <= (
             self.QuickTools.spinBoxPolygonTool.value() / 10
         ) + 10:
             return True
@@ -5728,6 +5844,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                                     ]
                                 )
                             import skimage
+
                             from celer_sight_ai import config
 
                             # create bitmap mask
@@ -6778,7 +6895,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
             else:
                 self.removeAllPoints()
         except Exception as e:
-            logger.error("PolygonAnnotation itemChange error: {}".format(e))
+            logger.error(f"PolygonAnnotation itemChange error: {e}")
             # log traceback
             import traceback
 
@@ -7253,7 +7370,7 @@ class mgcClick_cursor_cls(QtWidgets.QGraphicsItemGroup):
         )
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
-        print("setting radius to {}".format(radius))
+        print(f"setting radius to {radius}")
         self.myW = radius
         if self.current_rect:
             self.current_rect.setRect(
