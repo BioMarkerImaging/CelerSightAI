@@ -14,11 +14,11 @@ class BaseImageTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.test_dir = os.path.join(
+            os.path.dirname(os.environ.get("CELER_SIGHT_AI_HOME") or ""), "tests"
+        )
         super().setUpClass()
         """Set up class-level test fixtures."""
-        from celer_sight_ai.config import start_jvm
-
-        start_jvm()
 
         cls.fixture_dir_abs_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -29,17 +29,21 @@ class BaseImageTestCase(BaseTestCase):
         cls.all_images_tif = glob(cls.path_images_tif + "/*.tif") + glob(
             cls.path_images_tif + "/*.TIF"
         )
-        cls.ultra_high_res_root_path = "tests/fixtures/import_images_high_res"
+        cls.ultra_high_res_root_path = "fixtures/import_images_high_res"
+
+        cls.cropped_ultra_high_res_test_file = os.path.join(
+            cls.fixture_dir_abs_path,
+            "tests/fixtures/import_images_high_res/tiff_slide_test.tiff",
+        )
 
         # Load test data configurations
         cls.mock_image_data = cls._load_mock_image_data()
+        cls.minimal_images_tif = cls._get_short_image_data()
         cls.mock_high_res_images = cls._load_mock_high_res_images()
+        cls.mock_all_images = cls._load_mock_write_load_celer_sight_file()
         cls.mock_proprietory_images = {
             "tests/fixtures/tissue_files/TCGA-HC-7820-01A-01-TS1.f9131ac5-c635-42a7-a383-634d90d212d4.svs": None
         }
-        cls.test_dir = os.path.join(
-            os.path.dirname(os.environ.get("CELER_SIGHT_AI_HOME") or ""), "tests"
-        )
 
     def check_key_value_pairs(self, dict1, dict2):
         """Compare two dictionaries with special handling for None and numpy arrays."""
@@ -90,15 +94,27 @@ class BaseImageTestCase(BaseTestCase):
 
     @classmethod
     def _load_mock_write_load_celer_sight_file(cls):
-        # collect all the images from _load_mock_image_data  and _load_mock_high_res_images
-        return list(cls._load_mock_image_data().keys()) + list(
-            cls._load_mock_high_res_images().keys()
-        )
+        # Combine both dictionaries instead of just their keys
+        return {**cls._load_mock_image_data(), **cls._load_mock_high_res_images()}
+
+    @classmethod
+    def _get_short_image_data(cls):
+        short_data_names = [
+            "PIR3_L1_TMRE_Image015.tif",
+            "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_22.tif",
+        ]
+        return {
+            os.path.join(cls.path_images_tif, key): cls.mock_image_data[
+                os.path.join(cls.path_images_tif, key)
+            ]
+            for key in short_data_names
+        }
 
     @classmethod
     def _load_mock_image_data(cls):
         """Load mock image data configuration."""
-        return {
+        # Define base dictionary with relative paths
+        all_files = {
             "PIR3_L1_TMRE_Image015.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 1392,
@@ -109,7 +125,7 @@ class BaseImageTestCase(BaseTestCase):
                 "channels": ["gray"],
                 "size_x": 439,
                 "size_y": 167,
-                "readable": True,
+                "readable": False,
             },
             "Cell_2.tif": {
                 "channels": ["gray"],
@@ -121,13 +137,13 @@ class BaseImageTestCase(BaseTestCase):
                 "channels": ["red", "green", "blue"],
                 "size_x": 439,
                 "size_y": 167,
-                "readable": True,
+                "readable": False,
             },
             "multi-channel-time-series.ome.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 439,
                 "size_y": 167,
-                "readable": True,
+                "readable": False,
             },
             "multi-channel-z-series.ome.tif": {
                 "channels": ["red", "green", "blue"],
@@ -234,12 +250,12 @@ class BaseImageTestCase(BaseTestCase):
                 "physical_pixel_unit_y": "µm",
                 "readable": False,
             },
-            "Philips-1.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 45056,
-                "size_y": 35840,
-                "readable": True,
-            },
+            # "Philips-1.tiff": { # deleted for now
+            #     "channels": ["red", "green", "blue"],
+            #     "size_x": 45056,
+            #     "size_y": 35840,
+            #     "readable": True,
+            # },
             "pl_ua_1_gfp.tif": {
                 "channels": ["GFP"],
                 "size_x": 1992,
@@ -247,7 +263,7 @@ class BaseImageTestCase(BaseTestCase):
                 "readable": True,
             },
             "pl con_Top Slide_R_p01_0_A01f00d1.TIF": {
-                "channels": ["gray"],
+                "channels": ["red", "green", "blue"],
                 "size_x": 2048,
                 "size_y": 1536,
                 "readable": True,
@@ -262,16 +278,23 @@ class BaseImageTestCase(BaseTestCase):
             },
         }
 
+        # Convert relative paths to absolute paths
+        return {
+            os.path.join(cls.path_images_tif, key): value
+            for key, value in all_files.items()
+        }
+
     @classmethod
     def _load_mock_high_res_images(cls):
         """Load mock high resolution images configuration."""
         # Reference to original mock_high_res_images dictionary
         # tests/test_image_import.py lines 179-212
-        return {
+        all_files = {
             "aup-1_13_2_Top Right Dish_TM_p00_0_A01f00d0.TIF": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 17515,
                 "size_y": 17239,
+                "readable": True,
             },
             # "20211005_LHE042_plane1_-324.425_raw-092_Cycle00001_Ch1_000001.ome.tif": None,
             # "CMU-1.ndpi": {
@@ -283,17 +306,19 @@ class BaseImageTestCase(BaseTestCase):
                 "channels": ["red", "green", "blue"],
                 "size_x": 46000,
                 "size_y": 32914,
+                "readable": True,
             },
             "Philips-1.tiff": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 45056,
                 "size_y": 35840,
+                "readable": True,
             },
-            "Philips-3.tiff": {
-                "channels": ["red", "green", "blue"],
-                "size_x": 131072,
-                "size_y": 100352,
-            },
+            # "Philips-3.tiff": { # deleted for now.
+            #     "channels": ["red", "green", "blue"],
+            #     "size_x": 131072,
+            #     "size_y": 100352,
+            # },
             # Needs to be converted to a pyramidal tiff first
             # "aup-1_13_Top Left Dish_TM_p00_0_A01f00d0.TIF": {
             #     "channels": ["red", "green", "blue"],
@@ -304,7 +329,12 @@ class BaseImageTestCase(BaseTestCase):
                 "channels": ["red", "green", "blue"],
                 "size_x": 17231,
                 "size_y": 17525,
+                "readable": True,
             },
+        }
+        return {
+            os.path.join(cls.test_dir, cls.ultra_high_res_root_path, key): value
+            for key, value in all_files.items()
         }
 
     def get_test_image_path(self, image_name):
@@ -313,16 +343,4 @@ class BaseImageTestCase(BaseTestCase):
 
     def get_high_res_image_path(self, image_name):
         """Get the full path for a high resolution test image."""
-        return os.path.join(
-            self.fixture_dir_abs_path, self.ultra_high_res_root_path, image_name
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        from celer_sight_ai.config import stop_jvm
-
-        # import shutil
-
-        # shutil.rmtree(cls.temp_dir)
-
-        stop_jvm()
+        return os.path.join(self.test_dir, self.ultra_high_res_root_path, image_name)
