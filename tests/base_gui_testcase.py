@@ -1,23 +1,46 @@
+import logging
 import os
 import tempfile
 import unittest
-import numpy as np
 from glob import glob
-import logging
+
+import numpy as np
+import pytest
+
 from tests import qttest_utils
 from tests.base_test_case import BaseTestCase
-import pytest
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.long
+class BaseOnlineGuiTestCase(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.app = qttest_utils.get_gui_main(offline=False)
+        qttest_utils.wait_until_shown(cls.app.MainWindow)
+
+    def check_key_value_pairs(self, dict1, dict2):
+        """Compare two dictionaries with special handling for None and numpy arrays."""
+        if isinstance(dict1, type(None)) and isinstance(dict2, type(None)):
+            return
+        for key in dict1.keys():
+            value = dict1.get(key)
+            self.assertEqual(dict2[key], value)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.app.closeApp()
+
+
 class BaseGuiTestCase(BaseTestCase):
     """Base class for image-related tests providing common test fixtures and utilities."""
 
     @classmethod
     def setUpClass(cls):
         """Set up class-level test fixtures."""
+        # os.environ["QT_QPA_PLATFORM"] = "offscreen"
         super().setUpClass()
         cls.app = qttest_utils.get_gui_main(offline=True)
         qttest_utils.wait_until_shown(cls.app.MainWindow)
