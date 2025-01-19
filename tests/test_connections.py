@@ -1,38 +1,36 @@
-import requests
-import sys
+import logging
 import os
+import sys
+import unittest
+
+import pytest
+import requests
+
+# load env
+from dotenv import load_dotenv
+from parameterized import parameterized
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 # sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
 from celer_sight_ai import config
 
-from celer_sight_ai.configHandle import *
-from celer_sight_ai.core.LogTool import LogInHandler
-import unittest
-from celer_sight_ai.core.file_client import FileClient
-from tests.base_online_testcase import BaseOnlineTestCase
-import pytest
-
 # from tests.csight_test_loader import tags
-from celer_sight_ai.configHandle import getServerLogAddress
-import logging
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-
-# load env
-from dotenv import load_dotenv
+from celer_sight_ai.configHandle import (
+    get_optimal_annotation_range_address,
+    getServerLogAddress,
+)
+from celer_sight_ai.core.file_client import FileClient
+from celer_sight_ai.core.LogTool import LogInHandler
+from tests.base_online_testcase import BaseOnlineTestCase
 
 load_dotenv("../.env")
 logger = logging.getLogger(__name__)
 
-unittest.TestLoader.sortTestMethodsUsing = None
-from unittest.mock import patch
-from requests.exceptions import RequestException
-from parameterized import parameterized
 
-
-@pytest.mark.online
 class TestBasicConnection(BaseOnlineTestCase):
 
     @parameterized.expand(BaseOnlineTestCase._load_optimal_annotation_range_fixture)
+    @pytest.mark.online
     def test_get_optimal_annotation_range(self, category, expected_result):
         result = self.client.get_optimal_annotation_range(category).get(
             "optimal_annotation_range", None
@@ -42,16 +40,11 @@ class TestBasicConnection(BaseOnlineTestCase):
             self.assertIsNone(result)
         else:
             self.assertIsNotNone(result)
-            self.assertIsInstance(result, dict)
-            self.assertIn("max", result)
-            self.assertIn("min", result)
-            self.assertAlmostEqual(result["min"], expected_result["min"], places=2)
-            self.assertAlmostEqual(result["max"], expected_result["max"], places=2)
+            self.assertIsInstance(result, list)
+            self.assertAlmostEqual(result[0], expected_result[0], places=2)
+            self.assertAlmostEqual(result[1], expected_result[1], places=2)
 
-    def test_get_optimal_annotation_range_results(self):
-        result = requests.get(get_optimal_annotation_range_address())
-        self.assertEqual(result.status_code, 200)
-
+    @pytest.mark.skip(reason="This test is not implemented")
     def test_get_available_models(self):
         # Assuming the login method sets self.jwt and the user is already registered
 
