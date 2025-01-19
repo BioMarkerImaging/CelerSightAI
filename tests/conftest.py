@@ -6,11 +6,11 @@ import sys
 p_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(p_dir)
 
-import pytest
+from typing import Any, Callable, Literal
 from unittest.mock import patch
-from typing import Literal, Any, Callable
-from ui_qtbot_tools import get_gui_main
+
 import pytest
+from ui_qtbot_tools import get_gui_main
 
 
 def pytest_addoption(parser):
@@ -23,6 +23,10 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    # Don't skip if only one test is being run
+    if len(items) == 1:
+        return
+
     # Skip online tests unless --online flag is provided
     if not config.getoption("--online"):
         skip_online = pytest.mark.skip(reason="need --online option to run")
