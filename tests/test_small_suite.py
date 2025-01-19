@@ -1,12 +1,13 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
 import os
 import sys
 import unittest
+
 import pytest
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
+
 from celer_sight_ai import config
-import logging
 from tests import qttest_utils
 from tests.base_gui_testcase import BaseGuiTestCase
 
@@ -67,10 +68,6 @@ class CelerSightTestSimple(BaseGuiTestCase):
         import time
 
         app = self.app
-        # wait 5 seconds
-        qttest_utils.wait_until_shown(app.MainWindow)
-        print("SHOWN OK")
-        qttest_utils.to_main_window(app)
 
         # download assets if needed
         config.client.download_test_fixtures()

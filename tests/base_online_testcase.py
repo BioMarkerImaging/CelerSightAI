@@ -1,12 +1,14 @@
+import logging
 import os
 import tempfile
 import unittest
-import numpy as np
 from glob import glob
-import logging
-from celer_sight_ai.core.file_client import FileClient
-from celer_sight_ai.configHandle import getServerLogAddress
+
+import numpy as np
 import pytest
+
+from celer_sight_ai.configHandle import getServerLogAddress
+from celer_sight_ai.core.file_client import FileClient
 from tests.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -23,10 +25,10 @@ class BaseOnlineTestCase(BaseTestCase):
         from celer_sight_ai.config import start_jvm
 
         cls.mock_credentials = []
-        if os.environ.get("USERNAME_USER") and os.environ.get("PASSWORD_USER"):
+        if os.environ.get("USERNAME_ADMIN") and os.environ.get("PASSWORD_ADMIN"):
             cls.mock_credentials = [
-                os.environ.get("USERNAME_USER"),
-                os.environ.get("PASSWORD_USER"),
+                os.environ.get("USERNAME_ADMIN"),
+                os.environ.get("PASSWORD_ADMIN"),
             ]
         else:
             raise ValueError("No mock credentials found, cant log in")
@@ -35,8 +37,6 @@ class BaseOnlineTestCase(BaseTestCase):
         # log user
         cls.client = FileClient(getServerLogAddress())
         cls.client.login(cls.mock_credentials[0], cls.mock_credentials[1])
-
-        start_jvm()
 
         cls.fixture_dir_abs_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -63,7 +63,7 @@ class BaseOnlineTestCase(BaseTestCase):
     @classmethod
     def _load_optimal_annotation_range_fixture(cls):
         return [
-            ("58f00d07-caa7-4bec-8a66-39432f2e1086", {"min": 0.12, "max": 0.20}),
+            ("58f00d07-caa7-4bec-8a66-39432f2e1086", [0.12, 0.16]),
             ("0888765f-f214-4e24-8cc6-c92735d03e68", None),
         ]
 

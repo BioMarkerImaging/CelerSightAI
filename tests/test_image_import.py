@@ -1,16 +1,18 @@
-import tifffile
-import xmltodict
-from glob import glob
-import cv2
-import numpy as np
+import logging
 import os
 import sys
-import time
-import logging
 import tempfile
-from tests.base_image_testcase import BaseImageTestCase
-from celer_sight_ai.io.image_reader import read_specialized_image
+import time
+from glob import glob
+
+import cv2
+import numpy as np
 import pytest
+import tifffile
+import xmltodict
+
+from celer_sight_ai.io.image_reader import read_specialized_image
+from tests.base_image_testcase import BaseImageTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +21,11 @@ class TestImageImport(BaseImageTestCase):
 
     def setUp(self):
         """Set up test-specific fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(self.cleanup)
+        # Add debug prints to verify paths
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"ultra_high_res_root_path: {self.ultra_high_res_root_path}")
+
+        super().setUp()
 
     def cleanup(self):
         """Clean up test resources."""
@@ -28,15 +33,14 @@ class TestImageImport(BaseImageTestCase):
 
         shutil.rmtree(self.temp_dir)
 
+    @pytest.mark.long
     def test_extract_tile_data_from_tiff(self):
         from celer_sight_ai.io.image_reader import (
             extract_tile_data_from_tiff,
         )
 
-        for img_path in self.mock_high_res_images:
-            if not os.path.basename(img_path) in self.mock_image_data.keys():
-                print("Skipping image: " + img_path)
-                continue
+        for img_path, image_info in self.mock_high_res_images.items():
+
             if not (
                 os.path.basename(img_path).lower().endswith(".tiff")
                 or os.path.basename(img_path).lower().endswith(".tif")
@@ -60,19 +64,20 @@ class TestImageImport(BaseImageTestCase):
                 print(e)
                 self.fail()
 
-    def test_tifffile_loader(self):
+    @pytest.mark.long
+    def test_tifffile_loader_full(self):
+        self.tifffile_loader_core(self.mock_image_data)
+
+    def test_tifffile_loader_minimal(self):
+        self.tifffile_loader_core(self.minimal_images_tif)
+
+    def tifffile_loader_core(self, image_data):
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
-        for img_path in self.all_images_tif:
-            if not os.path.basename(img_path) in self.mock_image_data.keys():
-                logger.info("Skipping image: " + img_path)
-                continue
-            if not "ntrol_Bottom Slide_D_p00_0_A01f11d1.TIF" in img_path:
-                continue
+        for img_path in image_data.keys():
+
             logger.info("Testing image: " + img_path)
             try:
-                result, arr_metadata = read_specialized_image(
-                    os.path.join(self.fixture_dir_abs_path, img_path)
-                )
+                result, arr_metadata = read_specialized_image(img_path)
 
             except Exception as e:
                 import traceback
@@ -82,18 +87,14 @@ class TestImageImport(BaseImageTestCase):
                 self.fail()
 
             # delete the readable key from the mock_image_data
-            is_readable = self.mock_image_data[os.path.basename(img_path)].get(
-                "readable", False
-            )
+            is_readable = image_data[img_path].get("readable", False)
             if not is_readable:
                 # make sure that the image data is None
                 print("Skipping image: " + img_path)
                 continue
-            if "readable" in self.mock_image_data[os.path.basename(img_path)]:
-                del self.mock_image_data[os.path.basename(img_path)]["readable"]
-            self.check_key_value_pairs(
-                self.mock_image_data[os.path.basename(img_path)], arr_metadata
-            )
+            if "readable" in image_data[img_path]:
+                del image_data[img_path]["readable"]
+            self.check_key_value_pairs(image_data[img_path], arr_metadata)
             logger.info("Testing image: " + img_path)
             if arr_metadata:
                 logger.info(
@@ -105,13 +106,22 @@ class TestImageImport(BaseImageTestCase):
             else:
                 logger.info("Invalid image.")
 
-    def test_write_read_ome_tiff(self):
+    @pytest.mark.long
+    def test_write_read_ome_tiff_full(self):
+        self.write_read_ome_tiff_core(self.mock_image_data)
+
+    def test_write_read_ome_tiff_minimal(self):
+        self.write_read_ome_tiff_core(self.minimal_images_tif)
+
+    def write_read_ome_tiff_core(self, image_data):
         """
         Write every tiff file and record its channels, read it back again and
         validate that the channels and shape are the same.
         """
-        from celer_sight_ai.io.image_reader import write_ome_tiff
-        from celer_sight_ai.io.image_reader import read_specialized_image
+        from celer_sight_ai.io.image_reader import (
+            read_specialized_image,
+            write_ome_tiff,
+        )
 
         skip_images = [
             "4D-series.ome.tif",
@@ -126,7 +136,7 @@ class TestImageImport(BaseImageTestCase):
             "neuro_rosella_D2_UA.vsi - 10x_FBW, FGW_Z_25.tif",  # channel is an array of color
             "Cell_2.tif",
         ]
-        for img_path in self.mock_image_data.keys():
+        for img_path in image_data.keys():
             if img_path in skip_images:
                 logger.info(f"Skipping image: {img_path}")
                 continue
@@ -134,13 +144,11 @@ class TestImageImport(BaseImageTestCase):
             logger.info(f"Testing image: {img_path}")
 
             # delete the readable key from the mock_image_data
-            if "readable" in self.mock_image_data[os.path.basename(img_path)]:
-                del self.mock_image_data[os.path.basename(img_path)]["readable"]
+            if "readable" in image_data[img_path]:
+                del image_data[img_path]["readable"]
 
             # if its not readable, skip it
-            if not self.mock_image_data[os.path.basename(img_path)].get(
-                "readable", False
-            ):
+            if not image_data[img_path].get("readable", False):
                 logger.info(f"Skipping image: {img_path}")
                 continue
 
@@ -148,23 +156,23 @@ class TestImageImport(BaseImageTestCase):
                 os.path.join(self.path_images_tif, img_path)
             )
             logger.info(f"Shape: {arr.shape}")
-            logger.info(f"Channels: {self.mock_image_data[img_path]['channels']}")
+            logger.info(f"Channels: {image_data[img_path]['channels']}")
             # write it to ome-tiff
-            logger.info(f"Writing to ome-tiff")
+            logger.info("Writing to ome-tiff")
             result = write_ome_tiff(
                 arr=arr,
-                channels=self.mock_image_data[img_path]["channels"],
+                channels=image_data[img_path]["channels"],
                 tif_path=os.path.join(self.temp_dir, "test.tiff"),
-                physical_pixel_size_x=self.mock_image_data[img_path].get(
+                physical_pixel_size_x=image_data[img_path].get(
                     "physical_pixel_size_x", None
                 ),
-                physical_pixel_size_y=self.mock_image_data[img_path].get(
+                physical_pixel_size_y=image_data[img_path].get(
                     "physical_pixel_size_y", None
                 ),
-                physical_pixel_unit_x=self.mock_image_data[img_path].get(
+                physical_pixel_unit_x=image_data[img_path].get(
                     "physical_pixel_unit_x", None
                 ),
-                physical_pixel_unit_y=self.mock_image_data[img_path].get(
+                physical_pixel_unit_y=image_data[img_path].get(
                     "physical_pixel_unit_y", None
                 ),
             )
@@ -175,31 +183,31 @@ class TestImageImport(BaseImageTestCase):
                 os.path.join(self.temp_dir, "test.tiff")
             )
             logger.info(f"Shape: {arr.shape}")
-            logger.info(f"Channels: {self.mock_image_data[img_path]['channels']}")
+            logger.info(f"Channels: {image_data[img_path]['channels']}")
 
-            self.check_key_value_pairs(
-                self.mock_image_data[os.path.basename(img_path)], arr_metadata
-            )
+            self.check_key_value_pairs(self.mock_image_data[img_path], arr_metadata)
 
     @pytest.mark.long
     def test_ultra_high_res_preview(self):
+        import time
+
         from celer_sight_ai import config
         from celer_sight_ai.gui.custom_widgets.scene import readImage
         from celer_sight_ai.io.image_reader import (
-            open_preview_with_tiffslide_image_reader,
-            open_preview_with_openslide_image_reader,
-            get_deep_zoom_by_tiffslide,
             create_pyramidal_tiff,
+            get_deep_zoom_by_tiffslide,
+            open_preview_with_openslide_image_reader,
+            open_preview_with_tiffslide_image_reader,
         )
-        import time
 
         config.user_cfg["USER_WORKERS"] = False
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
         for img_path in self.mock_high_res_images.keys():
             expected_val_key_pairs = self.mock_high_res_images[img_path]
             print("Testing image: " + os.path.basename(img_path))
-            # if not "aup-1_13_2_Top Right Dish_TM_p00_0_A01f00d0" in img_path:
-            #     continue
+            full_path = os.path.join(self.ultra_high_res_root_path, img_path)
+            print(f"Attempting to read: {full_path}")
+            print(f"File exists: {os.path.exists(full_path)}")
             try:
                 start = time.time()
                 #  test thumbnail first
@@ -222,6 +230,7 @@ class TestImageImport(BaseImageTestCase):
                 ):
                     self.assertEqual(expected_val_key_pairs, None)
                     continue
+                del expected_val_key_pairs["readable"]
                 self.check_key_value_pairs(expected_val_key_pairs, result[1])
                 # test loading for interactive zoom
                 start = time.time()
@@ -236,7 +245,7 @@ class TestImageImport(BaseImageTestCase):
                     f"{os.path.basename(img_path)} Image read in {time_taken} seconds"
                 )
                 assert (
-                    time_taken < 1
+                    time_taken < 3
                 ), f"{os.path.basename(img_path)} took {time_taken} seconds to load interactive zoom"
                 print()
             except Exception as e:

@@ -1,24 +1,26 @@
 import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
-import os
 import sys
 import unittest
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
 
 from celer_sight_ai import config
 
 config.user_cfg["OFFLINE_MODE"] = True
-from tests.base_image_testcase import BaseImageTestCase
-from tests.base_gui_testcase import BaseGuiTestCase
-import pytest
 import logging
-from tests import qttest_utils
 from unittest.mock import patch
+
 import numpy as np
+import pytest
+from parameterized import parameterized
 
 # import shapely
 from shapely.geometry import Polygon
-from parameterized import parameterized
+
+from tests import qttest_utils
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_image_testcase import BaseImageTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -29,26 +31,6 @@ normal_image = "daf-2_D2_aup-1i_26.tif"
 
 
 DELAY_TIME = 200
-
-
-def run_single_test_suite():
-    loader = unittest.TestLoader()
-    loader.sortTestMethodsUsing = custom_test_order
-    suite = loader.loadTestsFromTestCase(CelerSightRemoteAnnotationAdminTest)
-    runner = unittest.TextTestRunner()
-    result = runner.run(suite)
-    return result.wasSuccessful()
-
-
-# Function to run the test suite multiple times
-def run_tests_multiple_times(num_runs):
-    for i in range(num_runs):
-        print(f"Run {i + 1}/{num_runs}")
-        if not run_single_test_suite():
-            print(f"Errors or failures encountered in run {i + 1}")
-            break
-    else:
-        print("All test runs completed successfully")
 
 
 def custom_test_order(test_name, num):
@@ -63,8 +45,8 @@ class TestImageIntensityWithGUI(BaseGuiTestCase, BaseImageTestCase):
     def setUp(self):
         super().setUp()  # This ensures parent class setUp methods are called
 
-    @pytest.mark.long
     @parameterized.expand(BaseImageTestCase._load_mock_image_intensity_data)
+    @pytest.mark.long
     def test_image_intensity_2D_rgb(
         self,
         image_path,  # Will receive the fixture's "image_path"
@@ -107,8 +89,4 @@ class TestImageIntensityWithGUI(BaseGuiTestCase, BaseImageTestCase):
 
 if __name__ == "__main__":
 
-    # Number of times to run the tests
-    num_runs = 1
-
-    # Run the test suite multiple times
-    run_tests_multiple_times(num_runs)
+    unittest.main()

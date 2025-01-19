@@ -1,14 +1,15 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
 import os
 import sys
 import unittest
+
+import numpy as np
 import pytest
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
+
 import celer_sight_ai
 from celer_sight_ai import config
-import logging
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -405,7 +406,9 @@ def draw_mask_by_array(gui_main, point_array):
     )
     QTest.qWait(1500)  # wait 1.5 seconds
     all_mask_uuids_new = [i.unique_id for i in gui_main.DH.BLobj.get_all_mask_objects()]
-    assert len(all_mask_uuids_new) == len(all_mask_uuids_old) + 1
+    assert (
+        len(all_mask_uuids_new) == len(all_mask_uuids_old) + 1
+    ), "Got a different number of annotations than expected"
     added_uuid = list(set(all_mask_uuids_new) - set(all_mask_uuids_old))[0]
     return added_uuid
 

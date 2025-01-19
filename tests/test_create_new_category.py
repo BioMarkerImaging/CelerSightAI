@@ -1,18 +1,20 @@
-import requests
-import sys
+import logging
 import os
+import sys
+import unittest
+
+import pytest
+import requests
+from dotenv import load_dotenv
+from parameterized import parameterized
+from requests.exceptions import ConnectionError, HTTPError, Timeout
+
 from celer_sight_ai import config
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.core.LogTool import LogInHandler
-import unittest
-from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.configHandle import getServerLogAddress
-import logging
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-import pytest
+from celer_sight_ai.core.file_client import FileClient
+from celer_sight_ai.core.LogTool import LogInHandler
 from tests.base_online_testcase import BaseOnlineTestCase
-from parameterized import parameterized
-from dotenv import load_dotenv
 
 load_dotenv("../.env")
 
@@ -25,16 +27,16 @@ def add(x, y):
     return x + y
 
 
-@pytest.mark.online
+@pytest.mark.skip(reason="Skipping test, it should be on the cloud instead")
 class TestCreateNewCategories(BaseOnlineTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.empty_mock_objects(cls)  # remove all mock objects
+        cls.empty_mock_objects()  # remove all mock objects
 
     @classmethod
     def tearDownClass(cls):
-        cls.empty_mock_objects(cls)
+        cls.empty_mock_objects()
 
     def empty_mock_objects(self):
         ## Delete all mock category objects from the server ##

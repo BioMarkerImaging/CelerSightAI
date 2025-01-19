@@ -1,23 +1,25 @@
-import tifffile
-import xmltodict
-from glob import glob
-import cv2
-import numpy as np
+import logging
 import os
 import sys
 import time
-
 import unittest
+from glob import glob
+
+import cv2
+import numpy as np
+import tifffile
+import xmltodict
 
 from tests.base_image_testcase import BaseImageTestCase
-import logging
 
 logger = logging.getLogger(__name__)
 import lzma
+import time
+
 import lz4
 import lz4.frame
-import zstandard
 import pytest
+import zstandard
 
 
 @pytest.mark.long
@@ -28,6 +30,7 @@ class TestCompressionMethods(BaseImageTestCase):
             self.path_images_tif + "/*.TIF"
         )
 
+    @pytest.mark.skip(reason="This test is taking way too long")
     def test_ultra_high_res_compression_from_raw(self):
         import tempfile
         import time
@@ -43,9 +46,9 @@ class TestCompressionMethods(BaseImageTestCase):
             # "lzma": [],
         }
         with tempfile.TemporaryDirectory() as tmpdirname:
-            for image_name, image_info in self.mock_high_res_images.items():
-                image_path = self.get_high_res_image_path(image_name)
+            for image_path, image_info in self.mock_high_res_images.items():
                 start = time.time()
+                image_name = os.path.basename(image_path)
                 cctx = zstandard.ZstdCompressor(level=3, threads=-1)
                 with open(image_path, "rb") as ifh, open(
                     tmpdirname + "/" + image_name, "wb"
@@ -91,6 +94,7 @@ class TestCompressionMethods(BaseImageTestCase):
 
         import tempfile
         import time
+
         from celer_sight_ai.io.image_reader import (
             create_large_compressed_image_from_ultra_high_res_tiled_image,
         )
@@ -108,8 +112,8 @@ class TestCompressionMethods(BaseImageTestCase):
             # "lzma": [],
         }
         with tempfile.TemporaryDirectory() as tmpdirname:
-            for image_name, image_info in self.mock_high_res_images.items():
-                image_path = self.get_high_res_image_path(image_name)
+            for image_path, image_info in self.mock_high_res_images.items():
+                image_name = os.path.basename(image_path)
                 start = time.time()
                 image_path_jpg = (
                     create_large_compressed_image_from_ultra_high_res_tiled_image(

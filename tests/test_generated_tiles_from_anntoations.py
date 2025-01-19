@@ -1,31 +1,37 @@
-from glob import glob
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
-import cv2
-import numpy as np
+import copy
 import os
 import sys
 import time
-import copy
 import unittest
-from tests import qttest_utils
+from glob import glob
+
+import cv2
+import numpy as np
+import pytest
 from parameterized import parameterized
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
+
+from tests import qttest_utils
 
 sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
-from celer_sight_ai.io.image_reader import read_specialized_image
 import logging
+
 from celer_sight_ai.gui.custom_widgets.grid_button_image_selector import (
     gather_cfgs,
     process_cfg_for_grid_button_image_selector,
     validate_cfg,
 )
 from celer_sight_ai.io.data_handler import (
-    overlaps,
     build_graph,
-    get_tile_range_from_annotation_size,
     find_minimum_groups,
+    get_tile_range_from_annotation_size,
     get_tile_range_from_group,
+    overlaps,
 )
+from celer_sight_ai.io.image_reader import read_specialized_image
+from tests.base_gui_testcase import BaseGuiTestCase
+from tests.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 DELAY_TIME = 200
@@ -57,7 +63,7 @@ bb_points_for_ultra_high_res = [
 ]
 
 
-class TestCategoryConfigs(unittest.TestCase):
+class TestCategoryConfigs(BaseTestCase):
     def test_case_1(self):
         MIN_PERCENTAGE = 0.03  # 3%
         MAX_PERCENTAGE = 0.14  # 24%
@@ -89,14 +95,7 @@ class TestCategoryConfigs(unittest.TestCase):
         # determin the groups required for the rest of the items
 
 
-class TestAnnotationSizeForInfereceFromUI(unittest.TestCase):
-    app = None
-
-    @classmethod
-    def setUpClass(cls):
-        # start the app
-        cls.app = qttest_utils.get_gui_main()
-        qttest_utils.wait_until_shown(cls.app.MainWindow)
+class TestAnnotationSizeForInfereceFromUI(BaseGuiTestCase):
 
     @parameterized.expand(
         [
@@ -109,9 +108,11 @@ class TestAnnotationSizeForInfereceFromUI(unittest.TestCase):
             ),
         ]
     )
+    @pytest.mark.long
     def test_case_1(self, image_path, bb_points, width, height, image_size):
-        from celer_sight_ai import configHandle, config
         import time
+
+        from celer_sight_ai import config, configHandle
 
         app = self.app
         # wait for app to start
