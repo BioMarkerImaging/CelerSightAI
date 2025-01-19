@@ -1,184 +1,187 @@
-import requests
-import sys
+import json
+import logging
 import os
+import sys
+import unittest
 from typing import List, Tuple
 
-# sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
-from celer_sight_ai import config
+import requests
+from parameterized import parameterized
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
-from celer_sight_ai import configHandle
+# sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])
+from celer_sight_ai import config, configHandle
 from celer_sight_ai.configHandle import *
-from celer_sight_ai.core.LogTool import LogInHandler
-import unittest
-from celer_sight_ai.core.file_client import FileClient
 
 # from tests.csight_test_loader import tags
-from celer_sight_ai.configHandle import getServerLogAddress, getServerLogAddress
-import logging
-from requests.exceptions import ConnectionError, HTTPError, Timeout
-import json
-from parameterized import parameterized
+from celer_sight_ai.configHandle import getServerLogAddress
+from celer_sight_ai.core.file_client import FileClient
+from celer_sight_ai.core.LogTool import LogInHandler
 from tests.base_online_testcase import BaseOnlineTestCase
 
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-import dotenv
-import cv2
+import concurrent.futures
+import random
 import time
+
+import cv2
+import dotenv
+import pytest
+from parameterized import parameterized
+from tqdm import tqdm
 
 # load env vars
 dotenv.load_dotenv(os.path.join(p, ".env"))
-# from celer_sight_ai.gui.net.errors import AuthenticationError
-from parameterized import parameterized
+
 
 logger = logging.getLogger(__name__)
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
-import concurrent.futures
-import random
-from tqdm import tqdm
 
+class TestInference(BaseOnlineTestCase):
 
-class MyTest(BaseOnlineTestCase):
-    def setUp(self):
-        self.mock_credentials = []
-        if os.environ.get("USERNAME_ADMIN") and os.environ.get("PASSWORD_ADMIN"):
-            self.mock_credentials.append(
-                (os.environ.get("USERNAME_ADMIN"), os.environ.get("PASSWORD_ADMIN"))
-            )
-        # log user
-        self.client = FileClient(getServerLogAddress())
-        self.client.login(*self.mock_credentials[0])
+    @parameterized.expand(
+        [
+            # ("tests//fixtures//inference_test_items//worm_plate.png",
+            # "on_plate",
+            # ["0888765f-f214-4e24-8cc6-c92735d03e68"]
+            # ),
+            (
+                "tests//fixtures//inference_test_items//worm_celegans_whole_body.png",
+                "worms",
+                ["0888765f-f214-4e24-8cc6-c92735d03e68"],  # body
+                4,  # min 4 results
+            ),
+            (
+                "tests//fixtures//inference_test_items//tissue_1.jpg",
+                "tissue",
+                ["54639-a30491da-528b-4546-9eb4-b6ecc3c6e035"],  # tissue cell
+                None,  # any
+            ),
+            (
+                "tests//fixtures//inference_test_items//tissue_1.jpg",
+                "cells",
+                ["58f00d07-caa7-4bec-8a66-39432f2e1086"],  # cell
+                None,  # any
+            ),
+            # ("tests//fixtures//inference_test_items//worm_celegans_whole_body.png",
+            # "worms",
+            # ["ba2d0d66-0bb3-4a8f-b8a3-3a349e7c2ae2"] # head
+            # ),
+        ]
+        # ("tests//fixtures//inference_test_items//cyto_test.png",
+        # "cell",
+        # ["cytoplasm"])
+        # ],
+    )
+    def test_inference(
+        self, image_url, supercategory, class_names, min_number_of_results
+    ):
+        """
+        Sends annotation to the server, and checks responce
+        """
+        import time
 
-    # @parameterized.expand(
-    #     [
-    #         # ("tests//fixtures//inference_test_items//worm_plate.png",
-    #         # "on_plate",
-    #         # ["0888765f-f214-4e24-8cc6-c92735d03e68"]
-    #         # ),
-    #         # (
-    #         #     "tests//fixtures//inference_test_items//worm_celegans_whole_body.png",
-    #         #     "worms",
-    #         #     ["0888765f-f214-4e24-8cc6-c92735d03e68"],  # body
-    #         # ),
-    #         (
-    #             "tests//fixtures//inference_test_items//tissue_1.jpg",
-    #             "tissue",
-    #             ["54639-a30491da-528b-4546-9eb4-b6ecc3c6e035"],  # tissue cell
-    #         ),
-    #         (
-    #             "tests//fixtures//inference_test_items//tissue_1.jpg",
-    #             "cells",
-    #             ["58f00d07-caa7-4bec-8a66-39432f2e1086"],  # cell
-    #         ),
-    #         # ("tests//fixtures//inference_test_items//worm_celegans_whole_body.png",
-    #         # "worms",
-    #         # ["ba2d0d66-0bb3-4a8f-b8a3-3a349e7c2ae2"] # head
-    #         # ),
-    #     ]
-    #     # ("tests//fixtures//inference_test_items//cyto_test.png",
-    #     # "cell",
-    #     # ["cytoplasm"])
-    #     # ],
-    # )
-    # def test_inference(self, image_url, supercategory, class_names):
-    #     """
-    #     Sends annotation to the server, and checks responce
-    #     """
-    #     from celer_sight_ai import configHandle, config
-    #     import time
+        from celer_sight_ai import config, configHandle
 
-    #     image_path = os.path.join(p, image_url)
-    #     img_data = cv2.imread(image_path)
+        image_path = os.path.join(p, image_url)
+        img_data = cv2.imread(image_path)
 
-    #     # enconde image to jpg
-    #     img_encoded = cv2.imencode(".jpg", img_data)[1]
-    #     send_image_inference_url = configHandle.get_send_image_inference_address()
-    #     retrieve_inference_data_url = configHandle.retrieve_inference_data_address()
-    #     start = time.time()
-    #     resp = self.client.session.post(
-    #         send_image_inference_url,
-    #         data={
-    #             "json": json.dumps(
-    #                 {
-    #                     "inference_user_settings": (
-    #                         "settings.json",
-    #                         None,
-    #                         "application/json",
-    #                     ),
-    #                     "supercategory": supercategory,
-    #                     "class_names": class_names,
-    #                 }
-    #             )
-    #         },
-    #         files={
-    #             "data": ("image.png", img_encoded.tostring(), "image/png"),
-    #         },
-    #         timeout=60,
-    #     )
-    #     resp.raise_for_status()
-    #     request_id = resp.json()["request_id"]
-    #     print()
-    #     import time
+        # enconde image to jpg
+        img_encoded = cv2.imencode(".jpg", img_data)[1]
+        send_image_inference_url = configHandle.get_send_image_inference_address()
+        retrieve_inference_data_url = configHandle.retrieve_inference_data_address()
+        start = time.time()
+        resp = self.client.session.post(
+            send_image_inference_url,
+            data={
+                "json": json.dumps(
+                    {
+                        "inference_user_settings": (
+                            "settings.json",
+                            None,
+                            "application/json",
+                        ),
+                        "supercategory": supercategory,
+                        "class_names": class_names,
+                    }
+                )
+            },
+            files={
+                "data": ("image.png", img_encoded.tostring(), "image/png"),
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        request_id = resp.json()["request_id"]
+        print()
+        import time
 
-    #     start_time = time.time()
-    #     timeout = 60  # 10 seconds timeout
+        start_time = time.time()
+        timeout = 60  # 10 seconds timeout
 
-    #     while True:
-    #         try:
-    #             result = self.client.retrieve_inference_data([request_id])
-    #             if not result["completed_inference"]:
-    #                 print("waiting for inference results")
-    #                 time.sleep(0.5)
-    #                 if time.time() - start_time > timeout:
-    #                     raise TimeoutError(
-    #                         "Inference took too long (more than 10 seconds)"
-    #                     )
-    #                 continue
-    #             break
-    #         except TimeoutError as e:
-    #             print(f"Error: {e}")
-    #             raise
-    #         except Exception as e:
-    #             print(e)
+        while True:
+            try:
+                result = self.client.retrieve_inference_data([request_id])
+                if not result["completed_inference"]:
+                    print("waiting for inference results")
+                    time.sleep(0.5)
+                    if time.time() - start_time > timeout:
+                        raise TimeoutError(
+                            "Inference took too long (more than 10 seconds)"
+                        )
+                    continue
+                break
+            except TimeoutError as e:
+                print(f"Error: {e}")
+                raise
+            except Exception as e:
+                print(e)
 
-    #     print(f"Took {time.time() - start} seconds")
-    #     print()
-    #     import numpy as np
-    #     import copy
+        print(f"Took {time.time() - start} seconds")
+        print()
+        import copy
 
-    #     # draw the segmentation on the image
-    #     tmp_image_data = copy.deepcopy(img_data)
-    #     for item in result["completed_inference"]:
-    #         # sort result["completed_inference"] by confidence
-    #         # item["result"] = sorted(item["result"], key=lambda x: x["confidence"], reverse=True)
-    #         for i in range(len(item["result"])):
+        import numpy as np
 
-    #             # Convert segmentation to contour
-    #             segmentation = (
-    #                 np.array(item["result"][i]["segmentation"][0])
-    #                 .reshape((-1, 2))
-    #                 .astype(np.int32)
-    #             )
+        total_results = 0
+        # draw the segmentation on the image
+        tmp_image_data = copy.deepcopy(img_data)
+        for item in result["completed_inference"]:
+            for i in range(len(item["result"])):
 
-    #             # Draw the contour on the image
-    #             tmp_image_data = cv2.drawContours(
-    #                 tmp_image_data, [segmentation], 0, (0, 255, 0), 2
-    #             )
+                # Convert segmentation to contour
+                segmentation = (
+                    np.array(item["result"][i]["segmentation"][0])
+                    .reshape((-1, 2))
+                    .astype(np.int32)
+                )
 
-    #             # Add label with class name and confidence
-    #             class_name = item["result"][i]["class"]
-    #             confidence = item["result"][i]["confidence"]
-    #             label = f"{class_name}: {confidence:.2f}"
+                # Draw the contour on the image
+                tmp_image_data = cv2.drawContours(
+                    tmp_image_data, [segmentation], 0, (0, 255, 0), 2
+                )
 
-    #             # Get top-left corner of bounding box for label placement
-    #             # x, y = segmentation.min(axis=0)
+                # Add label with class name and confidence
+                class_name = item["result"][i]["class"]
+                confidence = item["result"][i]["confidence"]
+                label = f"{class_name}: {confidence:.2f}"
 
-    #             # Put text on the image
-    #             # cv2.putText(tmp_image_data, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-    #         cv2.imwrite("test.jpg", tmp_image_data)
-    #         print(result)
+                # Get top-left corner of bounding box for label placement
+                # x, y = segmentation.min(axis=0)
 
+                # Put text on the image
+                # cv2.putText(tmp_image_data, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            cv2.imwrite("test.jpg", tmp_image_data)
+            total_results += len(item["result"])
+            print(result)
+            if min_number_of_results is not None:
+                assert total_results >= min_number_of_results
+
+    @pytest.mark.skip(reason="skipping stress test, too slow")
+    @pytest.mark.online
+    @pytest.mark.long
     def test_inference_stress(self, total_requests_per_user=20, users=10, timeout=420):
         """
         Stress test the inference server with multiple concurrent requests.
@@ -288,7 +291,7 @@ class MyTest(BaseOnlineTestCase):
         failed_requests = [r for r in results if not r["success"]]
         print(results)
 
-        print(f"\nStress Test Results:")
+        print("\nStress Test Results:")
         print(f"Total Requests: {num_requests}")
         print(f"Successful: {len(successful_requests)}")
         print(f"Failed: {len(failed_requests)}")
