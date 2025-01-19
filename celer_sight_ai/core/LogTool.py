@@ -1,5 +1,5 @@
-import pathlib
 import os
+import pathlib
 
 os.chdir(os.environ["CELER_SIGHT_AI_HOME"])
 
@@ -7,29 +7,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from cryptography.fernet import Fernet
+import os
+import sys
 
+from cryptography.fernet import Fernet
 from PyQt6 import QtCore, QtGui, QtWidgets
+
+import celer_sight_ai.configHandle as configHandle
+from celer_sight_ai import config
+from celer_sight_ai.core.Workers import Worker
 from celer_sight_ai.gui.designer_widgets_py_files.loginui1 import Ui_LogInDialog
 from celer_sight_ai.gui.designer_widgets_py_files.loginuiRegistration1 import (
     Ui_Dialog as ActivationDialog,
 )
-from celer_sight_ai.core.Workers import Worker
-import sys
-from celer_sight_ai import config
-
-import celer_sight_ai.configHandle as configHandle
-import os
 
 global gui_main
 gui_main = None
 import json
+
 import requests
-from celer_sight_ai.configHandle import getLocal, getLogInAddress
+
 from celer_sight_ai import config
+from celer_sight_ai.configHandle import getLocal, getLogInAddress
 
 
-class UpdateStatus(object):
+class UpdateStatus:
     """Enumerated data type"""
 
     # pylint: disable=invalid-name
@@ -57,6 +59,8 @@ class LogInHandler(Ui_LogInDialog):
         self.connection_complete = False
         logger.debug("loggin handler initializing")
         self.LogInDialog = QtWidgets.QDialog()
+        # Make the dialog modal
+        self.LogInDialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
         self.splash = splash
         self._is_main_window_launched = is_main_window_launched
 
@@ -64,9 +68,8 @@ class LogInHandler(Ui_LogInDialog):
         self.retranslateUi(self.LogInDialog)
         self.during_log_in = False
         from celer_sight_ai import config
-        from celer_sight_ai.updater import launch_update
-
         from celer_sight_ai.gui.custom_widgets.widget_spinner import WaitingSpinner
+        from celer_sight_ai.updater import launch_update
 
         # spinner that runs while we are logging in.
         self.spinner_log_in = WaitingSpinner(
@@ -204,7 +207,7 @@ class LogInHandler(Ui_LogInDialog):
 
     # on close event, close app
     def closeEvent(self, event):
-        logger.info(f"Closing application")
+        logger.info("Closing application")
         from celer_sight_ai import clean_exit
 
         try:
@@ -270,11 +273,7 @@ class LogInHandler(Ui_LogInDialog):
             if settings.value("LoadFromLastLogIn") != None:
                 if settings.value("LoadFromLastLogIn").lower() == "true":
                     logger.info("Loading last log in settings")
-                    logger.info(
-                        "past loaded value is ".format(
-                            settings.value("LoadFromLastLogIn")
-                        )
-                    )
+                    logger.info("past loaded value is ")
                     from celer_sight_ai.configHandle import (
                         get_stored_password,
                         get_stored_username,
@@ -317,7 +316,7 @@ class LogInHandler(Ui_LogInDialog):
             if not self._is_main_window_launched:
                 config.global_signals.launch_main_window_after_log_in_signal.emit({})
             return
-        logger.info("Starting log in worker {}".format(self.during_log_in))
+        logger.info(f"Starting log in worker {self.during_log_in}")
         if self.during_log_in == False:
             self.during_log_in = True
             logger.info("Athentification running")
@@ -391,8 +390,9 @@ class LogInHandler(Ui_LogInDialog):
         Channel options are stable, beta & alpha
         Patches are only created & applied on the stable channel
         """
-        from pyupdater.client import Client
         from celer_sign_ai import __version__
+        from pyupdater.client import Client
+
         from celer_sight_ai import config
 
         if config.user_cfg.OVERRIDE_VERSION:
@@ -418,18 +418,16 @@ class LogInHandler(Ui_LogInDialog):
         client = Client(CLIENT_CONFIG, refresh=True)
 
         if "b" in config.APP_VERSION:
-            logger.info("Downloading beta version : {}".format(config.APP_VERSION))
+            logger.info(f"Downloading beta version : {config.APP_VERSION}")
             appUpdate = client.update_check(
                 CLIENT_CONFIG.APP_NAME, config.APP_VERSION, channel="beta"
             )
         else:
-            logger.info(
-                "Downloading production version : {}".format(config.APP_VERSION)
-            )
+            logger.info(f"Downloading production version : {config.APP_VERSION}")
             appUpdate = client.update_check(
                 CLIENT_CONFIG.APP_NAME, config.APP_VERSION, channel="stable"
             )
-        logger.info("Update is ".format(appUpdate))
+        logger.info("Update is ")
         if appUpdate:
             if config.is_executable:
                 config.global_signals.lunchUpdaterWindowSignal.emit()
@@ -445,7 +443,7 @@ class LogInHandler(Ui_LogInDialog):
                 status = UpdateStatus.UPDATE_AVAILABLE_BUT_APP_NOT_FROZEN
         else:
             status = UpdateStatus.NO_AVAILABLE_UPDATES
-        logger.info("finished updating with status ".format(status))
+        logger.info("finished updating with status ")
         return status
 
     def onUpdateCurrentVersionFINISH(self):
@@ -525,7 +523,7 @@ class LogInHandler(Ui_LogInDialog):
             if self.remember_me_checkbox.isChecked():
                 logger.info("Enabling remember me")
                 # save the credentials
-                from celer_sight_ai.configHandle import store_username, store_password
+                from celer_sight_ai.configHandle import store_password, store_username
 
                 # save the username
                 if creds.get("username"):
@@ -550,10 +548,9 @@ class LogInHandler(Ui_LogInDialog):
 
         :param result: The result of the login attempt
         """
-        from celer_sight_ai.core import file_client
         import celer_sight_ai.configHandle as configHandle
-        from celer_sight_ai import config
-        from celer_sight_ai import __version__
+        from celer_sight_ai import __version__, config
+        from celer_sight_ai.core import file_client
 
         logger.debug("Lunching main window after authentication")
 
@@ -620,10 +617,12 @@ class LogInHandler(Ui_LogInDialog):
 
     def verify_folder_against_txt(self, version) -> bool:
         # make a connection to the server and get that file path
-        import requests
         import hashlib
-        from celer_sight_ai import configHandle
         import platform
+
+        import requests
+
+        from celer_sight_ai import configHandle
 
         if config.user_cfg["OFFLINE_MODE"]:
             return True

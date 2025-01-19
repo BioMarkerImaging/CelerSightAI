@@ -1,14 +1,16 @@
-import tifffile
-import xmltodict
-from glob import glob
-import cv2
-import numpy as np
+import logging
 import os
 import sys
-import logging
-from celer_sight_ai import config
 import time
 import unittest
+from glob import glob
+
+import cv2
+import numpy as np
+import tifffile
+import xmltodict
+
+from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +29,10 @@ def get_tif_tags(tag_vals):
 
 
 def get_description_metadata(tif_tags):
-    if not "ImageDescription" in tif_tags:
+    if "ImageDescription" not in tif_tags:
         print("No ImageDescription tag")
     desc = xmltodict.parse(tif_tags["ImageDescription"])
-    if not "OME" in desc:
+    if "OME" not in desc:
         print("No OME tag")
 
     return
@@ -97,11 +99,11 @@ def getImage(
                 from celer_sight_ai import config
 
                 # download thumbnail and use that for now, right after set the high quality image for download
-                im = config.client.get_remote_image(
+                result_dict = config.client.get_remote_image(
                     image_object.get_path(), quality="low"
                 )
                 config.global_signals.download_remote_image_signal.emit(image_object)
-                return
+                return result_dict["image_data"]
             if (
                 result_dict.get("needs_pyramidal_conversion", False)
                 and avoid_loading_ultra_high_res_arrays_normaly is True
@@ -167,7 +169,7 @@ def getImage(
             if isinstance(im, type(None)):
                 return None
         elif fast_load_ram and image_object._is_ultra_high_res:
-            logger.debug(f"Loading fast ultra high res")
+            logger.debug("Loading fast ultra high res")
             # load normal
             from celer_sight_ai.gui.custom_widgets.scene import readImage
 
@@ -184,7 +186,7 @@ def getImage(
             from celer_sight_ai import config
 
             im = image_object.load_current_ram_image(bbox)
-        if im.shape[0] == 0 or im.shape[1] == 0:
+        if isinstance(im, type(None)) or im.shape[0] == 0 or im.shape[1] == 0:
             return None
 
         image_channels = image_object.channel_list
@@ -361,7 +363,7 @@ def get_tif_rgb_channe_imageJ_from_metadata(tif_metadata, channel):
 
 
 def max_projection(input_array, axis):
-    if not "z" in axis.lower():
+    if "z" not in axis.lower():
         return input_array, axis
     if not isinstance(input_array, np.ndarray):
         raise ValueError("Input must be a numpy array")
@@ -474,6 +476,7 @@ def get_tiff_tags(tags):
 
 def create_pyramidal_tiff(source_file, destination_file, qualitty=90):
     import pyvips
+
     from celer_sight_ai import config
 
     im = pyvips.Image.new_from_file(source_file, access="sequential")
@@ -526,6 +529,7 @@ def open_preview_with_openslide_image_reader(image_path):
     Dont use this method other than for qgraphicsview items
     """
     import openslide
+
     from celer_sight_ai.config import IMAGE_THUMBNAIL_MAX_SIZE
 
     try:
@@ -560,9 +564,10 @@ def get_deep_zoom_by_tiffslide(image_path, viewport_bounding_box):
     The coordinates of the bounding box are analogous to the coordinates of the image
     """
 
+    import time
+
     from tiffslide import TiffSlide
     from tiffslide.deepzoom import MinimalComputeAperioDZGenerator
-    import time
 
     image_position = (
         viewport_bounding_box[0] + viewport_bounding_box[2] // 2,
@@ -663,21 +668,21 @@ def get_deep_zoom_by_openslide(image_path, viewport_bounding_box=None):
     This bbox tile needs to match the size of the interactive magic box
     size
     """
-    from unicodedata import normalize
+    import base64
     import zlib
     from io import BytesIO
-    import base64
+    from unicodedata import normalize
 
-    from PIL import ImageCms
-    from PIL import Image
+    from PIL import Image, ImageCms
 
     Image.MAX_IMAGE_PIXELS = 1933120000
 
+    import time
+
     import openslide
     from openslide import ImageSlide, open_slide
-    from tiffslide import TiffSlide
     from openslide.deepzoom import DeepZoomGenerator
-    import time
+    from tiffslide import TiffSlide
 
     SLIDE_NAME = "slide"
     try:
@@ -821,10 +826,11 @@ def get_relevant_tiles_numpy(bounding_box, tiles):
 
 
 def read_and_display_tile_deepzoom(tile_pos, slide, best_level, downsample, image_name):
-    from io import BytesIO
-    import openslide
-    from PyQt6 import QtWidgets, QtCore, QtGui
     import time
+    from io import BytesIO
+
+    import openslide
+    from PyQt6 import QtCore, QtGui, QtWidgets
 
     try:
         logger.debug("Reading tile data")
@@ -843,7 +849,7 @@ def read_and_display_tile_deepzoom(tile_pos, slide, best_level, downsample, imag
         tile_arr.convert("RGB").save(bytes_io, format="JPEG")
         try:
             tile_arr.verify()  # verify that it is, in fact, an image
-        except (IOError, SyntaxError):
+        except (OSError, SyntaxError):
             logger.error("Bad tile")
         # Get the byte data from the buffer
         tile_arr = bytes_io.getvalue()
@@ -1007,10 +1013,11 @@ def standardize_and_hash_image(
     Returns:
         str: SHA-256 hash of the standardized image
     """
-    from tiffslide import TiffSlide
+    import hashlib
+
     import cv2
     import numpy as np
-    import hashlib
+    from tiffslide import TiffSlide
 
     hash_method = "sha256_" + str(TARGET_SIZE[0])
     if is_ultra_high_res:
@@ -1059,8 +1066,9 @@ def compute_tile_request_level(level_resolution, image_position, image_size):
     # level_resolution: level of the slide to extract tiles from
     # image_position:
 
-    from celer_sight_ai.config import ZOOM_OUT_REZ
     import math
+
+    from celer_sight_ai.config import ZOOM_OUT_REZ
 
     minx = max(0, image_position[0] - (image_size[0] // 2))
     miny = max(0, image_position[1] - (image_size[1] // 2))
@@ -1130,9 +1138,10 @@ def read_ome_tiff(tif_path):
     If there are time or Z dimensions, performs max projection along those axes.
     Also extracts physical pixel size information if available.
     """
-    import tifffile
-    import numpy as np
     import logging
+
+    import numpy as np
+    import tifffile
 
     logger = logging.getLogger(__name__)
 
@@ -1188,13 +1197,13 @@ def read_ome_tiff(tif_path):
                 # If we couldn't match all dimensions, fall back to standard order
                 if len(dimension_order) != len(data.shape):
                     if len(data.shape) == 2:
-                        dimension_order = "YX"
+                        dimension_order = "XY"
                     elif len(data.shape) == 3:
-                        dimension_order = "YXC"
+                        dimension_order = "XYC"
                     elif len(data.shape) == 4:
-                        dimension_order = "ZYXC"
+                        dimension_order = "ZXYC"
                     elif len(data.shape) == 5:
-                        dimension_order = "TZYXC"
+                        dimension_order = "TZXYC"
 
                 # adjust the dimension size
                 dimension_size = [
@@ -1301,7 +1310,7 @@ def extract_ome_metadata(tif_path, dict_out):
                 dict_out["physical_pixel_size_y"] = parsed_metadata.get(
                     "PhysicalSizeY", None
                 )
-        except Exception as e:
+        except Exception:
             m_ome = remove_at_symbol(xmltodict.parse(tif.ome_metadata))
 
             # Check for different possible namespace prefixes
@@ -1503,7 +1512,13 @@ def standardize_channels(arr, current_channels):
         and len(arr.shape) == 3
         and arr.shape[2] == 3
     ):
-        return ["red", "green", "blue"], arr
+
+        if len(arr.shape) == 3 and arr.shape[2] == 3:
+            if np.all(arr[:, :, 0] == arr[:, :, 1]) and np.all(
+                arr[:, :, 1] == arr[:, :, 2]
+            ):
+                return ["gray"], arr
+            return ["red", "green", "blue"], arr
 
     # Normalize string channels to list
     if isinstance(current_channels, str):
@@ -1555,8 +1570,9 @@ def write_ome_tiff(
     physical_pixel_unit_x: str | None = None,
     physical_pixel_unit_y: str | None = None,
 ):
-    import pyometiff
     from pathlib import Path
+
+    import pyometiff
 
     logger.debug(f"Writing OME-TIFF to {tif_path}")
     c_size = 1
@@ -1636,8 +1652,10 @@ def read_specialized_image(
     In case of a normal file, get the original arrays and channels from the metadata
     In case of a ultra high res array, get a thumbnail array, and mark the object as ultra high res
     """
-    import javabridge
     import time
+
+    import javabridge
+
     from celer_sight_ai.config import ULTRA_HIGH_RES_THRESHOLD
 
     IS_ULTRA_HIGH_RES = False
@@ -1785,9 +1803,7 @@ def read_specialized_image(
         # There is an edge case that the tiff file wont load due to out of bounds error on tiff.series
         # in that case, we will load the image with bioio
         logger.error(f"Error loading tiff file with tifffile: {e}")
-        logger.error(
-            f"Attempting to load with asarray(0) and manually extract metadata"
-        )
+        logger.error("Attempting to load with asarray(0) and manually extract metadata")
         try:
             arr = tif.asarray(0)
         except Exception as e:
@@ -1920,10 +1936,11 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
     - tile_width, tile_height: Dimensions of each tile.
     - grid_width, grid_height: The number of tiles in each dimension.
     """
-    import pyvips
     import math
     import os
     import zlib
+
+    import pyvips
 
     # Open the .svs file with pyvips
     image = pyvips.Image.new_from_file(ultra_high_res_path, access="sequential")
@@ -1978,8 +1995,8 @@ def create_large_compressed_image_from_ultra_high_res_tiled_image(
 
 
 def run_with_timeout(primary_func, image_path, timeout=5):
-    import threading
     import queue
+    import threading
 
     result_queue = queue.Queue()
 
@@ -2063,9 +2080,9 @@ def extract_tile_data_from_tiff(tiff_path, tile_bbox=None, forced_resolution=Non
     # Extract a tile from the TIFF image.
     # If tile is None, the entire image is returned.
 
+    import numpy as np
     import tifffile
     import zarr
-    import numpy as np
 
     metadata = {}
     # Open the TIFF file
@@ -2140,9 +2157,9 @@ def interactive_untiled_tiff_preview(tiff_path, tile_bbox=None):
     (y1, y2, x1, x2) (tuple): The coordinates of the cropped region in the original image.
 
     """
+    import numpy as np
     import tifffile
     import zarr
-    import numpy as np
     from PyQt6 import QtGui
 
     if isinstance(tile_bbox, type(None)):
@@ -2601,4 +2618,4 @@ def generate_complete_spiral_tiles(
 
 
 if __name__ == "__main__":
-    pass
+    unittest.main()

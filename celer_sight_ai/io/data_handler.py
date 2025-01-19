@@ -1,44 +1,41 @@
 import logging
-import cv2
-import time
 import os
-import numpy as np
 import pathlib
+import time
 from pathlib import Path
 from typing import Union
 
+import cv2
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
-from celer_sight_ai import config
-from celer_sight_ai.config import (
-    BUTTON_WIDTH,
-    BUTTON_HEIGHT,
-    BUTTON_SPACING,
-    BUTTON_PADDING_LEFT,
-    BUTTON_PADDING_TOP,
-    IMAGE_THUMBNAIL_MAX_SIZE,
-    IMAGE_THUMBNAIL_JPEG_QUALITY,
-    BUTTON_THUMBNAIL_MIN_SIZE,
-)
+import uuid
+from collections.abc import Generator
+from typing import Any
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+from celer_sight_ai import config
+from celer_sight_ai.config import (
+    BUTTON_HEIGHT,
+    BUTTON_PADDING_LEFT,
+    BUTTON_PADDING_TOP,
+    BUTTON_SPACING,
+    BUTTON_THUMBNAIL_MIN_SIZE,
+    BUTTON_WIDTH,
+    IMAGE_THUMBNAIL_JPEG_QUALITY,
+    IMAGE_THUMBNAIL_MAX_SIZE,
+)
+from celer_sight_ai.gui.custom_widgets.image_button import ImageButtonPlaceHolderClass
+from celer_sight_ai.gui.custom_widgets.scene import readImage
 from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import (
     TransparentGraphicsWidget,
 )
-
-from celer_sight_ai.gui.custom_widgets.scene import readImage
-
-import uuid
-
-from celer_sight_ai.gui.custom_widgets.image_button import ImageButtonPlaceHolderClass
-
-from typing import Generator, Any
-
 from celer_sight_ai.io.image_reader import (
-    post_proccess_image,
     combine_channels,
     getImage,
+    post_proccess_image,
 )
 
 
@@ -304,7 +301,12 @@ def group_ranges_to_tile_size(
             )
             optimal_overlap = 0
             for c in group:
-                optimal_overlap = max(optimal_overlap, max(overlap_sizes.get(c, 0)))
+                overlap_size = overlap_sizes.get(c, 0)
+                if overlap_size:
+                    max_overlap = max(overlap_size)
+                else:
+                    max_overlap = max(overlap_size + [0.2])
+                optimal_overlap = max(optimal_overlap, max_overlap)
             if optimal_overlap == 0:
                 optimal_overlap = 0.2
             elif 1 > optimal_overlap > 3:
@@ -323,7 +325,7 @@ def group_ranges_to_tile_size(
     return result
 
 
-class DataHandler(object):
+class DataHandler:
     """
     Class for the handling of  'large' arrays that need storing or proccessing
     """
@@ -512,6 +514,15 @@ class CelerSightObj:  # contains group obj
         image_object = self.get_image_object_by_uuid(image_uuid)
         if image_object:
             return image_object.myButton
+        return None
+
+    def get_button_by_image_number(self, image_number):
+        for group in self.groups:
+            for condition in self.groups[group].conds:
+                for image in self.groups[group].conds[condition].images:
+                    if image.imgID == image_number:
+                        return image.myButton
+        return None
 
     def set_current_condition(self, condition_name: str | None = None) -> None:
         """
@@ -1038,6 +1049,8 @@ class CelerSightObj:  # contains group obj
 
         signal_object: a list of lists that contains the group id, condition id, image id, and if its the last image to be loaded
         """
+        if not signal_objects:
+            return
         logger.debug(f"Creating button instance for {len(signal_objects)} images")
         for signal_object in signal_objects:
             try:
@@ -1118,7 +1131,7 @@ class CelerSightObj:  # contains group obj
 
                 proxy = TransparentGraphicsWidget()
                 proxy.setWidget(ButtonAssetClassInstance)
-                proxy.setPos(int((position[0])), int((position[1])))
+                proxy.setPos(int(position[0]), int(position[1]))
                 self.MainWindow.images_preview_graphicsview.scene().addItem(proxy)
                 cond.images[image_uuid].myButton.button_instance_proxy = proxy
 
@@ -1162,6 +1175,13 @@ class CelerSightObj:  # contains group obj
                     cond.images[
                         image_uuid
                     ].myButton.button_instance.startInferenceAnimation()
+
+                # check if the button is selected
+                if (
+                    image_idx
+                    in self.MainWindow.images_preview_graphicsview.selected_buttons
+                ):
+                    ButtonAssetClassInstance.set_checked_to_true()
 
                 if self.MainWindow.MyInferenceHandler.is_inference_running:
                     # button
@@ -1347,7 +1367,7 @@ class condObj:
         args = tuple([self.images[imID]] + args)
         try:
             im = getImage(*args, **kwargs)
-        except Exception as e:
+        except Exception:
             # delete current image
             image_object = self.images[imID]
             button = image_object.myButton
@@ -1425,12 +1445,12 @@ class condObj:
         ROOTFILE, BASEFILE = self.assignPathToImage(video_path)
         self.images.append(
             ImageObject(
-                self.MainWindow,
-                ROOTFILE,
-                BASEFILE,
-                group_uuid,
-                cond_uuid,
-                image_id,
+                MainWindow=self.MainWindow,
+                rootfile=ROOTFILE,
+                filename=BASEFILE,
+                groupId=group_uuid,
+                treatment_uuid=cond_uuid,
+                image_id=image_id,
                 is_video=True,
             )
         )
@@ -1441,8 +1461,8 @@ class condObj:
             rootfile="celer_sight_ai:",
             filename=image_url.replace("celer_sight_ai:", ""),
             groupId=groupId,
-            condId=condId,
-            imgID=imageId,
+            treatment_uuid=condId,
+            imgIdx=imageId,
             image_uuid=image_url.replace("celer_sight_ai:", ""),
         )
 
@@ -1494,7 +1514,7 @@ class condObj:
             logger.info("No image ID or image uuid provided")
             raise ValueError("No image ID or image uuid provided")
 
-        if isinstance(image_object.thumbnail, type(bytes())):
+        if isinstance(image_object.thumbnail, bytes):
             # it is an encoded jpg
             nparr = np.frombuffer(image_object.thumbnail, np.byte)
             img = cv2.imdecode(nparr, cv2.IMREAD_ANYCOLOR)
@@ -1832,14 +1852,24 @@ class ImageObject:
             return
         self._is_downloading = True
         try:
-            destination_path = config.client.get_remote_image_high(self.unique_id)
+            destination_path, image_shape_dict = config.client.get_remote_image_high(
+                self.unique_id
+            )
+            # adjust height and width if needed
+            image_width = int(image_shape_dict["SizeX"])
+            image_height = int(image_shape_dict["SizeY"])
+            image = cv2.imread(destination_path, cv2.IMREAD_UNCHANGED)
+            image = cv2.resize(image, (image_width, image_height))
+            cv2.imwrite(destination_path, image)
             # set the image path to the destination path
             self.set_path(destination_path)
         except Exception as e:
             logger.error(f"Error downloading remote image {e}")
         self._is_downloading = False
         # trigger a ui refresh
-        config.global_signals.load_main_scene_and_fit_in_view_signal.emit()
+        # if the viewer has the same image as the one downloaded,refresh the viewer
+        if self.unique_id == self.MainWindow.DH.BLobj.get_current_image_uuid():
+            config.global_signals.load_main_scene_and_fit_in_view_signal.emit()
 
     def getSizeX(self):
         """
@@ -2424,9 +2454,10 @@ class ImageObject:
         Returns:
             list or numpy.ndarray: Depending on the 'unified' parameter, either a list of masks or a single unified mask.
         """
+        import logging
+
         import shapely
         from shapely import ops
-        import logging
 
         logger = logging.getLogger(__name__)
 
@@ -2631,8 +2662,8 @@ class ImageObject:
     def get_all_possible_tiles(self, tile_groups, skip_lower_than_overlap=False):
 
         from celer_sight_ai.io.image_reader import (
-            generate_complete_spiral_tiles,
             crop_and_pad_image,
+            generate_complete_spiral_tiles,
         )
 
         image_width = self.getSizeX()

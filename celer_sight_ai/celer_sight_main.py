@@ -4,8 +4,8 @@ import sys
 
 
 def excepthook(exc_type, exc_value, exc_tb):
-    import traceback
     import logging
+    import traceback
 
     logging.error("****** Exception Start *******")
     tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
@@ -17,13 +17,11 @@ def excepthook(exc_type, exc_value, exc_tb):
 
 sys.excepthook = excepthook
 
+import logging
+import pathlib
+
 from celer_sight_ai import config
 from celer_sight_ai.configHandle import getLocal
-
-import pathlib
-import logging
-from celer_sight_ai import config
-
 
 if "CELER_SIGHT_INSTANCE_STARTED" not in os.environ:
 
@@ -144,7 +142,7 @@ def start_celer_sight_main_part_login(app, splash_window=None):
     os.environ["CELER_SIGHT_INSTANCE_STARTED"] = "true"
     import celer_sight_ai.core.LogTool as LogTool
 
-    logger.debug(f"Creating Application instance")
+    logger.debug("Creating Application instance")
 
     logger.debug("Created app instance")
     # get enviromental variable ""CELER_SIGHT_TESTING"
@@ -153,7 +151,7 @@ def start_celer_sight_main_part_login(app, splash_window=None):
 
     login_handler = LogTool.LogInHandler(splash_window)
 
-    logger.debug(f"Checking if connection is complete.")
+    logger.debug("Checking if connection is complete.")
     return login_handler
 
 
@@ -195,7 +193,6 @@ logger.info("ok right after")
 
 
 from celer_sight_ai import config
-
 
 if config.is_executable:
     sys.path.append(os.environ["CELER_SIGHT_AI_HOME"])

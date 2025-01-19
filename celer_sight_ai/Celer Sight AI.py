@@ -7,25 +7,23 @@ import time
 
 start = time.time()
 
-from azure.storage.blob import BlobServiceClient, BlobClient
-import tufup
-import networkx
-import openslide
-import imagecodecs
-import sys
+import argparse
 import os
+import sys
+
+import bioformats
+import imagecodecs
+import javabridge
+import networkx
+import numcodecs
+import openslide
+import tufup
 import zarr
 import zarr.storage
-import numcodecs
+from azure.storage.blob import BlobClient, BlobServiceClient
 
-import os
-import sys
-import argparse
 from celer_sight_ai import config
 from celer_sight_ai.gui.custom_widgets.splash_widget import CustomSplashScreenWithText
-
-import javabridge
-import bioformats
 
 print("Importing Splash")
 from PyQt6.QtWidgets import QApplication, QWidget
@@ -82,9 +80,9 @@ def start_celer_sight_ai():
         parser.add_argument("args", nargs=argparse.REMAINDER)
         args = parser.parse_args()
         if args.empty_local_dir:
-            from celer_sight_ai.configHandle import getLocal
-
             import shutil
+
+            from celer_sight_ai.configHandle import getLocal
 
             shutil.rmtree(os.path.join(getLocal()), ignore_errors=True)
             # re-create the local directories
@@ -152,6 +150,7 @@ def start_celer_sight_ai():
 
     if os.name == "nt":
         from ctypes import wintypes
+
         import win32api
         import win32con
         import win32gui
