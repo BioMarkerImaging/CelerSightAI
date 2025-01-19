@@ -1,29 +1,28 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtWidgets
-import unittest
 import logging
-import qttest_utils
+import os
+import unittest
 from unittest.mock import patch
-from celer_sight_ai.core.file_client import FileClient
-from celer_sight_ai import config
-from tests.base_gui_testcase import BaseGuiTestCase
-from tests.base_online_testcase import BaseOnlineTestCase
+
 import pytest
+import qttest_utils
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtTest import QTest
+
+from celer_sight_ai import config
+from celer_sight_ai.core.file_client import FileClient
+from tests.base_gui_testcase import BaseOnlineGuiTestCase
 
 logger = logging.getLogger(__name__)
 
 DELAY_TIME = 200  # in ms
 
 
-class TestLoginDuringAnalysis(BaseGuiTestCase, BaseOnlineTestCase):
+class TestLoginDuringAnalysis(BaseOnlineGuiTestCase):
 
     @pytest.mark.long
     @pytest.mark.online
     def test_login_during_analysis(self):
         app = self.app
-        qttest_utils.wait_until_shown(app.MainWindow)
-        qttest_utils.to_main_window(app)
 
         # Load some test image
         test_image_path = (
@@ -42,12 +41,15 @@ class TestLoginDuringAnalysis(BaseGuiTestCase, BaseOnlineTestCase):
         QTest.qWait(DELAY_TIME)
 
         # Verify login dialog is shown
-        login_dialog = app.login_handler.LogInDialog
+        for widget in QtWidgets.QApplication.topLevelWidgets():
+            if widget.objectName() == "LogInDialog":
+                login_dialog = widget
+                break
         self.assertTrue(login_dialog.isVisible())
 
         # Perform login
-        app.login_handler.lineEdit.setText(os.environ.get("USERNAME_USER"))
-        app.login_handler.lineEdit_2.setText(os.environ.get("PASSWORD_USER"))
+        app.login_handler.lineEdit.setText(os.environ.get("USERNAME_ADMIN"))
+        app.login_handler.lineEdit_2.setText(os.environ.get("PASSWORD_ADMIN"))
         QTest.qWait(DELAY_TIME)
 
         # Click login button
