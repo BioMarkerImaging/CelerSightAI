@@ -43,6 +43,7 @@ def start_jvm():
         except Exception as e:
             print(f"Failed to patch log level: {e}")
 
+
 jvm_lock = threading.RLock()
 
 
@@ -976,6 +977,19 @@ class UserConfig:
             The value associated with key if it exists, otherwise default
         """
         return self._user_cfg.get(key, default)
+
+
+visible_channel_cache = {}
+
+
+def update_visible_channel_cache(channel_name, is_checked):
+    visible_channel_cache[channel_name] = is_checked
+
+
+def get_visible_channel_cache(channel_name, non_cached_value):
+    if channel_name in visible_channel_cache:
+        return visible_channel_cache[channel_name]
+    return non_cached_value
 
 
 def load_user_settings():
