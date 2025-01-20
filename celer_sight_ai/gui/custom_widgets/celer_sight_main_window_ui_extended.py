@@ -652,27 +652,6 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: QtWidgets.QApplication.processEvents()
         )
 
-        self.pg1_red_channel_button_visual.setCheckable(True)
-        self.pg1_green_channel_button_visual.setCheckable(True)
-        self.pg1_blue_channel_button_visual.setCheckable(True)
-
-        self.pg1_red_channel_button_visual.clicked.connect(
-            lambda: self.load_main_scene(self.current_imagenumber)
-        )
-        self.pg1_green_channel_button_visual.clicked.connect(
-            lambda: self.load_main_scene(self.current_imagenumber)
-        )
-        self.pg1_blue_channel_button_visual.clicked.connect(
-            lambda: self.load_main_scene(self.current_imagenumber)
-        )
-
-        self.pg1_red_channel_button_visual.setChecked(False)
-        self.pg1_green_channel_button_visual.setChecked(False)
-        self.pg1_blue_channel_button_visual.setChecked(False)
-        #
-        # self.add_images_btn.clicked.connect(lambda: QtWidgets.QApplication.processEvents())
-        #
-
         self.pg2_savegraph_btn.clicked.connect(lambda: self.saveCurrentGraph())
 
         # self.canvas.setMinimumSize(QtCore.QSize(116, 700)) # TODO: maybe change this?
@@ -1380,7 +1359,15 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             }
             """
         )
-
+        from celer_sight_ai.gui.custom_widgets.channel_picker_widget import (
+            ChannelPickerWidget,
+        )
+        self.channel_picker_widget = ChannelPickerWidget(
+            parent=self.pg1_Maskshandler_groupBox_ToolBox,
+            MainWindow=self,
+        )
+        # add channel picker to the layout
+        self.channel_picker_widget_outer_layout.addWidget(self.channel_picker_widget)
         # this is to close the project
         # an action on the top menu bar
 
