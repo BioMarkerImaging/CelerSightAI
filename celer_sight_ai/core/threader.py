@@ -298,24 +298,30 @@ class RacerThread:
         RacerThread.cancel_previous_func2_event.clear()
 
     def run(self):
-        self.cancel_previous_func2()
+        if config.user_cfg["USER_WORKERS"]:
+            self.cancel_previous_func2()
+            t1 = threading.Thread(target=self.wrapper_func1)
+            self.t2 = threading.Thread(target=self.wrapper_func2, daemon=True)
 
-        t1 = threading.Thread(target=self.wrapper_func1)
-        self.t2 = threading.Thread(target=self.wrapper_func2, daemon=True)
+            t1.start()
+            self.t2.start()
 
-        t1.start()
-        self.t2.start()
+            while t1.is_alive() and self.t2.is_alive():
+                if (
+                    self.func2_completed
+                    or RacerThread.cancel_previous_func2_event.is_set()
+                ):
+                    # Terminate func1
+                    return
+                time.sleep(0.001)
 
-        while t1.is_alive() and self.t2.is_alive():
-            if self.func2_completed or RacerThread.cancel_previous_func2_event.is_set():
-                # Terminate func1
-                return
-            time.sleep(0.001)
-
-        # Join both threads
-        t1.join()
-        if not RacerThread.cancel_previous_func2_event.is_set():
-            self.t2.join()
+            # Join both threads
+            t1.join()
+            if not RacerThread.cancel_previous_func2_event.is_set():
+                self.t2.join()
+        else:
+            self.wrapper_func1()
+            self.wrapper_func2()
 
 
 if __name__ == "__main__":
