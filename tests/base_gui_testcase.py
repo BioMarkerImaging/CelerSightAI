@@ -40,10 +40,30 @@ class BaseGuiTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Set up class-level test fixtures."""
-        # os.environ["QT_QPA_PLATFORM"] = "offscreen"
-        super().setUpClass()
-        cls.app = qttest_utils.get_gui_main(offline=True)
-        qttest_utils.wait_until_shown(cls.app.MainWindow)
+        try:
+            # os.environ["QT_QPA_PLATFORM"] = "offscreen"
+            super().setUpClass()
+            cls.app = qttest_utils.get_gui_main(offline=True)
+            qttest_utils.wait_until_shown(cls.app.MainWindow)
+        except Exception as e:
+            logger.error(f"Failed to set up test class: {str(e)}", exc_info=True)
+            raise
+
+    def setUp(self):
+        """Set up test-level fixtures."""
+        try:
+            super().setUp()
+        except Exception as e:
+            logger.error(f"Failed to set up test: {str(e)}", exc_info=True)
+            raise
+
+    def tearDown(self):
+        """Clean up after each test."""
+        try:
+            super().tearDown()
+        except Exception as e:
+            logger.error(f"Failed to tear down test: {str(e)}", exc_info=True)
+            raise
 
     def check_key_value_pairs(self, dict1, dict2):
         """Compare two dictionaries with special handling for None and numpy arrays."""
@@ -65,5 +85,10 @@ class BaseGuiTestCase(BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super().tearDownClass()
-        cls.app.closeApp()
+        """Clean up class-level fixtures."""
+        try:
+            super().tearDownClass()
+            cls.app.closeApp()
+        except Exception as e:
+            logger.error(f"Failed to tear down test class: {str(e)}", exc_info=True)
+            raise
