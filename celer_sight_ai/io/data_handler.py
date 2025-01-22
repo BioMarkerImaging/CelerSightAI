@@ -464,8 +464,6 @@ class CelerSightObj:  # contains group obj
         config.global_signals.create_button_instance_signal.connect(
             self.create_button_instance
         )
-
-        self.importing_images = 0  # set to +1 when we are loading images,set to -1 when all images are loaded. 0 means all images are loaded form all groups
         self.set_current_group("default")
 
     def get_all_buttons(self, group_id: str, condition_name: str) -> list:
@@ -852,7 +850,12 @@ class CelerSightObj:  # contains group obj
             else:
                 im_format = QtGui.QImage.Format.Format_Grayscale16
         else:
-            raise NotImplementedError("Only uint8 and uint16 are supported for now")
+            # Scale uint16 to uint8 for display
+            im = cv2.normalize(im, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+            if len(im.shape) == 3:
+                im_format = QtGui.QImage.Format.Format_RGB888
+            else:
+                im_format = QtGui.QImage.Format.Format_Grayscale8
 
         if as_QIcon:
             # case were we get pixmap as qicon, this is primarily for the button area
@@ -1367,8 +1370,10 @@ class condObj:
         args = tuple([self.images[imID]] + args)
         try:
             im = getImage(*args, **kwargs)
-        except Exception:
+        except Exception as e:
             # delete current image
+            logger.warning(f"Error reading image, deleting image {e}")
+            im = np.zeros((500, 500, 3), dtype=np.uint8)
             image_object = self.images[imID]
             button = image_object.myButton
             if button:
@@ -1870,6 +1875,16 @@ class ImageObject:
         # if the viewer has the same image as the one downloaded,refresh the viewer
         if self.unique_id == self.MainWindow.DH.BLobj.get_current_image_uuid():
             config.global_signals.load_main_scene_and_fit_in_view_signal.emit()
+
+    def get_channel_name_and_colors(self):
+        from celer_sight_ai.io.image_reader import channel_to_color
+
+        if not self.channel_list:
+            return {}
+        out = {}
+        for i, channel in enumerate(self.channel_list):
+            out[config.ch_as_str(channel)] = channel_to_color(channel)
+        return out
 
     def getSizeX(self):
         """
