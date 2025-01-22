@@ -328,7 +328,7 @@ def readImage(
     if im is None:
         return None, {}
     if not isinstance(channel_names_to_filter, type(None)):
-        # remove                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        hannels that are not in the channel_names_to_filter
+        # remove channels that are not in the channel_names_to_filter
         # convert text to index
         channel_names_to_filter = [
             config.channel_names.index(i.lower()) for i in channel_names_to_filter

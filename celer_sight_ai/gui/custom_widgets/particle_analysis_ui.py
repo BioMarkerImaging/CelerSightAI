@@ -1,16 +1,19 @@
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
 import os
 import sys
-import logging
-import numpy as np
+
 import cv2
-from celer_sight_ai.io.image_reader import (
-    post_proccess_image,
-    combine_channels,
-    channel_to_color,
-)
-from celer_sight_ai.io.data_handler import colorize_gray_image
+import numpy as np
+from PyQt6 import QtCore, QtGui, QtWidgets
+
 from celer_sight_ai import config
+from celer_sight_ai.io.data_handler import colorize_gray_image
+from celer_sight_ai.io.image_reader import (
+    channel_to_color,
+    combine_channels,
+    post_proccess_image,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,8 +51,9 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
             []
         )  # list all classes particles have been generated for
         self.current_class_uuid = None
-        self.apply_threshold_to_MainWindow_part_2_signal.connect(self.apply_threshold_to_MainWindow_part_2)
-
+        self.apply_threshold_to_MainWindow_part_2_signal.connect(
+            self.apply_threshold_to_MainWindow_part_2
+        )
 
     def despawn(self):
         # select non particle class
@@ -62,6 +66,7 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
 
     def spawn(self, channel_list=[]):
         from celer_sight_ai import config
+
         # spawn the ui and initiate everything, if already spawn, just show and load saved values
         # if channel_list is empty, show message ==> To measure particles, please load an image first.
 
@@ -142,8 +147,9 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
         from celer_sight_ai import config
 
         # lock ui
-        config.global_signals.lock_ui_signal.emit(["left_group", "classes", "condition_buttons" , "interactive_tools"])
-
+        config.global_signals.lock_ui_signal.emit(
+            ["left_group", "classes", "condition_buttons", "interactive_tools"]
+        )
 
     def record_particle_settings_to_class_object(self, class_uuid=None):
         """
@@ -292,10 +298,12 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
     ):
         # use skimage rolling ball
         # arr needs to be single channel
-        from skimage import restoration
-        from celer_sight_ai import config
-        import cv2
         import re
+
+        import cv2
+        from skimage import restoration
+
+        from celer_sight_ai import config
 
         channel = self.channel_combobox.currentText()
         if channel == "":
@@ -312,9 +320,12 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
         if img_obj is None:
             condition = self.MainWindow.DH.BLobj.get_current_condition()
             img_id = self.MainWindow.current_imagenumber
-            if self.MainWindow.DH.BLobj.groups["default"].conds[condition].images[
-                img_id
-            ]._is_ultra_high_res:
+            if (
+                self.MainWindow.DH.BLobj.groups["default"]
+                .conds[condition]
+                .images[img_id]
+                ._is_ultra_high_res
+            ):
                 logger.info("Image is ultra high res, background removal not supported")
                 # disable the substract background slider
                 self.background_slider.setEnabled(False)
@@ -331,7 +342,8 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
                     img_id,
                     to_uint8=True,  # because it doesnt not affect the measurmnet, just the particle generation
                     to_rgb=False,
-                    channel_names_to_filter=[channel],
+                    do_channel_filter=True,
+                    channel_names_to_filter=[config.ch_as_str(channel)],
                     fast_load_ram=True,
                 )
             )
@@ -339,7 +351,9 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
 
             if img_obj._is_ultra_high_res:
                 logger.info("Image is ultra high res, background removal not supported")
-                config.global_signals.errorSignal.emit("Image is too large to analyze particles. Please use a lower resolution image.")
+                config.global_signals.errorSignal.emit(
+                    "Image is too large to analyze particles. Please use a lower resolution image."
+                )
                 self.despawn()
                 return
             else:
@@ -347,11 +361,12 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
                 self.background_slider.setEnabled(True)
 
             img = img_obj.getImage(
-                    to_uint8=True,  # because it doesnt not affect the measurmnet, just the particle generation
-                    to_rgb=False,
-                    channel_names_to_filter=[channel],
-                    # fast_load_ram=True,
-                )
+                to_uint8=True,  # because it doesnt not affect the measurmnet, just the particle generation
+                to_rgb=False,
+                do_channel_filter=True,
+                channel_names_to_filter=[config.ch_as_str(channel)],
+                # fast_load_ram=True,
+            )
 
         # if value is 0 just return the image as grayscale
         if val > 0:
@@ -367,11 +382,9 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
             print(e)
             rgb = (255, 255, 255)
         # colorize to channel
-        sub_img_color = (
-            colorize_gray_image(sub_img.copy(), rgb)
-        )
+        sub_img_color = colorize_gray_image(sub_img.copy(), rgb)
         if not return_image:
-            config.global_signals.refresh_main_scene_image_only_signal.emit(
+            config.global_signals.refresh_main_scene_pixmap_only_signal.emit(
                 sub_img_color
             )
         else:
@@ -389,16 +402,18 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
     ):
         # use skimage rolling ball
         # arr needs to be single channel
-        from skimage import restoration
-        from celer_sight_ai import config
+        import re
 
         import cv2
-        import re
+        from skimage import restoration
+
+        from celer_sight_ai import config
+
         if provided_image is None:
             if self.current_substract_image is None:
                 # if the image is ultra high res
                 # prompt the image to refresh with new tiles, tresholded
-                
+
                 return
             # get stored image on ram from config
             img = self.current_substract_image
@@ -441,14 +456,22 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
                 viewer_bbox = self.MainWindow.viewer.viewport().rect().getRect()
                 # if image is ultra high res, follow a different tactic, only get the portion of the
                 # image that is visible
-                if self.MainWindow.DH.BLobj.groups[group_name].conds[condition_name].images[img_id]._is_ultra_high_res:
+                if (
+                    self.MainWindow.DH.BLobj.groups[group_name]
+                    .conds[condition_name]
+                    .images[img_id]
+                    ._is_ultra_high_res
+                ):
                     return
                 else:
                     img_original, min_val, max_val = post_proccess_image(
                         self.MainWindow.DH.BLobj.groups["default"]
                         .conds[self.MainWindow.DH.BLobj.get_current_condition()]
                         .getImage(
-                            self.MainWindow.current_imagenumber, channel_names_to_filter = [channel]),
+                            self.MainWindow.current_imagenumber,
+                            do_channel_filter=True,
+                            channel_names_to_filter=[config.ch_as_str(channel)],
+                        ),
                         channels,
                         to_uint8=True,
                         to_rgb=True,
@@ -467,7 +490,7 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
                 thresh = combined_image
                 # combine the scene image with this image
         if provided_image is None:
-            config.global_signals.refresh_main_scene_image_only_signal.emit(thresh)
+            config.global_signals.refresh_main_scene_pixmap_only_signal.emit(thresh)
         else:
             return thresh
 
@@ -540,10 +563,10 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
 
         self.channel_label = QtWidgets.QLabel(self.main_groupbox)
         self.channel_label.setText("Select Channel")
+        from celer_sight_ai.gui.custom_widgets.analysis_handler import HtmlDelegate
         from celer_sight_ai.gui.custom_widgets.modern_qcombobox_widgets import (
             ModernSearchableQComboBox,
         )
-        from celer_sight_ai.gui.custom_widgets.analysis_handler import HtmlDelegate
 
         self.channel_combobox = ModernSearchableQComboBox(self.main_groupbox)
         font = QtGui.QFont()
@@ -746,7 +769,9 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
         self.done_button = GlowHoverButton(
             "Save and Apply", glow_color=QtGui.QColor(155, 155, 255)
         )
-        self.done_button.clicked.connect(lambda: self.apply_threshold_to_MainWindow_process())
+        self.done_button.clicked.connect(
+            lambda: self.apply_threshold_to_MainWindow_process()
+        )
         self.done_button.setMaximumWidth(180)
         self.done_button.setMinimumHeight(30)
         self.done_button.setStyleSheet(
@@ -869,24 +894,30 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
             multiple child masks for 1 parent mask
         """
         from celer_sight_ai import config
-        all_image_objects = [i for i in self.MainWindow.DH.BLobj.get_all_image_objects()]
 
-        config.global_signals.start_progress_bar_signal.emit({"title" : "", "main_text" : "Applying threshold to all images"})
+        all_image_objects = [
+            i for i in self.MainWindow.DH.BLobj.get_all_image_objects()
+        ]
+
+        config.global_signals.start_progress_bar_signal.emit(
+            {"title": "", "main_text": "Applying threshold to all images"}
+        )
         # make sure no particle bitmap masks are left from a previous
         # particle session.
-        
+
         config.global_signals.unlock_ui_signal.emit()
         quant = 100 / len(all_image_objects)
         i = 0
         # iterate over all images
         for img_obj in all_image_objects:
-            config.global_signals.update_progress_bar_progress_signal.emit({"percent" : quant * ( i+1)})
+            config.global_signals.update_progress_bar_progress_signal.emit(
+                {"percent": quant * (i + 1)}
+            )
             self.process_substract_and_threshold(img_obj)
             i += 1
         config.global_signals.complete_progress_bar_signal.emit()
         self.apply_threshold_to_MainWindow_part_2_signal.emit()
 
-    
     def apply_threshold_to_MainWindow_part_2(self):
         """
         None threaded part of the process. Record settings and unlock UI
@@ -900,8 +931,6 @@ class ParticleAnalysisSettingsWidgetUi(QtWidgets.QWidget):
         # reload scene
         QtWidgets.QApplication.processEvents()
         config.global_signals.load_main_scene_signal.emit()
-
-
 
 
 class GlowHoverButton(QtWidgets.QPushButton):

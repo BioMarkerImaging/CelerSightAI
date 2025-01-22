@@ -150,6 +150,7 @@ class ChannelFlowWidget(QtWidgets.QWidget):
         self.channel_items = []
         self.margin = 4
         self.spacing = 4  # Space between items
+        self.effective_height = 0
 
     def add_channel_item(self, item: ChannelListWidgetItem):
         item.setParent(self)
@@ -214,10 +215,11 @@ class ChannelFlowWidget(QtWidgets.QWidget):
                 item.setGeometry(int(x), int(y), int(item_width), 30)
                 x += item_width + self.spacing
 
-            y += 30 + self.spacing
+            y += 20 + self.spacing
 
         # Update widget height to include bottom margin
         self.setMinimumHeight(int(y + self.margin))
+        self.effective_height = int(y + self.margin)
 
 
 class ChannelPickerWidget(QtWidgets.QWidget):
@@ -257,11 +259,11 @@ class ChannelPickerWidget(QtWidgets.QWidget):
         # This is our manual flow container
         self.flow_widget = ChannelFlowWidget()
         self.scroll_area.setWidget(self.flow_widget)
-        self.scroll_area.setMaximumHeight(80)
+        self.scroll_area.setMaximumHeight(120)
         self.main_layout.addWidget(self.scroll_area)
         self.setLayout(self.main_layout)
 
-        self.setMinimumHeight(80)
+        # self.setMinimumHeight(80)
 
     def add_channel(self, channel_name, channel_color, is_checked=True):
         item = ChannelListWidgetItem(
@@ -286,18 +288,16 @@ class ChannelPickerWidget(QtWidgets.QWidget):
         logger.info(f"Spawning {len(channels)} channels")
         # clear all old channels
         self.clear_channels()
-        # if not channels:
-        #     # create rgb for now, and refresh once retrieved from the image
-        #     channels = {
-        #         "red": (255, 0, 0),
-        #         "green": (0, 255, 0),
-        #         "blue": (0, 0, 255),
-        #     }
         self.channels = channels
         # add new channels
         for channel_name, channel_color in channels.items():
             is_checked = config.get_visible_channel_cache(channel_name.lower(), True)
             self.add_channel(channel_name, channel_color, is_checked=is_checked)
+
+        # scroll_height = self.flow_widget.effective_height + 20  # margin
+        # # calculate the height needed for the scroll area
+        # self.scroll_area.setMaximumHeight(scroll_height)
+        # self.scroll_area.setMaximumHeight(120)
 
     def get_checked_channels(self):
         return [i.channel_name for i in self.flow_widget.channel_items if i.isChecked()]
