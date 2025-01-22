@@ -330,7 +330,7 @@ class ChannelPickerSignals(QtCore.QObject):
     load_image_to_preview_button_signal = QtCore.pyqtSignal(object)
     refresh_image_preview_graphicsscene_signal = QtCore.pyqtSignal()
     AddPixmapFromImageSignal = QtCore.pyqtSignal(object)  # pixmap to the button
-
+    spawn_channels_signal = QtCore.pyqtSignal(object)
     ############################
     ##### Ultra High Res #######
     ############################
@@ -354,10 +354,9 @@ class ChannelPickerSignals(QtCore.QObject):
     load_main_scene_gather_image_threaded_signal = QtCore.pyqtSignal(
         object
     )  # threaded part of reading the image, reads 2 images concurently in a threaded way and displays the original image
-    load_main_scene_display_image_signal = QtCore.pyqtSignal(
-        object
-    )  # qt part of displaying the image in scene
-    refresh_main_scene_image_only_signal = QtCore.pyqtSignal(object)
+    load_main_scene_display_image_signal = QtCore.pyqtSignal(object)  # NOT IMPLEMENTED
+    refresh_main_scene_image_only_signal = QtCore.pyqtSignal()
+    refresh_main_scene_pixmap_only_signal = QtCore.pyqtSignal(object)
     load_main_scene_signal = QtCore.pyqtSignal()
     load_main_scene_and_fit_in_view_signal = QtCore.pyqtSignal()
 
@@ -411,17 +410,6 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.UniteToolButton.clicked.connect(
             lambda: self.graphicsView.ToggleOverlayMode()
         )
-        # self.BtDct = {
-        #     "pushButton" : self.pushButton,
-        #     "pushButton_2" : self.pushButton_2,
-        #     "pushButton_3" : self.pushButton_3,F
-        #     "pushButton_4" : self.pushButton_4,
-        #     "pushButton_5" : self.pushButton_5,
-        #     "pushButton_6" : self.pushButton_6,
-        #     "pushButton_7" : self.pushButton_7,
-        #     "pushButton_8" : self.pushButton_8,
-        #     "pushButton_9" : self.pushButton_9
-        # }
 
         listWidgetsToAddShadow = [
             self.frame_2,
@@ -451,7 +439,6 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.SplitterButton.hide()
         self.SeparateViewsButton.hide()
 
-        # self.ImportButton.clicked.connect(lambda: self.ImportAllCombinedButtons())
         self.CancelButton.clicked.connect(lambda: self.Cancel())
         self.DetermineNewCondition()
 
@@ -518,10 +505,6 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.FillButtonsFromListThreaded.signals.finished.connect(
             self.OnFinishImportingToMultiChannel
         )
-
-    # self.FillButtonsFromListThreaded.signals.finished.
-    # deleteLater()
-    #         logger.info("IndiImportMultiThreaded finished just now ")
 
     def OnFinishImportingToMultiChannel(self):
         self.LoadingAnimationWidget.close()

@@ -329,6 +329,10 @@ class AddButtonHandler(QtWidgets.QWidget):
                 img_arr = cond_object.getImage(
                     image_object.imgID,
                     for_thumbnail=True,
+                    for_interactive_zoom=True,
+                    to_uint8=True,
+                    do_channel_filter=False,
+                    channel_names_to_filter=None,
                     avoid_loading_ultra_high_res_arrays_normaly=True,
                 )  # this image can still be 16 bit  # this image can still be 16 bit
                 channels = image_object.channel_list
@@ -363,7 +367,11 @@ class AddButtonHandler(QtWidgets.QWidget):
                 else:  # case image is read correctly and preview is to be generated
                     logger.debug("Image is read sucessfully, creating thumbnail image")
                     img_arr_display, min_val, max_val = post_proccess_image(
-                        img_arr, channels, to_uint8=True, to_rgb=True, has_min_max=False
+                        img_arr,
+                        channels,
+                        to_uint8=True,
+                        to_rgb=True,
+                        has_min_max=False,
                     )
                     image_object.channel_list = channels
                     cond_object.set_thumbnail(
@@ -637,7 +645,6 @@ class AddButtonHandler(QtWidgets.QWidget):
 
         config.global_signals.lock_ui_signal.emit(["left_group", "image_viewer"])
         QtWidgets.QApplication.processEvents()
-        self.MainWindow.DH.BLobj.importing_images += 1  # TODO: add -1 on the last image
 
         # Calculate the position of Every button
         maxNumberOfButtons = len(imagesUrls) + 10000
