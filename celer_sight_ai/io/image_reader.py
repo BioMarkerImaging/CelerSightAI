@@ -42,6 +42,7 @@ def getImage(
     image_object,
     to_uint8: bool = True,
     to_rgb=True,
+    do_channel_filter=False,  # wether to apply the filter or not
     channel_names_to_filter=None,  # channels to filter
     fast_load_ram=False,  # load image quickly from config.ram_image, used in brightness adjustment
     for_interactive_zoom=False,  # When loading a viewport array, use tricks to load it faster
@@ -209,16 +210,33 @@ def getImage(
             image_object.raw_image_min_value = min_val
             image_object.raw_image_max_value = max_val
 
-        # filter channels
-        if channel_names_to_filter:
-            im = filter_channels(im, image_object, channel_names_to_filter)
         if image_object and result_dict.get("channels"):
             # assign channnels
             logger.debug(
                 f"Assigning channels {result_dict['channels']} to image {image_object.fileName}"
             )
             image_object.channel_list = result_dict["channels"]
-        config.dbg_image(im)
+        # filter channels
+        if do_channel_filter:
+            if (
+                not isinstance(channel_names_to_filter, type(None))
+                and len(channel_names_to_filter) == 0
+            ):
+                # return a blank images
+                im = np.zeros_like(im)
+            else:
+                im = filter_channels(
+                    im, image_object, channel_names_to_filter, to_rgb=to_rgb
+                )
+                if to_rgb:
+                    channel_names_with_colors = (
+                        image_object.get_channel_name_and_colors()
+                    )
+                    channel_names_with_colors = {
+                        i: channel_names_with_colors[i] for i in channel_names_to_filter
+                    }
+                    im = colorize_image(im, channel_names_with_colors)
+
         logger.debug(
             f"Time taken to read image: {time.time() - start} at size {im.shape }"
         )
@@ -226,8 +244,65 @@ def getImage(
         return im  # only need the image (index 0) since we have already recorded the channels
 
 
+def colorize_image(
+    source_image, channel_names_with_colors: dict[str, tuple[int, int, int]]
+) -> np.ndarray:
+    source_dtype = source_image.dtype
+    destination_image = np.zeros(
+        [source_image.shape[0], source_image.shape[1], 3],
+        dtype=np.float32,
+    )
+    if not len(source_image.shape) == 2:
+        assert (
+            len(channel_names_with_colors) == source_image.shape[2]
+        ), "The number of channel colors must match the number of channels in the source image"
+    else:
+        source_image = np.stack((source_image,) * 3, axis=-1)
+
+        assert (
+            len(channel_names_with_colors) == 1
+        ), "The number of channel colors must be 1 for a single channel image"
+    weight_per_channel = 1 / len(channel_names_with_colors)
+    # get min max per channel
+    min_max_per_channel = {}
+    for i, channel_name in enumerate(channel_names_with_colors):
+        channel_color = channel_names_with_colors[channel_name]
+        min_val = np.min(source_image[:, :, i])
+        max_val = np.max(source_image[:, :, i])
+        min_max_per_channel[channel_name] = (min_val, max_val)
+
+        # scale the channel to 0-255, handling uniform intensity case
+        if max_val > min_val:  # Only normalize if there's a range
+            source_image_channel = (source_image[:, :, i] - min_val) / (
+                max_val - min_val
+            )
+        else:
+            # For uniform intensity, use the value directly (normalized to 0-1)
+            source_image_channel = np.full_like(
+                source_image[:, :, i], min_val / max(min_val, 1)
+            )
+
+        destination_image += (
+            np.stack((source_image_channel,) * 3, axis=-1)
+            * channel_color
+            * weight_per_channel
+        )
+    # scale the image to 0-255
+    destination_image_max = np.max(destination_image)
+    destination_image_min = np.min(destination_image)
+    destination_image = (destination_image - destination_image_min) / (
+        destination_image_max - destination_image_min
+    )
+    destination_image = destination_image * 255
+
+    return destination_image.astype(source_dtype)
+
+
 def filter_channels(
-    image: np.ndarray, image_object, channel_names_to_filter: list[str]
+    image: np.ndarray,
+    image_object,
+    channel_names_to_filter: list[str],
+    to_rgb: bool = True,
 ):
     """
     Filters the channels from an image, channel
@@ -239,9 +314,13 @@ def filter_channels(
     Returns:
     - image: The filtered image
     """
+    channel_list_lower = [
+        config.ch_as_str(i).lower() for i in image_object.channel_list
+    ]
+    channel_names_to_filter_lower = [i.lower() for i in channel_names_to_filter]
     # Get the channel indices
     channel_indices = [
-        image_object.channel_list.index(channel) for channel in channel_names_to_filter
+        channel_list_lower.index(channel) for channel in channel_names_to_filter_lower
     ]
     # Filter the channels
     if len(image.shape) == 3:
