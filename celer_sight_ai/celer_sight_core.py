@@ -157,6 +157,9 @@ class Master_MainWindow(CelerSightMainWindow):
         config.global_signals.refresh_main_scene_image_only_signal.connect(
             self.refresh_main_scene_image_only
         )
+        config.global_signals.refresh_main_scene_pixmap_only_signal.connect(
+            self.refresh_main_scene_pixmap_only
+        )
         config.global_signals.lock_ui_signal.connect(self.lock_ui)
         config.global_signals.unlock_ui_signal.connect(self.unlock_ui)
         config.global_signals.ensure_not_particle_class_selected_signal.connect(
@@ -179,7 +182,9 @@ class Master_MainWindow(CelerSightMainWindow):
         config.global_signals.start_analysis_signal.connect(
             lambda: self.sendAnnotatedImagesToServer()
         )
-
+        config.global_signals.spawn_channels_signal.connect(
+            self.channel_picker_widget.spawn_channels
+        )
         self.viewer.LeftArrowChangeButton.updatePositionViewer()
         self.viewer.RightArrowChangeButton.updatePositionViewer()
         self.MainWindow.closeEvent = self.closeEvent
@@ -308,9 +313,6 @@ class Master_MainWindow(CelerSightMainWindow):
         self.addRNAi_button_list.clicked.connect(lambda: self.load_main_scene())
 
         self.delete_button_list.clicked.connect(lambda: self.delete_RNAi_list_item())
-        # self.delete_button_list.clicked.connect(
-        #     lambda: QtWidgets.QApplication.processEvents()
-        # )
 
         self.add_images_btn.clicked.connect(
             lambda: self.add_images_btn._timer.force_stop()
@@ -4003,6 +4005,7 @@ class Master_MainWindow(CelerSightMainWindow):
     def delete_RNAi_list_item(self):
         from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
+        self.channel_picker_widget.clear_channels()
         logger.debug("delete_RNAi_list_item")
         if self.RNAi_list.count() == 0:
             return
@@ -4619,37 +4622,14 @@ class Master_MainWindow(CelerSightMainWindow):
         """
         import numpy as np
 
-        canvasImage = np.zeros(image.shape, image.dtype)
-        blue = self.pg1_blue_channel_button_visual.isChecked()
-        red = self.pg1_red_channel_button_visual.isChecked()
-        green = self.pg1_green_channel_button_visual.isChecked()
-        if len(image.shape) == 2:
-            return image
-        if blue == False and red == True and green == True:
-            image[:, :, 0] = canvasImage[:, :, 0]
-            image[:, :, 1] = canvasImage[:, :, 1]
-            return image
-        if red == False and green == True and blue == True:
-            image[:, :, 2] = canvasImage[:, :, 2]
-            image[:, :, 1] = canvasImage[:, :, 1]
-            return image
-        if green == False and red == True and blue == True:
-            image[:, :, 0] = canvasImage[:, :, 0]
-            image[:, :, 2] = canvasImage[:, :, 2]
-            return image
-        if blue == False and green == False and red == True:
-            image[:, :, 0] = canvasImage[:, :, 0]
-            return image
-        if blue == False and red == False and green == True:
-            image[:, :, 1] = canvasImage[:, :, 1]
-            return image
-        if green == False and red == False and blue == True:
-            image[:, :, 2] = canvasImage[:, :, 2]
-            return image
-        if green == False and red == False and blue == False:
-            return image
-        if green == True and red == True and blue == True:
-            return canvasImage
+        from celer_sight_ai.gui.custom_widgets.channel_picker_widget import (
+            ChannelPickerWidget,
+        )
+
+        # list all widgets in the channel picker widget
+        checked_channels = self.channel_picker_widget.get_checked_channels()
+
+        return checked_channels
 
     def appendMaskToScene(self, object_dict):
         """Creates the graphics item from the mask object that will
@@ -4918,7 +4898,7 @@ class Master_MainWindow(CelerSightMainWindow):
         # remove all deep zoom items
         while config._deepzoom_pixmaps:
             self.viewer._scene.removeItem(config._deepzoom_pixmaps.pop()[0])
-
+        # self.viewer._photo.setPixmap(QtGui.QPixmap())
         current_condition = self.DH.BLobj.get_current_condition()
         if not current_condition:
             # set the _photo object to empty
@@ -4962,9 +4942,13 @@ class Master_MainWindow(CelerSightMainWindow):
                 self.viewer._photo.boundingRect().y()
                 + (self.viewer._photo.boundingRect().height() // 2),
             )
+            self.channel_picker_widget.clear_channels()
             return
 
         io = self.DH.BLobj.get_current_image_object()
+        if isinstance(io, type(None)):
+            return
+
         if not io:
             logger.warning("No image object found, skipping load main scene.")
             return
@@ -5112,8 +5096,8 @@ class Master_MainWindow(CelerSightMainWindow):
                 return
             logger.debug("Reading image through racing thread.")
             RacerThread(
-                func1=self.load_main_scene_display_image,
-                func2=self.load_main_scene_read_image,
+                func1=self.load_main_scene_display_image,  # this does a quick update from thumbnail
+                func2=self.load_main_scene_read_image,  # this reads the full update
                 func1_kwargs={"signal_object": signal_object},
                 func2_kwargs={"signal_object": signal_object},
             ).run()
@@ -5133,7 +5117,10 @@ class Master_MainWindow(CelerSightMainWindow):
             )
             return
 
-    def refresh_main_scene_image_only(self, new_image, tile=None):
+    def refresh_main_scene_image_only(self):
+        raise NotImplementedError("Not implemented")
+
+    def refresh_main_scene_pixmap_only(self, new_image, tile=None):
         logger.info("Refreshing image only")
         # quick refresh on just the main image
         pixmap = self.DH.BLobj.get_image_pixmap(new_image)
@@ -5160,26 +5147,47 @@ class Master_MainWindow(CelerSightMainWindow):
             logger.warning("Image number out of bounds.")
             config.global_signals.load_main_scene_signal.emit()
             return
+
+        do_channel_filter = False
+        checked_channels = self.channel_picker_widget.get_checked_channels()
+        if not condition_object.images[img_uuid].channel_list:
+            do_channel_filter = False
+            channel_names_to_filter = None
+        else:
+            # remove any changes that are not being used
+            image_channels_lower = [
+                config.ch_as_str(i).lower()
+                for i in condition_object.images[img_uuid].channel_list
+            ]
+            checked_channels = [
+                i for i in checked_channels if str(i).lower() in image_channels_lower
+            ]
+            do_channel_filter = True
+            channel_names_to_filter = checked_channels
         DisplayedImage = condition_object.getImage(
             img_uuid,
-            to_uint8=True,
+            to_uint8=False,
+            do_channel_filter=do_channel_filter,
+            channel_names_to_filter=channel_names_to_filter,
             fast_load_ram=fast_load_ram,
             for_interactive_zoom=True,
             for_thumbnail=True,
             avoid_loading_ultra_high_res_arrays_normaly=True,
         )
-
+        io = self.DH.BLobj.get_image_object_by_uuid(img_uuid)
+        config.global_signals.spawn_channels_signal.emit(
+            io.get_channel_name_and_colors()
+        )
         if isinstance(DisplayedImage, type(None)):
             logger.error("Displayed image is nan!")
             return
-        DisplayedImage = self.GetActiveChannels(
-            DisplayedImage.copy()
-        )  # filter by channels on the ui (rgb) for now
+
         DisplayedImage = self.handle_adjustment_to_image(
-            DisplayedImage
+            DisplayedImage, to_uint8=True
         )  # brightness equalization
         # set image as thumbnail
-        condition_object.set_thumbnail(img_uuid, DisplayedImage)
+        if not io.thumbnailGenerated:
+            condition_object.set_thumbnail(img_uuid, DisplayedImage)
         config.load_main_scene_read_image = False
         config.global_signals.load_main_scene_display_image_signal.emit(
             {
@@ -5219,6 +5227,11 @@ class Master_MainWindow(CelerSightMainWindow):
             # get from thumbnail
             try:
                 DisplayedImage = condition_object.get_thumbnail(img_uuid)
+                # apply brightness and contrast
+                DisplayedImage = self.handle_adjustment_to_image(
+                    DisplayedImage, to_uint8=True
+                )
+
             except Exception as e:
                 logger.error(e)
                 return
@@ -5228,7 +5241,7 @@ class Master_MainWindow(CelerSightMainWindow):
 
         try:
 
-            # DisplaydeImage is the result of this block << Qt >>
+            # DisplayedImage is the result of this block << Qt >>
             self.viewer.LabelNumberViewer.setText("Image: " + str(img_id + 1))
             self.viewer.updateMaskCountLabel()
             if self.viewer.i_am_drawing_state == True:
@@ -5293,9 +5306,7 @@ class Master_MainWindow(CelerSightMainWindow):
 
         except Exception as e:
             self.during_load_main_scene_display = False
-            tb_str = traceback.format_exception(
-                etype=type(e), value=e, tb=e.__traceback__
-            )
+            tb_str = traceback.format_exception(e)
             tb_str = "".join(tb_str)
             logger.error("An error occurred: %s\nTraceback:\n%s", e, tb_str)
         self.during_load_main_scene_display = False
@@ -5418,7 +5429,7 @@ class Master_MainWindow(CelerSightMainWindow):
         # triget a scene refresh
         config.global_signals.load_main_scene_signal.emit()
 
-    def handle_adjustment_to_image(self, image, brightness=None):
+    def handle_adjustment_to_image(self, image, brightness=None, to_uint8=True):
         """
         Adds brightness and contrast
         TODO: this needs fixing,
@@ -5439,11 +5450,17 @@ class Master_MainWindow(CelerSightMainWindow):
         else:
             max_value = 4294967295
             min_value = -4294967295
-
+        if to_uint8 and original_dtype != np.uint8:
+            image = cv2.normalize(
+                image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
+            ).astype(np.uint8)
+            max_value = 255
+            min_value = 0
         brightent_img = self.Brightness_adjast(image, brightness)
         brightent_img = np.clip(brightent_img, min_value, max_value)
         contrasted_image = np.clip(brightent_img, min_value, max_value)
-
+        if to_uint8 and original_dtype != np.uint8:
+            contrasted_image = contrasted_image.astype(np.uint8)
         return contrasted_image.astype(original_type)
 
     def Brightness_adjast(self, image_in, brightness=None):
