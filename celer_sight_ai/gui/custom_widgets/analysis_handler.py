@@ -6,14 +6,16 @@
 ##########################################################################
 ##########################################################################
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
+
 import cv2
+import numpy as np
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from celer_sight_ai import config
 from celer_sight_ai.core.Workers import Worker, WorkerSignals
 from celer_sight_ai.gui.custom_widgets.ProgressD import Ui_Progress_dialog
-import numpy as np
-from celer_sight_ai import config
 from celer_sight_ai.io.image_reader import channel_to_color
-import logging
 
 logger = logging.getLogger(__name__)
 # import CelerSightModules # TODO: implement lost functions
@@ -140,8 +142,9 @@ class AnalysisDialogWidget(QtWidgets.QDialog):
 class HTMLViewer(QtWidgets.QWidget):  # viewe is used to display html grapher pygwalker
     def __init__(self, html_content):
         super().__init__()
-        from PyQt6 import QtWebEngineWidgets
         import tempfile
+
+        from PyQt6 import QtWebEngineWidgets
 
         layout = QtWidgets.QVBoxLayout(self)
         self.web_engine_view = QtWebEngineWidgets.QWebEngineView(self)
@@ -428,7 +431,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
             ]  # only in experiements cfgs there will be more, this is a feature to be added in the future
             category_uuid = first_category.get("uuid")
             category_name = first_category.get("class_name")
-            if not category_uuid in class_uuids_in_use:
+            if category_uuid not in class_uuids_in_use:
                 # skip uuid if not in the current experiement
                 continue
             # get the best thumbnail for the category
@@ -528,12 +531,13 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
             #     # case of cloud category, we need to update the thumbnail throught he api
             #     config.client.update_category_image(category_uuid, image_array)
             # also write to disk directly
-            from celer_sight_ai import configHandle
             import os
+
+            from celer_sight_ai import configHandle
 
             image_path = os.path.join(
                 configHandle.getLocal(),
-                f"experiment_configs/category_image_cache/" + category_uuid + ".jpg",
+                "experiment_configs/category_image_cache/" + category_uuid + ".jpg",
             )
             if not os.path.exists(image_path):
                 cv2.imwrite(image_path, image_array)
@@ -688,7 +692,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
         ):
             print("pressed right")
             self.MainWindow.imagenumber = self.MainWindow.imagenumber + 1
-            self.MainWindow.loadImage((self.MainWindow.imagenumber))
+            self.MainWindow.loadImage(self.MainWindow.imagenumber)
         if e.key() == QtCore.Qt.Key.Key_Left and self.MainWindow.imagenumber > 0:
             print("pressed left")
             self.MainWindow.imagenumber = self.MainWindow.imagenumber - 1
@@ -884,9 +888,9 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
         Calculates intenisties in addition to Area,
          used mainly for cells
         """
-        import skimage
         import cv2
         import numpy as np
+        import skimage
 
         raise NotImplementedError("Intensity with area for cells not implemented yet")
 
@@ -1150,7 +1154,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
             max_val = np.max(image[cc, rr])
             std = np.std(image[cc, rr])
 
-        except Exception as e:
+        except Exception:
             # cut off cc and rr larger than the image size
             # iterate and remove in a safe manner for lists
             for i in range(len(cc) - 1, -1, -1):
@@ -1206,9 +1210,9 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
         """
 
         print("calculating all particles")
-        import skimage
         import cv2
         import numpy as np
+        import skimage
 
         maxProg = 0  # maximum data
         current_round = 0
@@ -1253,7 +1257,10 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                             i,
                             to_uint8=False,
                             to_rgb=False,
-                            channel_names_to_filter=[channels[ch_indx]],
+                            do_channel_filter=True,
+                            channel_names_to_filter=[
+                                config.ch_as_str(channels[ch_indx])
+                            ],
                         )
                     )
 
@@ -1323,10 +1330,11 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
 
     def calculate_all_intensities(self, progress_callback=None):
         print("calculating all intensities")
-        import skimage
+        import itertools
+
         import cv2
         import numpy as np
-        import itertools
+        import skimage
 
         self.MainWindow.all_RNAi_green_over_red_int = []
         self.MainWindow.all_RNAi_green_intensities = []
@@ -1410,7 +1418,10 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
                             i,
                             to_uint8=False,
                             to_rgb=False,
-                            channel_names_to_filter=[channels[ch_indx]],
+                            do_channel_filter=True,
+                            channel_names_to_filter=[
+                                config.ch_as_str(channels[ch_indx])
+                            ],
                         )
                     )
                     for m, mask in enumerate(
@@ -1557,7 +1568,7 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
         pd.to_csv(file_location)
 
     def rgb_to_hex(self, arr):
-        return "#{:02x}{:02x}{:02x}".format(arr[0], arr[1], arr[2])
+        return f"#{arr[0]:02x}{arr[1]:02x}{arr[2]:02x}"
 
     def gather_all_analysis_data_in_a_df(self):
         """
@@ -1569,10 +1580,11 @@ class Ui_AnalysisDialog(QtWidgets.QDialog):
           a pandas DataFrame that contains all the analysis data gathered from iterating through images,
         channels, and masks.
         """
-        import pandas as pd
-        import numpy as np
         import copy
         import itertools
+
+        import numpy as np
+        import pandas as pd
         import webcolors
 
         from celer_sight_ai.io.data_handler import ImageObject
