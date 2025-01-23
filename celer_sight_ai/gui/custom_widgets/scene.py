@@ -1094,6 +1094,7 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
     def delete_image(self, proxy, widget):
         logger.info(f"Deleted image preview item : {widget.image_number}")
         self.scene().removeItem(proxy)
+        self.MainWindow.channel_picker_widget.clear_channels()
         widget.deleteCurrentImage()
 
         return

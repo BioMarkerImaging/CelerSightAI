@@ -45,8 +45,8 @@ class TestImageIntensityWithGUI(BaseGuiTestCase, BaseImageTestCase):
     def setUp(self):
         super().setUp()  # This ensures parent class setUp methods are called
 
+    # @pytest.mark.long
     @parameterized.expand(BaseImageTestCase._load_mock_image_intensity_data)
-    @pytest.mark.long
     def test_image_intensity_2D_rgb(
         self,
         image_path,  # Will receive the fixture's "image_path"

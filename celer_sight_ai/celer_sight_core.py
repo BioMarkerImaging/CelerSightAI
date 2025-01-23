@@ -4034,14 +4034,14 @@ class Master_MainWindow(CelerSightMainWindow):
         else:
             self.DH.BLobj.set_current_condition(None)
 
-        if (
+        if not (
             self.RNAi_list.count() == 0
             or self.RNAi_list.item(self.RNAi_list.currentRow()) == None
         ):
-            self.viewer._photo = BackgroundGraphicsItem()
-            self.viewer._photo.setZValue(-50)
-            self.viewer._scene.addItem(self.viewer._photo)
-        else:
+            #     self.viewer._photo = BackgroundGraphicsItem()
+            #     self.viewer._photo.setZValue(-50)
+            #     self.viewer._scene.addItem(self.viewer._photo)
+            # else:
             self.myButtonHandler.ShowNewCondition(
                 condition=self.RNAi_list.item(self.RNAi_list.currentRow()).text()
             )
@@ -4909,7 +4909,6 @@ class Master_MainWindow(CelerSightMainWindow):
         current_condition_object = self.DH.BLobj.groups["default"].conds[
             current_condition
         ]
-
         #  Case where We have an empty scene --> Drag and Drop images is shown
         if (
             len(self.DH.BLobj.groups["default"].conds) == 0
@@ -4920,7 +4919,7 @@ class Master_MainWindow(CelerSightMainWindow):
             DisplayedImage = cv2.cvtColor(DisplayedImage, cv2.COLOR_BGR2RGB)
             self.currentUsedPixmap = self.DH.BLobj.get_image_pixmap(DisplayedImage)
             self._zoom = 0
-
+            self.channel_picker_widget.clear_channels()
             if self.currentUsedPixmap and not self.currentUsedPixmap == 0:
                 self._empty = False
                 self.viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
@@ -4942,10 +4941,11 @@ class Master_MainWindow(CelerSightMainWindow):
                 self.viewer._photo.boundingRect().y()
                 + (self.viewer._photo.boundingRect().height() // 2),
             )
-            self.channel_picker_widget.clear_channels()
+
             return
 
         io = self.DH.BLobj.get_current_image_object()
+
         if isinstance(io, type(None)):
             return
 
@@ -5150,10 +5150,28 @@ class Master_MainWindow(CelerSightMainWindow):
 
         do_channel_filter = False
         checked_channels = self.channel_picker_widget.get_checked_channels()
-        if not condition_object.images[img_uuid].channel_list:
+        io = self.DH.BLobj.get_image_object_by_uuid(img_uuid)
+        refresh_channels = False
+        # if the current available channels are different from the previous ones, clear the channel picker
+        if io.channel_list:
+            if [config.ch_as_str(i).lower() for i in io.channel_list] != [
+                config.ch_as_str(i).lower() for i in self.channel_picker_widget.channels
+            ]:
+                refresh_channels = True
+
+        if not condition_object.images[img_uuid].channel_list or refresh_channels:
+
             do_channel_filter = False
             channel_names_to_filter = None
+            # check with cached channels
+            if refresh_channels:
+                checked_channels = [
+                    i
+                    for i in io.channel_list
+                    if config.get_visible_channel_cache(i, True)
+                ]
         else:
+
             # remove any changes that are not being used
             image_channels_lower = [
                 config.ch_as_str(i).lower()
@@ -5164,6 +5182,7 @@ class Master_MainWindow(CelerSightMainWindow):
             ]
             do_channel_filter = True
             channel_names_to_filter = checked_channels
+
         DisplayedImage = condition_object.getImage(
             img_uuid,
             to_uint8=False,
@@ -5174,7 +5193,6 @@ class Master_MainWindow(CelerSightMainWindow):
             for_thumbnail=True,
             avoid_loading_ultra_high_res_arrays_normaly=True,
         )
-        io = self.DH.BLobj.get_image_object_by_uuid(img_uuid)
         config.global_signals.spawn_channels_signal.emit(
             io.get_channel_name_and_colors()
         )
