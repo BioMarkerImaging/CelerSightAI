@@ -3517,7 +3517,7 @@ margin-left:0px;
                         <property name="geometry">
                          <rect>
                           <x>8</x>
-                          <y>-534</y>
+                          <y>-549</y>
                           <width>142</width>
                           <height>1745</height>
                          </rect>
@@ -4511,7 +4511,7 @@ QGroupBox::title#pg1_settings_groupBox_brightness_contrast {
 	margin-top:1px;
 	padding: 6px ;
 	padding-right:46px;
-	padding-left:29px;
+	padding-left:10px;
 
 }
 
@@ -5912,7 +5912,7 @@ color:white;
                               <property name="maximumSize">
                                <size>
                                 <width>138</width>
-                                <height>120</height>
+                                <height>220</height>
                                </size>
                               </property>
                               <property name="font">
@@ -5931,7 +5931,7 @@ color:white;
                                <string notr="true"/>
                               </property>
                               <property name="title">
-                               <string>Light</string>
+                               <string>Channels</string>
                               </property>
                               <property name="alignment">
                                <set>Qt::AlignHCenter|Qt::AlignTop</set>
@@ -12703,7 +12703,7 @@ border-radius:8px;</string>
      <x>0</x>
      <y>0</y>
      <width>1297</width>
-     <height>37</height>
+     <height>24</height>
     </rect>
    </property>
    <property name="font">
