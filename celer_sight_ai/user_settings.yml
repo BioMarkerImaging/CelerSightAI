@@ -159,15 +159,15 @@ developer:
   ##### REMOTE ANNOTATION MODE #####
   ##################################
   ANNOTATE_DATA_MODE: false # used only by admins to connect to the database to annotate data
-  ANNOTATED_DATA_AMOUNT: 10 # request 100 images for annotation
+  ANNOTATED_DATA_AMOUNT: 30 # request 100 images for annotation
+  REMOTE_ANNOTATION_SUPERCATEGORY: "worm" # if its null, it will fetch images without supercategories, if they exist?
   REMOTE_ANNOTATATION_CATEGORIES: # audited
-    - "worm eggs"
+    - "body"
   REMOTE_ANNOTATION_CATEGORIES_TO_EXCLUDE:
     # - "body" 
   REMOTE_ANNOTATION_CONTRIBUTE_MODE : "fully_annotated" #["corrected" , "partially_annotated", "fully_annotated"]
   REMOTE_ANNOTATIONS_WITHOUT_ANNOTATIONS: null #false | True if we querry images without annotations
   # REMOTE_ANNOTATIONS_PARTIAL_ID: null # string id of the partial annotation, or "latest" to get the latest
-  REMOTE_ANNOTATION_SUPERCATEGORY: "on_plate" # if its null, it will fetch images without supercategories, if they exist?
   REMOTE_ANNOTATIONS_AUDITED: true # if the annotations are audited or not
   REMOTE_ANNOTATIONS_RANDOMIZED: false # shuffle annotations before sending them to client
   REMOTE_ANNOTATIONS_ORDER: -1 # can be -1 for the last one first or 1 for the first one first

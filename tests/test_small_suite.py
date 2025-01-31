@@ -68,6 +68,7 @@ class CelerSightTestSimple(BaseGuiTestCase):
         import time
 
         app = self.app
+        qttest_utils.to_main_window(app, organism="worm", model_button_names=["body"])
 
         # download assets if needed
         config.client.download_test_fixtures()

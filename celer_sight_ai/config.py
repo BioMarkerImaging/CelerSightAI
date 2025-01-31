@@ -16,6 +16,8 @@ def stop_jvm():
 
 def start_jvm():
     if not javabridge.get_env():  # Check if JVM is already running
+
+
         javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
         """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
         during runtime.

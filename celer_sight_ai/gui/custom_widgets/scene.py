@@ -645,8 +645,6 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         if not self.selected_buttons:
             self.selected_buttons.append(button_number)
             return
-        # get button idx
-        start_button_idx = self.visible_buttons_ids.index(self.selected_buttons[0])
         # Get the range boundaries
         start = min(self.selected_buttons[-1], button_number)
         end = max(self.selected_buttons[-1], button_number)
@@ -806,7 +804,8 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
         ):
             if b.image_number > reference_id:
                 b.image_number -= amount
-                b.button_instance.set_label_number(b.image_number + 1)
+                if b.button_instance is not None:
+                    b.button_instance.set_label_number(b.image_number + 1)
         for im, image in enumerate(
             self.MainWindow.DH.BLobj.groups[
                 self.MainWindow.DH.BLobj.get_current_group()
@@ -904,19 +903,23 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                 if button.image_number not in range(
                     max(self.start_button_i_to_show, 0), self.end_button_i_to_show
                 ):
-                    idx = self.visible_buttons_ids.index(button.image_number)
-                    print(f"removing button id {button.image_number} at index {idx}")
-                    if (
-                        button.button_instance_proxy is not None
-                        and button.button_instance_proxy in self.scene().items()
-                    ):
-                        self.scene().removeItem(button.button_instance_proxy)
-                    self.visible_buttons.remove(button)
+                    try:
+                        idx = self.visible_buttons_ids.index(button.image_number)
+                        print(
+                            f"removing button id {button.image_number} at index {idx}"
+                        )
+                        if (
+                            button.button_instance_proxy is not None
+                            and button.button_instance_proxy in self.scene().items()
+                        ):
+                            self.scene().removeItem(button.button_instance_proxy)
+                        self.visible_buttons.remove(button)
 
-                    self.visible_buttons_ids.pop(idx)
-                    button.button_instance = None
-                    button.button_instance_proxy = None
-
+                        self.visible_buttons_ids.pop(idx)
+                        button.button_instance = None
+                        button.button_instance_proxy = None
+                    except Exception:
+                        pass
             # show buttons needed
             all_buttons_to_create_instance = []
             total_buttons_len = len(
@@ -1055,9 +1058,10 @@ class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
                 lambda: self.delete_image(proxy_item, widget_item)
             )
 
-        if io.is_remote:
+        if io.is_remote():
             if len(self.selected_buttons) > 1:
-                delete_remote_action = menu.addAction("Delete All Remote Images")
+                if any([i for i in image_objects if i.is_remote()]):
+                    delete_remote_action = menu.addAction("Delete All Remote Images")
                 # get all uuids of the selected buttons
                 image_uuids = []
                 image_uuids = list(set([i.unique_id for i in image_objects]))

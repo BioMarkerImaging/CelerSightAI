@@ -56,6 +56,8 @@ class LogInHandler(Ui_LogInDialog):
         # if splash UI is not provided then we are probably testing, so
         # skiping all of the UI initialization stuff.
 
+        self._is_logged_in = False
+
         self.connection_complete = False
         logger.debug("loggin handler initializing")
         self.LogInDialog = QtWidgets.QDialog()
@@ -263,7 +265,9 @@ class LogInHandler(Ui_LogInDialog):
             if self.splash:
                 self.splash.finish(self.LogInDialog)
             self.LogInDialog.hide()
-            self.Lunch_application_after_authentication("OK")
+            self.Lunch_application_after_authentication(
+                {"result": "OK", "offline_mode": True}
+            )
         elif (
             settings.value("isUserSignedOut")
             and settings.value("isUserSignedOut").lower() == "true"
@@ -289,6 +293,7 @@ class LogInHandler(Ui_LogInDialog):
             if (
                 settings.contains("AutoLogIn")
                 and not config.user_cfg["FORCE_REJECT_AUTO_LOGIN"]
+                and not self._is_logged_in
             ):
 
                 if settings.value("AutoLogIn").lower() == "true":
@@ -296,7 +301,6 @@ class LogInHandler(Ui_LogInDialog):
 
                     self.LogInDialog.hide()
                     self.splash.showMessage("Signing in...")
-                    # self.pushButton_2.click()
                     self.AuthenticationRunner()
                     QtWidgets.QApplication.processEvents()
                     return
@@ -520,6 +524,7 @@ class LogInHandler(Ui_LogInDialog):
             # show the log in dialog again
             return
         else:
+            self._is_logged_in = True
             if self.remember_me_checkbox.isChecked():
                 logger.info("Enabling remember me")
                 # save the credentials
@@ -541,7 +546,7 @@ class LogInHandler(Ui_LogInDialog):
         if not self._is_main_window_launched:
             config.global_signals.launch_main_window_after_log_in_signal.emit(result)
 
-    def Lunch_application_after_authentication(self, result):
+    def Lunch_application_after_authentication(self, result: dict) -> None:
         """
         The function is called when the user presses the log in button. It checks if the credentials are
         correct and if they are it launches the main window
@@ -580,8 +585,9 @@ class LogInHandler(Ui_LogInDialog):
         config.client = file_client.FileClient(
             configHandle.getServerLogAddress(), MainWindow=self.gui_main
         )
-        # set the jwt tokens from the login result
-        config.client._update_jwt_tokens(result)
+        if not config.user_cfg["OFFLINE_MODE"]:
+            # set the jwt tokens from the login result
+            config.client._update_jwt_tokens(result)
 
         logger.info("Mainwindow is running")
         self.gui_main.FinalizeMainWindow()

@@ -115,6 +115,7 @@ class BaseImageTestCase(BaseTestCase):
         """Load mock image data configuration."""
         # Define base dictionary with relative paths
         all_files = {
+            # AS_09125_050118150001_A03f00d0.DIB
             "PIR3_L1_TMRE_Image015.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 1392,

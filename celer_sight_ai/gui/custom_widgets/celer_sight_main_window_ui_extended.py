@@ -2525,10 +2525,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: self.assignFontsFamilyInPlotTab()
         )
 
-        # Plot Settings Widget
-        # from celer_sight_ai.gui.designer_widgets_py_files.plot_tools_widget_v4 import Ui_Plot_tools_widget as plot_tools_widget_v4
-        # plot_tools_widget_v4.setupUi(self, self.scrollArea_for_plot_tools)  # add the widgets
-        # plot_tools_widget_v4.retranslateUi(self, self.scrollArea_for_plot_tools)  # translate properties
+
         self.pg2_graphs_view.itemSelectionChanged.connect(
             self.show_only_active_plot_settings
         )
@@ -2542,12 +2539,6 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # function to plce the settings for all the plots and hide them, then show_only_active_plot_settings whoces which settings to use
         self.setup_widgets()
-
-        # from celer_sight_ai.gui.designer_widgets_py_files.results_inspector_widgets import Ui_Form as results_inspector_widgets
-        # results_inspector_widgets.setupUi(self, self.ReviewAreaWidget)  # add the widgets
-        # results_inspector_widgets.retranslateUi(self, self.ReviewAreaWidget)  # translate properties
-
-        # signal to update the spreadsheet on qcombobox change
 
         # Selected Mask DIalog set up>>>
         self.SelectedMaskDialog = QtWidgets.QDialog()
@@ -2570,8 +2561,8 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SelectedMaskDialog.setAttribute(
             QtCore.Qt.WidgetAttribute.WA_TranslucentBackground
         )
-        # for item in self.SelectedMaskDialog.children():
-        # logger.info("Children are -- - -- - - -  ", item.objectName())
+
+
         self.SelectedMaskDialog.hide()
         self.pg_2_Source_Data_btn.clicked.connect(lambda: self.spawnAnnotationDialog())
 

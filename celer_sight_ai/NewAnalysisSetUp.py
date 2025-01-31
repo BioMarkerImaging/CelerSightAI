@@ -1,21 +1,19 @@
+import os
 import sys
 
-import os
 from celer_sight_ai import config
-
 
 if config.is_executable:
     sys.path.append(str(os.environ["CELER_SIGHT_AI_HOME"]))
+import logging
+
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import Qt, pyqtSlot
+
+from celer_sight_ai import config
 from celer_sight_ai.gui.designer_widgets_py_files.NewMenu2 import (
     Ui_Dialog as NewMenuForm,
 )
-from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtCore import Qt
-from celer_sight_ai import config
-
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -546,9 +544,8 @@ class NewAnalysis(NewMenuForm):
 
     def init_user_params(self):
         logger.info("Initializing parameters.")
-        from celer_sight_ai import config
-
         import celer_sight_ai.configHandle as configHandle
+        from celer_sight_ai import config
 
         organism_in_use = config.supercategory
 
@@ -649,7 +646,7 @@ class NewAnalysis(NewMenuForm):
 
         config.global_params.analysis = self.GetAnalysisType()
 
-        logger.info("record to global isntance organism is {0}".format(self.organism))
+        logger.info(f"record to global isntance organism is {self.organism}")
 
         logger.info("Record_To_GlobalVars")
 
@@ -887,6 +884,7 @@ class NN_Settings_Popup_Widget(NN_settings_hover_form):
 
 if __name__ == "__main__":
     import sys
+
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)

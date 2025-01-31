@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import time
+import unittest
 from glob import glob
 
 import cv2

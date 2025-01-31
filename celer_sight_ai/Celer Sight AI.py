@@ -1,6 +1,16 @@
 from multiprocessing import freeze_support  # noqa
 
 freeze_support()  # noqa
+# if frozen
+import sys
+
+# if not hasattr(sys, "frozen"):
+#     import typeguard
+#     from typeguard import TypeCheckConfiguration
+
+#     # Configure typeguard to ignore javabridge
+#     config = TypeCheckConfiguration(exclude_modules=("javabridge", "bioformats"))
+#     typeguard.install_import_hook("celer_sight_ai", config)  # For the package
 
 print("Running Celer Sight AI")
 import time
@@ -9,7 +19,6 @@ start = time.time()
 
 import argparse
 import os
-import sys
 
 import bioformats
 import imagecodecs
@@ -29,6 +38,9 @@ print("Importing Splash")
 from PyQt6.QtWidgets import QApplication, QWidget
 
 print("Importing QApplication, QWidget")
+os.environ["PYTHONDEVMODE"] = "0"
+os.environ["PYTHONTYPECHECKINGPDB"] = "0"
+os.environ["PYTHONTYPECHECKING"] = "0"
 
 
 def start_celer_sight_ai():
