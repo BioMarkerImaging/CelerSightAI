@@ -1,13 +1,14 @@
 import json
+import logging
 
 # from re import L
 # from cryptography.fernet import Fernet
 import os
-import requests
-import logging
 import ssl
-from PyQt6 import QtCore
+
 import keyring
+import requests
+from PyQt6 import QtCore
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -69,19 +70,19 @@ def get_recent_users():
 
 
 def store_jwt_token_for_auto_login(jwt_refresh_token):
-    logger.info(f"Storing jwt token for auto login.")
+    logger.info("Storing jwt token for auto login.")
     settings = get_app_settings()
     settings.setValue("last_jwt_refresh_token", jwt_refresh_token)
 
 
 def get_jwt_token_for_auto_login():
-    logger.info(f"Getting jwt token for auto login.")
+    logger.info("Getting jwt token for auto login.")
     settings = get_app_settings()
     return settings.value("last_jwt_refresh_token", None)
 
 
 def clear_jwt_token_for_auto_login():
-    logger.info(f"Clearing jwt token for auto login.")
+    logger.info("Clearing jwt token for auto login.")
     settings = get_app_settings()
     settings.setValue("last_jwt_refresh_token", None)
 
