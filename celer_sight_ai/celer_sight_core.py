@@ -984,10 +984,10 @@ class Master_MainWindow(CelerSightMainWindow):
                                 return
                             total_images_states.append([success, error_message])
 
-                        except Exception:
+                        except Exception as e:
                             import traceback
 
-                            logger.error(f"Error : {error_message}")
+                            logger.error(f"Error : {e}")
                             logger.error(traceback.format_exc())
                             config.global_signals.errorSignal.emit(
                                 "Failed to send data."
