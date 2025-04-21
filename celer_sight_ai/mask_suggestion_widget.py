@@ -1,6 +1,7 @@
-from PyQt6 import QtWidgets, QtGui, QtCore
 import logging
 import os
+
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class AnimatedGroupBox(QtWidgets.QGroupBox):
         self.animation.start()
 
 
-class Ui_Form(object):
+class Ui_Form:
     def setupUi(self, Form):
         Form.setObjectName("mask_suggestion_widget")
         Form.resize(555, 226)
@@ -626,8 +627,9 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
             config.global_signals.unlock_ui_signal.emit()
 
     def prompt_user_to_save_or_delete_suggestions(self):
-        from celer_sight_ai import config
         from functools import partial
+
+        from celer_sight_ai import config
 
         # prompt user to add multiple treatments
         config.global_signals.actionDialogSignal.emit(
@@ -699,9 +701,10 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
             self.roi_assistant_generate_button.setText("Generate")
 
     def reset_suggestions(self):
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
         import time
+
         from celer_sight_ai import config
+        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
 
         # if mask suggestion is running, stop it
         # wait until not runnning any more
@@ -722,11 +725,11 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
         logger.debug(
             f"Found {len(all_polygon_masks)} suggested masks to delete from the scene"
         )
-        logger.debug(f"Deleting suggested masks")
+        logger.debug("Deleting suggested masks")
         for mask in all_polygon_masks:
 
             mask.DeleteMask()
-        logger.debug(f"Done deleting suggested masks")
+        logger.debug("Done deleting suggested masks")
 
         self.set_generating(False)
 
