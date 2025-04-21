@@ -432,6 +432,7 @@ class SamPredictorONNX:
         # start generating button spinner etc..
         config.global_signals.set_mask_suggestor_generating_signal.emit(True)
         logger.debug("Starting suggested mask generator")
+
         if not self.loaded:
             try:
                 self.load_models()
@@ -750,6 +751,9 @@ class SamPredictorONNX:
             offset_y = tile_bbox[1]
         original_shape = image.shape[:2]
         logger.info(f"Image shape : {image.shape}")
+        config.dbg_image(
+            image, bbox=[point1[0], point1[1], point2[0], point2[1]], mode="xyxy"
+        )
         features, points, input_image, _ = self.get_feature_map(
             image, points=[point1, point2]
         )
@@ -797,10 +801,28 @@ class SamPredictorONNX:
         representative_features = self.get_representative_feature(
             pred_masks, scores, features
         )
+        adjusted_points = []
+        for batch_idx in range(len(points)):
+            batch_adjusted_points = []
+            for point in points[batch_idx]:
+                batch_adjusted_points.append(
+                    [
+                        int(point[0] / (input_image.shape[1] / original_shape[1])),
+                        int(point[1] / (input_image.shape[0] / original_shape[0])),
+                    ]
+                )
+            adjusted_points.append(np.array(batch_adjusted_points))
+
+        image_feature_crop = image[
+            int(adjusted_points[0][0][1]) : int(adjusted_points[0][1][1]),
+            int(adjusted_points[0][0][0]) : int(adjusted_points[0][1][0]),
+            ...,
+        ]
+
         features_from_mask = self.get_features_from_image_and_mask(
             pred_mask,
             score,
-            image,
+            image_feature_crop,
             celer_sight_object,  # mask_uuid
             representative_features,
             tile_bbox,
@@ -985,6 +1007,7 @@ class SamPredictorONNX:
     ):
         # import polygon
         from shapely import Polygon
+        from shapely.ops import unary_union
 
         inference_uuid = config.get_unique_id()
         # add a polygon shape on the region that we are inferencing
@@ -1001,7 +1024,6 @@ class SamPredictorONNX:
         image_tmp = image.copy()
         if not config.user_cfg["USER_WORKERS"]:
             QtWidgets.QApplication.processEvents()
-        from shapely.ops import unary_union
 
         if not effective_image_tile:
             effective_image_tile = [
@@ -1261,26 +1283,19 @@ class SamPredictorONNX:
     ):
         # Get the features for an image provided a mask
 
-        # first check bounds
-        if not mask.shape == image.shape[:2]:
-            return None
         points_future = points // 16  # convert to 64x64
         # get actual object shape with cv2 where the array is nonzero
         object_dict = {
             "area": mask.sum(),
             "size": cv2.boundingRect(mask.astype(np.uint8)),
-            "mean_color": np.mean(image[mask], axis=(0, 1)),
+            "mean_color": np.mean(image, axis=(0, 1)),
             "points": points_future,
             "vectors": vectors,
             "tile_bbox": tile_bbox,
             "image_uuid": celer_sight_object["image_uuid"],
             "mask_uuid": celer_sight_object["mask_uuid"],
             "class_uuid": celer_sight_object["class_uuid"],
-            "image_data": image[
-                int(points_future[0][0][1]) : int(points_future[0][1][1]),
-                int(points_future[0][0][0]) : int(points_future[0][1][0]),
-                ...,
-            ],  # image data of the bounding box, used to stabilize features across large images
+            "image_data": image,  # image data of the bounding box, used to stabilize features across large images
             "sign": "positive",
             "temporary_center_point": None,  # used to stabilize features across large images, different for every tile.
         }
