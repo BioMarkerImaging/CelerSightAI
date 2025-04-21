@@ -1712,12 +1712,12 @@ class FileClient:
                 uploaded = 0
                 with open(file_path, "rb") as file:
                     while True:
-                        data = file.read(4096)  # Read in chunks of 4KB
+                        data = file.read(4096)
                         if not data:
                             break
                         uploaded += len(data)
                         if callback:
-                            callback(uploaded, total_size)  # Update progress
+                            callback(uploaded, total_size)
                         yield data
 
             if with_dialog:
@@ -1753,18 +1753,82 @@ class FileClient:
                     "No annotations found, skipping image"
                 )
                 return True, ""
-            print(f"Size of file to transfer {os.path.getsize(file_to_transfer)}")
+
+            # Move annotations to a separate file and stream that file too
+            annotations_file_path = os.path.join(tempdir, "annotations.json")
+            with open(annotations_file_path, "w") as f:
+                json.dump(annotations, f)
+
+            # Compress the annotations file
+            annotations_compressed_path = os.path.join(tempdir, "annotations.json.zst")
+            with open(annotations_file_path, "rb") as ifh, open(
+                annotations_compressed_path, "wb"
+            ) as ofh:
+                cctx.copy_stream(ifh, ofh)
+
+            # Create a modified dict without the large annotations array
+            headers_dict = dict_to_send.copy()
+            headers_dict.pop("annotations", None)
+            headers_dict["annotations_file"] = True
+
+            # Set up a multipart streaming approach
+            print(f"Size of image file: {os.path.getsize(file_to_transfer)}")
+            print(
+                f"Size of annotations file: {os.path.getsize(annotations_compressed_path)}"
+            )
+
+            # Create boundary marker for multipart form data
+            boundary = "----WebKitFormBoundary" + "".join(
+                random.sample(string.ascii_letters + string.digits, 16)
+            )
+
+            def create_form_data():
+                # Start of multipart form data
+                yield f"--{boundary}\r\n".encode()
+                yield f'Content-Disposition: form-data; name="image_file"; filename="{os.path.basename(file_to_transfer)}"\r\n'.encode()
+                yield b"Content-Type: application/octet-stream\r\n\r\n"
+
+                # Stream the image file
+                with open(file_to_transfer, "rb") as f:
+                    total_size = os.path.getsize(file_to_transfer)
+                    uploaded = 0
+                    while True:
+                        chunk = f.read(4096)
+                        if not chunk:
+                            break
+                        uploaded += len(chunk)
+                        if callback:
+                            callback(uploaded, total_size)
+                        yield chunk
+
+                # Annotations file part
+                yield f"\r\n--{boundary}\r\n".encode()
+                yield b'Content-Disposition: form-data; name="annotations_file"; filename="annotations.json.zst"\r\n'
+                yield b"Content-Type: application/octet-stream\r\n\r\n"
+
+                # Stream the annotations file
+                with open(annotations_compressed_path, "rb") as f:
+                    while True:
+                        chunk = f.read(4096)
+                        if not chunk:
+                            break
+                        yield chunk
+
+                # End of multipart form data
+                yield f"\r\n--{boundary}--\r\n".encode()
+
             resp = self.session.post(
                 send_large_zipped_image_annotated_url,
-                data=file_generator(file_to_transfer),
+                data=create_form_data(),
                 headers={
                     "User-Agent": "python-requests/2.31.0",
                     "Connection": "keep-alive",
                     "Accept-Encoding": "gzip, deflate, br",
-                    "Content-Type": "application/octet-stream",
-                    "Metadata": json.dumps(dict_to_send),
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                    "Metadata": json.dumps(headers_dict),
                 },
             )
+
             if resp.status_code == 200:
                 return True, ""
             elif resp.status_code == 400:
