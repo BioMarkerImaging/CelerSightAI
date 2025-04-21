@@ -34,20 +34,12 @@ from celer_sight_ai.configHandle import getLocal, getLogInAddress
 class UpdateStatus:
     """Enumerated data type"""
 
-    # pylint: disable=invalid-name
-    # pylint: disable=too-few-public-methods
     UNKNOWN = 0
     NO_AVAILABLE_UPDATES = 1
     UPDATE_DOWNLOAD_FAILED = 2
     EXTRACTING_UPDATE_AND_RESTARTING = 3
     UPDATE_AVAILABLE_BUT_APP_NOT_FROZEN = 4
     COULDNT_CHECK_FOR_UPDATES = 5
-
-    # UPDATE_STATUS_STR = \
-    # ['Unknown', 'No available updates were found.',
-    #  'Update download failed.', 'Extracting update and restarting.',
-    #  'Update available but application is not frozen.',
-    #  'Couldn\'t check for updates.']
 
 
 class LogInHandler(Ui_LogInDialog):
@@ -84,7 +76,7 @@ class LogInHandler(Ui_LogInDialog):
             line_length=11,
             line_width=18,
             speed=0.5,
-            color=(0, 255, 35),
+            color=QtGui.QColor(0, 255, 35),
         )
 
         config.global_signals.shut_down_signal.connect(lambda: sys.exit(0))
@@ -251,7 +243,7 @@ class LogInHandler(Ui_LogInDialog):
                 line_length=11,
                 line_width=18,
                 speed=0.5,
-                color=(0, 255, 35),
+                color=QtGui.QColor(0, 255, 35),
             )
         self.LogInDialog.show()
 
