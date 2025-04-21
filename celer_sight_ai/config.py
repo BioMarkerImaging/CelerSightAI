@@ -17,7 +17,6 @@ def stop_jvm():
 def start_jvm():
     if not javabridge.get_env():  # Check if JVM is already running
 
-
         javabridge.start_vm(class_path=bioformats.JARS, run_headless=True)
         """(From pskeshu) This is so that Javabridge doesn't spill out a lot of DEBUG messages
         during runtime.
@@ -85,19 +84,39 @@ import javabridge
 from celer_sight_ai import __version__
 
 
-def dbg_image(img, bbox=None, mode: str = "xywh"):
+def dbg_image(img, bbox=None, mode: str = "xywh", rescale_image=(0, 0), points=[]):
     """
     On installations, we cannot write on disk, use this to avoid erros
     Args:
         img (np.ndarray): the image to save
         bbox (list): the bbox to draw on the image in format [x1, y1, x2, y2]
         mode (str): the mode to draw the bbox in, "xywh" or "xyxy"
+        rescale_image (tuple): dimensions to resize the image to (width, height)
+        points (list or np.ndarray): points to draw on the image as circles
     """
     import cv2
+    import numpy as np
 
     if is_executable:
         return
     image_drawn = img.copy()
+    if rescale_image != (0, 0):
+        image_drawn = cv2.resize(image_drawn, rescale_image)
+    if len(points) > 0:
+        # Convert numpy array to list of points if needed
+        if isinstance(points, np.ndarray):
+            if points.ndim == 2 and points.shape[1] == 2:
+                # Handle 2D array of points
+                for point in points:
+                    cv2.circle(
+                        image_drawn, (int(point[0]), int(point[1])), 5, (0, 0, 255), -1
+                    )
+            else:
+                print(f"Warning: points array has unexpected shape: {points.shape}")
+        else:
+            # Original behavior for list of points
+            for point in points:
+                cv2.circle(image_drawn, point, 5, (0, 0, 255), -1)
     if not isinstance(bbox, type(None)):
         # draw bbox on the image
 
@@ -122,6 +141,68 @@ def dbg_image(img, bbox=None, mode: str = "xywh"):
         cv2.imwrite("test.jpg", image_drawn)
     except Exception as e:
         print(f"Error saving image: {e}")
+
+
+def dbg_multiple_images(images):
+    # shows multiple images of the same size in a grid
+    import cv2
+    import numpy as np
+
+    if is_executable:
+        return False
+
+    # Create a grid of images
+    num_images = len(images)
+    if num_images == 0:
+        logger.error("No images provided to dbg_multiple_images")
+        return False
+
+    # Convert float images to uint8 if needed and ensure all images are 3-channel
+    processed_images = []
+    for img in images:
+        # Handle float images
+        if img.dtype == np.float32 or img.dtype == np.float64:
+            # Map float values to 0-255 range
+            img_normalized = (
+                np.clip(img, 0, 1) * 255 if np.max(img) <= 1.0 else np.clip(img, 0, 255)
+            )
+            img = img_normalized.astype(np.uint8)
+
+        # Convert grayscale to RGB if needed
+        if len(img.shape) == 2 or (len(img.shape) == 3 and img.shape[2] == 1):
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        elif len(img.shape) == 3 and img.shape[2] == 4:  # Handle RGBA
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+
+        processed_images.append(img)
+
+    # Determine the number of rows and columns for the grid
+    num_rows = int(np.ceil(np.sqrt(num_images)))
+    num_cols = int(np.ceil(num_images / num_rows))
+
+    # Create a new image to hold the grid
+    grid_size = (
+        num_cols * processed_images[0].shape[1],
+        num_rows * processed_images[0].shape[0],
+    )
+    grid_image = np.zeros((grid_size[1], grid_size[0], 3), dtype=np.uint8)
+
+    # Fill the grid with the images
+    for i, img in enumerate(processed_images):
+        row = i // num_cols
+        col = i % num_cols
+        grid_image[
+            row * img.shape[0] : (row + 1) * img.shape[0],
+            col * img.shape[1] : (col + 1) * img.shape[1],
+        ] = img
+
+    # Save the grid image to disk
+    try:
+        cv2.imwrite("test.jpg", grid_image)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving grid image: {e}")
+        return False
 
 
 def unregister_url_scheme():
@@ -1209,12 +1290,6 @@ def get_update_client():
         else:
             INSTALL_DIR = str(os.path.dirname(os.environ["CELER_SIGHT_AI_HOME"]))
 
-        if not is_executable and not override_app_install_dir:
-            # if its run in developer mode, installation directory cannot be the same as the developement directory
-            logger.warning(
-                "Cannot update in developer mode, please run the executable or specify an installation directory"
-            )
-            return False
         if not override_app_install_dir and not is_executable:
             logger.warning(
                 "Cannot update in developer mode, please run the executable or specify an installation directory"
@@ -1323,18 +1398,6 @@ def get_update_client():
             ):
                 restart_app = False
             logger.info(f"restart app after update  : {restart_app}")
-            # UPDATE_TEMPLATE = None
-            # # if we are on windows
-            # if os.name == "nt":
-            #     app_path = os.path.join(INSTALL_DIR, "Celer Sight AI.exe")
-            #     WIN_BATCH_TEMPLATE.replace("<<app_path>>", app_path)
-            #     WIN_BATCH_TEMPLATE.replace("<<pid_file>>", pid_file)
-            #     WIN_BATCH_TEMPLATE.replace(
-            #         "<<restart_app>>", "true" if restart_app else "false"
-            #     )
-            #     UPDATE_TEMPLATE = WIN_BATCH_TEMPLATE
-
-            # tufup.utils.platform_specific.WIN_BATCH_TEMPLATE = UPDATE_TEMPLATE
 
         # Create client with logging
         try:
