@@ -133,6 +133,18 @@ def map_value_to_dtype(value: float = 0.5, dtype=np.uint8):
     return np.iinfo(dtype).max * value
 
 
+def dbg_viewer() -> str:
+    """
+    A method to return a map of all items on screen and their heights
+    """
+    all_objects = ""
+
+    for item in self.viewer.scene():
+        print(item)
+
+    return
+
+
 def readImage(
     path: str = "",
     is_video=False,
@@ -329,20 +341,14 @@ def readImage(
         return None, {}
     if not isinstance(channel_names_to_filter, type(None)):
         # remove channels that are not in the channel_names_to_filter
+        dbg_viewer()
         # convert text to index
         channel_names_to_filter = [
             config.channel_names.index(i.lower()) for i in channel_names_to_filter
         ]
         # remove channels that are not in the channel_names_to_filter
         im = im[:, :, channel_names_to_filter]
-    # if (
-    #     not isinstance(im, type(None))
-    #     and not for_thumbnail
-    #     and not for_interactive_zoom
-    #     and isinstance(bbox, type(None))
-    # ):
-    #     config.ram_image = im
-    #     config.ram_image_path = path
+
     if not isinstance(im, type(None)):
         logger.debug(f"Image {im.shape} imported with channels : {channels}")
 
