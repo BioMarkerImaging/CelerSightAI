@@ -1,6 +1,10 @@
 # required not to crash as a first import
 import os
 import sys
+import dotenv
+
+# Load env vars relative to conftest.py location
+dotenv.load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # add parent directory to path
 p_dir = os.path.dirname(os.path.abspath(__file__))

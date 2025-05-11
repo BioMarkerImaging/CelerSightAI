@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 from parameterized import parameterized
 from requests.exceptions import ConnectionError, HTTPError, Timeout
+load_dotenv("../.env")
 
 from celer_sight_ai import config
 from celer_sight_ai.configHandle import *
@@ -16,7 +17,6 @@ from celer_sight_ai.core.file_client import FileClient
 from celer_sight_ai.core.LogTool import LogInHandler
 from tests.base_online_testcase import BaseOnlineTestCase
 
-load_dotenv("../.env")
 
 logger = logging.getLogger(__name__)
 

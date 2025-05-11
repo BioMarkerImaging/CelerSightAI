@@ -35,7 +35,7 @@ class BaseOnlineTestCase(BaseTestCase):
         assert cls.mock_credentials[0] is not None, "Username is not set"
         assert cls.mock_credentials[1] is not None, "Password is not set"
         # log user
-        cls.client = FileClient(getServerLogAddress())
+        cls.client = FileClient("https://s1.biomarkerimaging.com")#getServerLogAddress())
         cls.client.login(cls.mock_credentials[0], cls.mock_credentials[1])
 
         cls.fixture_dir_abs_path = os.path.join(
