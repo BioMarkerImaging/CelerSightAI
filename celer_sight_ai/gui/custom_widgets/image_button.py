@@ -153,28 +153,28 @@ class ButtonAssetClass(QtWidgets.QPushButton):
             pixmap = self.ResizedImageQPixMapOn
             target_rect = self.rect()
             pixmap_rect = pixmap.rect()
+            if pixmap_rect:
+                # Calculate the scaling factor for both width and height
+                width_scale = target_rect.width() / pixmap_rect.width()
+                height_scale = target_rect.height() / pixmap_rect.height()
 
-            # Calculate the scaling factor for both width and height
-            width_scale = target_rect.width() / pixmap_rect.width()
-            height_scale = target_rect.height() / pixmap_rect.height()
+                # Choose the larger scaling factor to ensure the pixmap covers the whole widget
+                scale_factor = max(width_scale, height_scale)
 
-            # Choose the larger scaling factor to ensure the pixmap covers the whole widget
-            scale_factor = max(width_scale, height_scale)
+                # Apply the scaling
+                scaled_size = QtCore.QSize(
+                    int(pixmap.width() * scale_factor),
+                    int(pixmap.height() * scale_factor),
+                )
 
-            # Apply the scaling
-            scaled_size = QtCore.QSize(
-                int(pixmap.width() * scale_factor),
-                int(pixmap.height() * scale_factor),
-            )
+                pixmap = pixmap.scaled(
+                    scaled_size,  # Scale to the new size
+                    QtCore.Qt.AspectRatioMode.KeepAspectRatio,  # Keep the aspect ratio
+                    QtCore.Qt.TransformationMode.SmoothTransformation,  # Use smooth transformation
+                )
 
-            pixmap = pixmap.scaled(
-                scaled_size,  # Scale to the new size
-                QtCore.Qt.AspectRatioMode.KeepAspectRatio,  # Keep the aspect ratio
-                QtCore.Qt.TransformationMode.SmoothTransformation,  # Use smooth transformation
-            )
-
-            # Center the pixmap in the target rectangle
-            target_rect.setSize(scaled_size)
+                # Center the pixmap in the target rectangle
+                target_rect.setSize(scaled_size)
             target_rect.moveCenter(self.rect().center())
 
             # Draw the pixmap
