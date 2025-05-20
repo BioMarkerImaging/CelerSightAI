@@ -1334,7 +1334,12 @@ class InferenceHandler:
                     score=score,
                     mask_uuid=mask_uuid,
                 )
+                # add polygon as the latest added polygon
                 self.MainWindowRef.undoStack.push(add)
+                self.MainWindowRef.viewer.active_adjustment_annotation_uuid = (
+                    add.mask_uuid
+                )
+
                 logger.debug(f"Time taken to add polygon: {time.time() - start}")
             except Exception as e:
                 logger.error(f"Error in polygon processing: {e}")
@@ -1364,6 +1369,8 @@ class InferenceHandler:
                 add.mask_uuid,
                 new_uuid,
             )  # make sure ids match
+            # also adjust the annotation uuid to the new one
+            self.MainWindowRef.viewer.active_adjustment_annotation_uuid = add.mask_uuid
 
     def is_polygon_close_to_edge(
         self,

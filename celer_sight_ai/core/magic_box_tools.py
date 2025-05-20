@@ -162,6 +162,8 @@ class SamPredictorONNX:
 
         self.load_models()
 
+        self.cached_magic_tool_parameters = {}
+
         self.MainWindow = MainWindow
 
         # long term memory
@@ -690,28 +692,35 @@ class SamPredictorONNX:
         self,
         image,
         celer_sight_object,
-        point1,
-        point2,
+        prompt_bbox,
         post_process=True,
         tile_bbox=None,
+        extra_point_prompts=[],
     ):
         """
         Main predictor method that segments objects by bounding box
         TODO: when using points, add a viewport point1 , point2 to do
         more efficient image cropping and segmentation
-        celer_sight_object : dict
-        {
-            image_uuid: str,
-            condition_uuid: str,
-            group_uuid: str, # its group name for now
-            class_uuid: str,
-        }
+
+        Args:
+            image: Input image array
+            celer_sight_object: Dict with metadata {image_uuid, condition_uuid, group_uuid, class_uuid}
+            prompt_bbox: Bounding box in format [x1, y1, x2, y2]
+            post_process: Whether to post-process the result
+            tile_bbox: Optional tile bounding box [x, y, w, h]
+            extra_point_prompts: Optional list of additional point prompts in format [(x, y, label), ...]
+                                 where label is 1 for foreground, 0 for background
         """
         if not self.loaded:
             self.load_models()
         if not self.loaded:
             raise Exception("Models not loaded")
-        logger.debug(f"Predict at {point1} {point2}")
+
+        # Extract points from prompt_bbox
+        prompt_bbox_point_1 = [prompt_bbox[0], prompt_bbox[1]]
+        prompt_bbox_point_2 = [prompt_bbox[2], prompt_bbox[3]]
+
+        logger.debug(f"Predict at {prompt_bbox_point_1} {prompt_bbox_point_2}")
         # record initial tile_box
         self._last_used_current_class_uuid = celer_sight_object[
             "class_uuid"
@@ -726,21 +735,31 @@ class SamPredictorONNX:
         resize_points = max(image.shape[0], image.shape[1]) / max(
             tile_bbox[2], tile_bbox[3]
         )
-        config.dbg_image(
-            image, bbox=[point1[0], point1[1], point2[0], point2[1]], mode="xyxy"
-        )
+
         # adjust point to image
-        point1[0] = point1[0] * resize_points  # x1
-        point1[1] = point1[1] * resize_points  # y1
-        point2[0] = point2[0] * resize_points
-        point2[1] = point2[1] * resize_points
+        prompt_bbox_point_1[0] = prompt_bbox_point_1[0] * resize_points  # x1
+        prompt_bbox_point_1[1] = prompt_bbox_point_1[1] * resize_points  # y1
+        prompt_bbox_point_2[0] = prompt_bbox_point_2[0] * resize_points
+        prompt_bbox_point_2[1] = prompt_bbox_point_2[1] * resize_points
+
+        if extra_point_prompts:
+            tmp_points = []
+            for point in extra_point_prompts:
+                tmp_points.append(
+                    [
+                        point[0] * resize_points,
+                        point[1] * resize_points,
+                        point[2],
+                    ]
+                )
+            extra_point_prompts = tmp_points
 
         self._initial_tile_box = tile_bbox  # used in mask suggestions
         self._subject_bbox = [
-            point1[0],
-            point1[1],
-            point2[0] - point1[0],
-            point2[1] - point1[1],
+            prompt_bbox_point_1[0],
+            prompt_bbox_point_1[1],
+            prompt_bbox_point_2[0] - prompt_bbox_point_1[0],
+            prompt_bbox_point_2[1] - prompt_bbox_point_1[1],
         ]
         self._latest_celer_sight_object = celer_sight_object
         offset_x = 0
@@ -751,15 +770,50 @@ class SamPredictorONNX:
             offset_y = tile_bbox[1]
         original_shape = image.shape[:2]
         logger.info(f"Image shape : {image.shape}")
+
         config.dbg_image(
-            image, bbox=[point1[0], point1[1], point2[0], point2[1]], mode="xyxy"
-        )
-        features, points, input_image, _ = self.get_feature_map(
-            image, points=[point1, point2]
+            image,
+            bbox=[
+                prompt_bbox_point_1[0],
+                prompt_bbox_point_1[1],
+                prompt_bbox_point_2[0],
+                prompt_bbox_point_2[1],
+            ],
+            points=extra_point_prompts,
+            mode="xyxy",
         )
 
+        # Initialize points with the bbox corners
+        input_points = [prompt_bbox_point_1, prompt_bbox_point_2]
+
+        # avoid recomputing the features on the same tile and image_uuid
+        features = None
+        if (
+            self.cached_magic_tool_parameters
+            and self.cached_magic_tool_parameters.get("tile")
+            == [int(i) for i in tile_bbox]
+            and self.cached_magic_tool_parameters.get("image_uuid")
+            == celer_sight_object["image_uuid"]
+        ):
+            features = self.cached_magic_tool_parameters.get("features")
+        else:
+            self.cached_magic_tool_parameters = {
+                "tile": [int(i) for i in tile_bbox],
+                "image_uuid": celer_sight_object["image_uuid"],
+            }
+
+        features, points, input_image, _ = self.get_feature_map(
+            image, points=input_points, provided_features=features
+        )
+        self.cached_magic_tool_parameters = {
+            "features": features,
+            "tile": [int(i) for i in tile_bbox],
+            "image_uuid": celer_sight_object["image_uuid"],
+        }
         self.long_term_memory_features = features
-        points = [
+
+        # Start with the bbox points
+        all_points = [
             [
                 (points[0][0]),
                 (points[0][1]),
@@ -768,13 +822,27 @@ class SamPredictorONNX:
                 (points[1][0]),
                 (points[1][1]),
             ],
-        ]  # points
-        labels = [2, 3]
-        points = np.expand_dims(np.asarray(points), 0)
-        labels = np.expand_dims(np.asarray(labels), 0)
-        # The above code is declaring a variable named "pred_mask" in Python. However, since there is
-        # no assignment or initialization of a value to the variable, it is not clear what the code is
-        # intended to do.
+        ]
+
+        # Use labels 2 and 3 for bbox points by default (SAM convention for box corners)
+        all_labels = [2, 3]
+
+        # Process additional point prompts if provided
+        if extra_point_prompts and len(extra_point_prompts) > 0:
+            for point_prompt in extra_point_prompts:
+                # Scale the point coordinates using the same resize_points factor
+                x = point_prompt[0]  # * resize_points
+                y = point_prompt[1]  # * resize_points
+                label = point_prompt[2]  # 1 for foreground, 0 for background
+
+                # Add the point and its label
+                all_points.append([x, y])
+                all_labels.append(label)
+
+        # Prepare points and labels for the model
+        points = np.expand_dims(np.asarray(all_points), 0)
+        labels = np.expand_dims(np.asarray(all_labels), 0)
+
         try:
             pred_masks, scores, coords = self.predict(
                 features=features,
@@ -813,6 +881,7 @@ class SamPredictorONNX:
                 )
             adjusted_points.append(np.array(batch_adjusted_points))
 
+        # Use only the bbox points for the feature crop (first two points)
         image_feature_crop = image[
             int(adjusted_points[0][0][1]) : int(adjusted_points[0][1][1]),
             int(adjusted_points[0][0][0]) : int(adjusted_points[0][1][0]),
@@ -844,8 +913,6 @@ class SamPredictorONNX:
                 offset_x,
                 offset_y,
             )
-
-        # calculate if there should be any extra offset (because the  image was cropped and there is extra space on the right and the bottom)
 
         return pred_masks, offset_x, offset_y
 
@@ -1369,6 +1436,7 @@ class SamPredictorONNX:
         image: np.ndarray,
         image_format: str = "RGB",
         points=None,
+        provided_features=None,
         upscale=1,
         map_points_to_input_image=None,  # points mapped to feature map
     ) -> None:
@@ -1392,21 +1460,6 @@ class SamPredictorONNX:
             image.shape[1], image.shape[0]
         )
 
-        # resize points
-        # if points is not None:
-        #     points = np.array(points)
-        #     points[..., 0] = np.array(points)[..., 0] * self.resize_xy
-        #     points[..., 1] = np.array(points)[..., 1] * self.resize_xy
-        # if map_points_to_input_image is not None:
-        #     map_points_to_input_image = np.array(map_points_to_input_image)
-        #     map_points_to_input_image[..., 0] = (
-        #         np.array(map_points_to_input_image)[..., 0] * resize_y
-        #     )
-        #     map_points_to_input_image[..., 1] = (
-        #         np.array(map_points_to_input_image)[..., 1] * resize_x
-        #     )
-        # add the output of the model in a grid fashion to total output
-        # pad to self.img_size
         input_image, points, map_points_to_input_image = self.resizeAndPad(
             image,
             (self.img_size, self.img_size),
@@ -1418,33 +1471,35 @@ class SamPredictorONNX:
 
         width_chunk = input_image.shape[1] // upscale
         height_chunk = input_image.shape[0] // upscale
-        for i in range(upscale):
-            for j in range(upscale):
-                input_image_encoder = input_image[
-                    i * height_chunk : (i + 1) * height_chunk,
-                    j * width_chunk : (j + 1) * width_chunk,
-                ]
-                input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
-                    None, :, :, :
-                ]
-                input_image_encoder = self.preprocess(input_image_encoder).astype(
-                    np.float32
-                )
+        if provided_features is None:
+            for i in range(upscale):
+                for j in range(upscale):
+                    input_image_encoder = input_image[
+                        i * height_chunk : (i + 1) * height_chunk,
+                        j * width_chunk : (j + 1) * width_chunk,
+                    ]
+                    input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
+                        None, :, :, :
+                    ]
+                    input_image_encoder = self.preprocess(input_image_encoder).astype(
+                        np.float32
+                    )
 
-                input_name = self.encoder.get_inputs()[0].name
+                    input_name = self.encoder.get_inputs()[0].name
 
-                outputs = self.encoder.run(
-                    None,
-                    {
-                        input_name: np.expand_dims(input_image_encoder, 0).reshape(
-                            1, 3, self.img_size, self.img_size
-                        )
-                    },
-                )
-                total_output[:, :, i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64] = (
-                    outputs[0]
-                )
-
+                    outputs = self.encoder.run(
+                        None,
+                        {
+                            input_name: np.expand_dims(input_image_encoder, 0).reshape(
+                                1, 3, self.img_size, self.img_size
+                            )
+                        },
+                    )
+                    total_output[:, :, i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64] = (
+                        outputs[0]
+                    )
+        else:
+            total_output = provided_features
         # features, adjusted points, input image, map_points_to_input_image
         return total_output, points, input_image, map_points_to_input_image
 
@@ -1607,18 +1662,12 @@ class sdknn_tool:
     def __init__(
         self, MainWindow, load_specialized_model=True, load_general_model=True
     ):
-        # self.gbModel = 'QtAssets\\Utilities\\mats\\grub_cut_Ai.onnx'
-        # onnxfile = open(self.gbModel , "rb")
         self.MainWindow = MainWindow
         self.specialized_model_loaded = False
-        # byte
-        # self.gbModelBuffer= onnxfile.read()
-        # self.input_image = input_image
         self.orgHeight = None  # of the cut
         self.orgWidth = None  # of the cut
         self.running = False  # if we are currently grabcutting
         self.brush_state = "plus"  # or "minus" or move?
-        # self.input_mask =
         from celer_sight_ai import config
 
         self.totalImportingNum = 1
@@ -1885,8 +1934,12 @@ class sdknn_tool:
                 maskOut, offset_x, offset_y = self.magic_box_2.magic_box_predict(
                     image,
                     celer_sight_object,
-                    [bounding_box[0], bounding_box[1]],  # bbox point 1
-                    [bounding_box[2], bounding_box[3]],  # bbox point 2
+                    [
+                        bounding_box[0],
+                        bounding_box[1],
+                        bounding_box[2],
+                        bounding_box[3],
+                    ],
                     post_process=True,
                     tile_bbox=tile_bbox,
                 )

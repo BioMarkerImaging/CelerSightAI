@@ -5,6 +5,7 @@ Scene viewer class
 import os
 import sys
 import typing
+from typing import Literal
 
 from PyQt6.QtWidgets import QGraphicsSceneMouseEvent
 
@@ -1142,7 +1143,6 @@ class ArrowChangeImageButton(QtWidgets.QPushButton):
         self.posVisible = False
         self.MODE = MODE
         # Add arrow left and right
-        # self = QtWidgets.QPushButton(self.ViewerRef)
         if self.MODE == "left":
             self.move(
                 QtCore.QPoint(
@@ -1177,10 +1177,6 @@ class ArrowChangeImageButton(QtWidgets.QPushButton):
         """
         )
         self.valueChangedSignal.connect(self.onValueChanged)
-        # self.sf = QtWidgets.QGraphicsDropShadowEffect()
-        # self.sf.setColor(QtGui.QColor(0,0,0,220))
-        # self.sf.setBlurRadius(30)
-        # self.setGraphicsEffect(self.sf)
         self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
 
         if MODE == "left":
@@ -1359,7 +1355,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     autofit = False
 
     def __init__(self, MainWindow=None):
-        super(PhotoViewer, self).__init__()
+        super().__init__()
         # super(Ui_MainWindow, self).__init__()
         from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
@@ -1406,6 +1402,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.BG_add = False  # removing brush aatool state
         # the state that activates after we have drawn the aa_tool(Grab cut / auto cut) box and  we want to review the mask
         self.aa_review_state = False
+
+        # Magic click that adjusts magic box mask
+        self.active_adjustment_annotation_uuid = None
 
         # ai inference bbox graphics item reference
         self.inference_tile_box_graphic_items = {}
@@ -2621,73 +2620,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self.add_new_images_by_drag_and_drop(v)
             return
 
-        ## TODO: Not supported yet
-        # # if file is video, load as video
-        # if len(urls) > 0 and isinstance(urls[0], str) and is_video_file(urls[0]):
-        #     self.add_new_images_by_drag_and_drop(
-        #         urls, check_for_videos=True
-        #     )  # forces to check on SetUpButtons methods if its a video
-
-        # if file is a video, open as one condition with frames
-        if len(urls) > 0 and isinstance(urls[0], str) and urls[0].endswith(".wmv"):
-            # TODO: patch this method correctly
-            # self.MainWindow.add_new_treatment_item()
-            # open with opencv
-            import cv2
-
-            import_url_dict = {}
-            # convert all videos to treatments with images
-            all_video_urls = [i for i in urls if i.endswith(".wmv")]
-            for v_urls in all_video_urls:
-                all_frame_paths = []
-                cap = cv2.VideoCapture(v_urls)
-                try:
-                    if cap.isOpened() is False:
-                        config.global_signals.errorSignal.emit(
-                            "Error opening video stream or file"
-                        )
-
-                    # get the url basename
-                    url_basename = os.path.basename(v_urls)
-                    # Read until video is completed
-                    frame_counter = 1
-                    skip_frames = 10  # reduce framerate by 4
-                    skip_i = 0
-                    while cap.isOpened():
-                        # if frame_counter == 10:
-                        #     break
-                        # Capture frame-by-frame
-                        ret, frame = cap.read()
-                        if skip_i < skip_frames:
-                            skip_i += 1
-                            continue
-                        else:
-                            skip_i = 0
-                        if ret is False:
-                            break
-
-                        # store in the cache dir as filename_0000.png at config.cache_dir
-                        frame_path = os.path.join(
-                            config.cache_dir,
-                            url_basename + "_" + str(frame_counter).zfill(8) + ".png",
-                        )
-                        all_frame_paths.append(frame_path)
-
-                        # if ret is True and frame_counter < 30:
-                        cv2.imwrite(frame_path, frame)
-                        frame_counter += 1
-
-                except Exception:
-                    cap.release()
-                    config.global_signals.errorSignal.emit(
-                        "Error opening video stream or file"
-                    )
-                    return
-                cap.release()
-                import_url_dict[url_basename] = all_frame_paths
-
-            return self.load_files_by_drag_and_drop(import_url_dict)
-
         #############################################
         ############# Urls of images ################
         #############################################
@@ -3449,6 +3381,143 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             return True
         return False
 
+    def process_bounding_box(
+        self,
+        image_uuid,
+        bbox,
+        class_id=None,
+        current_group="default",
+        ideal_annotation_to_image_ratio=None,
+    ):
+        """
+        Process a bounding box for a given image, handling bounds checking and adjustment.
+
+        Args:
+            image_uuid: UUID of the image to process
+            bbox: Bounding box coordinates [x1, y1, x2, y2] or None
+            class_id: Optional class ID for the bounding box
+            current_group: Group UUID (defaults to "default")
+
+        Returns:
+            Dictionary containing processed results or None if processing failed
+        """
+        from celer_sight_ai import config
+        from celer_sight_ai.io.image_reader import (
+            get_optimal_crop_bbox,
+        )
+
+        # Get current treatment UUID
+        treatment_uuid = self.MainWindow.DH.BLobj.get_current_condition_uuid()
+
+        # Check if bbox is None and use stored coordinates if needed
+        if isinstance(bbox, type(None)):
+            x1 = min(self.aa_tool_bb_first_x, self.last_bbox_x)
+            x2 = max(self.aa_tool_bb_first_x, self.last_bbox_x)
+            y1 = min(self.aa_tool_bb_first_y, self.last_bbox_y)
+            y2 = max(self.aa_tool_bb_first_y, self.last_bbox_y)
+        else:
+            x1, y1, x2, y2 = bbox
+        bbox_object = [x1, y1, x2, y2]
+        # Get image object
+        image_object = (
+            self.MainWindow.DH.BLobj.groups[current_group]
+            .conds[self.MainWindow.DH.BLobj.get_current_condition()]
+            .images[image_uuid]
+        )
+
+        # Ensure bbox is within image bounds
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(image_object.SizeX, x2)
+        y2 = min(image_object.SizeY, y2)
+
+        if not image_object.SizeX or not image_object.SizeY:
+            logger.warning("Image size not found, skipping")
+            return None
+
+        # Get optimal crop bbox
+        if class_id is None:
+            class_id = self.MainWindow.DH.BLobj.get_current_class_uuid()
+
+        bbox_tile = get_optimal_crop_bbox(
+            image_object.SizeX,
+            image_object.SizeY,
+            [round(x1), round(y1), round(x2), round(y2)],
+            class_id,
+            ideal_annotation_to_image_ratio=ideal_annotation_to_image_ratio,
+        )
+        bbox_tile = list(bbox_tile)
+
+        # Adjust if out of bounds
+        if image_object.SizeX - bbox_tile[3] < 0:
+            difference = bbox_tile[3] - image_object.SizeY
+            bbox_tile[3] = int(bbox_tile[3] - difference)
+            bbox_tile[1] = int(max(0, bbox_tile[1] - difference))
+
+        if image_object.SizeY - bbox_tile[2] < 0:
+            difference = bbox_tile[2] - image_object.SizeX
+            bbox_tile[2] = int(bbox_tile[2] - difference)
+            bbox_tile[0] = int(max(0, bbox_tile[0] - difference))
+
+        # Make bbox square using largest dimension
+        bbox_tile[2] = bbox_tile[3] = max(bbox_tile[2], bbox_tile[3])
+
+        # Get image for the tile
+        seg_image_prior = image_object.getImage(
+            to_uint8=True,
+            to_rgb=True,
+            fast_load_ram=True,
+            for_interactive_zoom=True,
+            for_thumbnail=False,
+            bbox=bbox_tile,
+            avoid_loading_ultra_high_res_arrays_normaly=True,
+        )
+
+        if isinstance(seg_image_prior, type(None)):
+            return None
+
+        # Apply adjustments
+        seg_image_prior = self.MainWindow.handle_adjustment_to_image(seg_image_prior)
+
+        bbox_width = max(x2 - x1, y2 - y1)
+
+        # Skip if bbox is too small
+        if (y2 - y1) * (x2 - x1) < 30:
+            return None
+
+        # Calculate padding
+        padding_top = bbox_tile[1] if bbox_tile[1] < 0 else 0
+        padding_left = bbox_tile[0] if bbox_tile[0] < 0 else 0
+
+        # Calculate bbox in the segmentation image coordinates
+        bbox_in_seg = [
+            bbox_object[0] - bbox_tile[0],
+            bbox_object[1] - bbox_tile[1],
+            (bbox_object[2] - bbox_tile[0]),
+            (bbox_object[3] - bbox_tile[1]),
+        ]
+
+        resize_to_processed_image = [
+            bbox_in_seg[2] / seg_image_prior.shape[1],  # resize on X
+            bbox_in_seg[3] / seg_image_prior.shape[0],  # resize on Y
+        ]
+
+        return {
+            "image_uuid": image_uuid,
+            "treatment_uuid": treatment_uuid,
+            "group_uuid": current_group,
+            "class_id": class_id,
+            "bbox": [x1, y1, x2, y2],
+            "bbox_tile": bbox_tile,
+            "bbox_in_seg": bbox_in_seg,
+            "seg_image": seg_image_prior,
+            "padding_top": padding_top,
+            "padding_left": padding_left,
+            "image_object": image_object,
+            "width": bbox_width,
+            "resize_factor_processed_image": resize_to_processed_image,
+        }
+
     @config.threaded
     def draw_bounding_box_stop(
         self,
@@ -3465,6 +3534,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         import numpy as np
 
         from celer_sight_ai import config
+        from celer_sight_ai.core.magic_box_tools import mask_to_polygon
+        from celer_sight_ai.io.image_reader import (
+            generate_complete_spiral_tiles,
+            get_optimal_crop_bbox,
+        )
 
         logger.debug("draw_bounding_box_stop")
 
@@ -3473,97 +3547,22 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             import time
 
             time.sleep(0.001)
-        current_condition_name = current_condition
-        treatment_uuid = self.MainWindow.DH.BLobj.get_current_condition_uuid()
-
-        image_uuid = current_image_uuid
-
-        # check bounds
-        # place bnounds in correct position
-        if isinstance(bbox, type(None)):
-            x1 = min(self.aa_tool_bb_first_x, self.last_bbox_x)
-            x2 = max(self.aa_tool_bb_first_x, self.last_bbox_x)
-            y1 = min(self.aa_tool_bb_first_y, self.last_bbox_y)
-            y2 = max(self.aa_tool_bb_first_y, self.last_bbox_y)
+        if self.is_magic_mask_generator_mode():
+            ideal_annotation_to_image_ratio = None
         else:
-            x1, y1, x2, y2 = bbox
+            ideal_annotation_to_image_ratio = 0.40
 
-        # Make the click tool same size/raidus:
-        from celer_sight_ai.io.image_reader import (
-            generate_complete_spiral_tiles,
-            get_optimal_crop_bbox,
-        )
-
-        # get image object
-        image_object = (
-            self.MainWindow.DH.BLobj.groups["default"]
-            .conds[self.MainWindow.DH.BLobj.get_current_condition()]
-            .images[current_image_uuid]
-        )
-        # make sure the the bbox is within bounds
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        x2 = min(image_object.SizeX, x2)
-        y2 = min(image_object.SizeY, y2)
-        if not image_object.SizeX or not image_object.SizeY:
-            logger.warning("Image size not found, skipping")
-            return
-        bbox_tile = get_optimal_crop_bbox(
-            image_object.SizeX,
-            image_object.SizeY,
-            [round(x1), round(y1), round(x2), round(y2)],
+        result = self.process_bounding_box(
+            current_image_uuid,
+            bbox,
             class_id,
-        )  # bbox is [x1, y1, x2, y2]
-        bbox_tile = list(bbox_tile)
-
-        # # if the bounding box is out of bounds, adjust it to be within bounds
-        if image_object.SizeX - bbox_tile[3] < 0:
-            difference = bbox_tile[3] - image_object.SizeY
-            bbox_tile[3] = int(bbox_tile[3] - difference)
-            # adjust top
-            bbox_tile[1] = int(max(0, bbox_tile[1] - difference))
-        if image_object.SizeY - bbox_tile[2] < 0:
-            difference = bbox_tile[2] - image_object.SizeX
-            bbox_tile[2] = int(bbox_tile[2] - difference)
-            # adjust left
-            bbox_tile[0] = int(max(0, bbox_tile[0] - difference))
-        # # Get width/height
-        # width = bbox_tile[2] - bbox_tile[0]
-        # height = bbox_tile[3] - bbox_tile[1]
-
-        # # If bbox extends beyond image bounds
-        # if bbox_tile[0] + width > image_object.SizeX:
-        #     width = image_object.SizeX - bbox_tile[0]
-        # if bbox_tile[1] + height > image_object.SizeY:
-        #     height = image_object.SizeY - bbox_tile[1]
-
-        # size = max(width, height)
-        # width = height = size
-        # make sure that the bbox is square (use the largest dimension)
-        bbox_tile[2] = bbox_tile[3] = max(bbox_tile[2], bbox_tile[3])
-
-        # get image object for this bbox_tile
-        seg_image_prior = image_object.getImage(
-            to_uint8=True,
-            to_rgb=True,
-            fast_load_ram=True,  # load image quickly from config.ram_image, used in brightness adjustment
-            for_interactive_zoom=True,  # When loading a viewport array, use tricks to load it faster
-            for_thumbnail=False,
-            bbox=bbox_tile,  # [bbox_tile[0], bbox_tile[1], bbox_tile[2] - bbox_tile[0], bbox_tile[3] - bbox_tile[1]], # bbox : [x,y,w,h]
-            avoid_loading_ultra_high_res_arrays_normaly=True,
+            current_group,
+            ideal_annotation_to_image_ratio,
         )
-        # check for failed bbox operation
-        if isinstance(seg_image_prior, type(None)):
-            return
-        # add brightness and contrast to match the scene
-        seg_image_prior = self.MainWindow.handle_adjustment_to_image(seg_image_prior)
-        # if the bounding box is less than config.MAGIC_BOX_2_IDEAL_SIZE then we need to infer using tiles
-        self.mgcClickWidth = max(x2 - x1, y2 - y1)
 
-        if (y2 - y1) * (x2 - x1) < 30:
+        if result is None:
             self.threadedBoundingBoxStopWorkerResultFunction()
-            return None
-        logger.debug("before get mask")
+            return
 
         mask_uuid = str(config.get_unique_id())
         while (
@@ -3575,41 +3574,23 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         ):
             mask_uuid = str(config.get_unique_id())
         celer_sight_object = {
-            "image_uuid": image_uuid,
-            "condition_uuid": treatment_uuid,
-            "group_uuid": current_group,  # should change to uuid when its supported
+            "image_uuid": result["image_uuid"],
+            "condition_uuid": result["treatment_uuid"],
+            "group_uuid": result["group_uuid"],
             "class_uuid": self.MainWindow.DH.BLobj.get_current_class_uuid(),
             "mask_uuid": mask_uuid,
-            "SizeX": image_object.SizeX,
-            "SizeY": image_object.SizeY,
+            "SizeX": result["image_object"].SizeX,
+            "SizeY": result["image_object"].SizeY,
         }
-        bbox_object = [x1, y1, x2, y2]
 
-        if bbox_tile[1] < 0:
-            padding_top = bbox_tile[1]
-        else:
-            padding_top = 0
-        if bbox_tile[0] < 0:
-            padding_left = bbox_tile[0]
-        else:
-            padding_left = 0
-        print(bbox_object)
-        bbox_object_in_seg_image_prior = [
-            bbox_object[0] - bbox_tile[0],
-            bbox_object[1] - bbox_tile[1],
-            (bbox_object[2] - bbox_tile[0]),
-            (bbox_object[3] - bbox_tile[1]),
-        ]
         try:
-            (
-                finalmask,
-                offset_x,
-                offset_y,
-            ) = self.MainWindow.sdknn_tool.get_bounding_box_mask(
-                seg_image_prior,
-                celer_sight_object,
-                bounding_box=bbox_object_in_seg_image_prior,  # [bbox_object[0] , bbox_object[1] , bbox_object[2]-bbox_object[0]  , bbox_object[3] - bbox_object[1] ],#bbox_object , #[round(x1), round(y1), round(x2) + x1, round(y2) + y1], # bbox_object,
-                tile_bbox=bbox_tile,  # x , y , w , h
+            finalmask, offset_x, offset_y = (
+                self.MainWindow.sdknn_tool.get_bounding_box_mask(
+                    result["seg_image"],
+                    celer_sight_object,
+                    bounding_box=result["bbox_in_seg"],
+                    tile_bbox=result["bbox_tile"],
+                )
             )
         except Exception as e:
             logger.error(e)
@@ -3626,24 +3607,19 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             if finalmask.shape[2] >= 1:
                 finalmask = finalmask[:, :, 0]
 
-        bbox = [x1, y1, x2 - x1, y2 - y1]  # [x,y,w,h]
+        # Extract values from result
+        x1, y1, x2, y2 = result["bbox"]
+        bbox_formatted = [x1, y1, x2 - x1, y2 - y1]  # [x,y,w,h]
 
         self.aa_review_state = False
-        from celer_sight_ai.core.magic_box_tools import mask_to_polygon
 
-        resize_factor_x = seg_image_prior.shape[1] / bbox_tile[2]
-        resize_factor_y = seg_image_prior.shape[0] / bbox_tile[3]
-        print()
-
-        # effective_resize_tile [290, 282.5, 1328, 1048]
-        #
-        # image_object.SizeX 1328
-        # image_object.SizeY 1048
+        resize_factor_x = result["seg_image"].shape[1] / result["bbox_tile"][2]
+        resize_factor_y = result["seg_image"].shape[0] / result["bbox_tile"][3]
 
         try:
             all_arrays = mask_to_polygon(
                 finalmask,
-                image_shape=seg_image_prior.shape,
+                image_shape=result["seg_image"].shape,
                 offset_x=offset_x,
                 offset_y=offset_y,
                 resize_factor_x=resize_factor_x,
@@ -3663,11 +3639,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
         config.global_signals.create_annotation_object_signal.emit(
             {
-                "treatment_uuid": treatment_uuid,  # TODO: Change to uuid in the future
-                "group_uuid": current_group,
+                "treatment_uuid": result["treatment_uuid"],
+                "group_uuid": result["group_uuid"],
                 "array": all_arrays,
-                "image_uuid": current_image_uuid,
-                "class_id": class_id,
+                "image_uuid": result["image_uuid"],
+                "class_id": result["class_id"],
                 "mask_type": "polygon",
             }
         )
@@ -3680,6 +3656,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         )  # in diameter
         config.CLASS_REGISTRY_WIDTH[class_id] = annotation_width
 
+        image_object = self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+            result["image_uuid"]
+        )
         # recalculate the tile box for the suggestor if used
         bbox_tile = get_optimal_crop_bbox(
             image_object.SizeX,
@@ -3701,7 +3680,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 image_object,
                 celer_sight_object,
                 bbox_tile,  # [x,y,w,h]
-                bbox,  # [x,y,w,h]
+                bbox_formatted,  # [x,y,w,h]
             )
         print("sending signal for auto bounding box")
         self.threadedBoundingBoxStopWorkerResultFunction()
@@ -4263,8 +4242,235 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self._brush = brush
         self.update()
 
-    # def boundingRect(self):
-    #     return self.scene_rect
+    def add_point_as_magic_click(self, point: QtCore.QPoint):
+        # check if there is an annotation polygon below the point
+        print(f"adding point as magic click {point}")
+        from shapely.geometry import Point
+        from shapely.geometry.polygon import Polygon
+
+        if not self.active_adjustment_annotation_uuid:
+            return
+        target_annotation = (
+            self.MainWindow.DH.BLobj.get_current_image_object().get_by_uuid(
+                self.active_adjustment_annotation_uuid
+            )
+        )
+        # Determine if this is a positive or negative point
+        if not target_annotation:
+            return
+        polygon_data = target_annotation.get_array()
+        if isinstance(polygon_data, list) and len(polygon_data) > 0:
+            # Get the outer polygon and any holes
+            outer_polygon = polygon_data[0]
+            holes = polygon_data[1:] if len(polygon_data) > 1 else []
+
+            try:
+                # Create a Shapely polygon with holes
+                shapely_polygon = Polygon(outer_polygon, holes)
+
+                # Ensure the geometry is valid
+                if not shapely_polygon.is_valid:
+                    # Use make_valid to repair the geometry
+                    from shapely import make_valid
+
+                    shapely_polygon = make_valid(shapely_polygon)
+
+                shapely_point = Point(point.x(), point.y())
+                is_within_polygon = shapely_polygon.contains(shapely_point)
+            except Exception as e:
+                print(f"Error creating polygon: {e}")
+                is_within_polygon = False
+        else:
+            is_within_polygon = False
+        if is_within_polygon:
+            # Point is inside a polygon - add as negative point
+            print(f"Adding negative point at {point}")
+            target_annotation.magic_click_negative_points.append(point)
+
+            # Visual feedback for negative point (red)
+            feedback_item = QtWidgets.QGraphicsEllipseItem(
+                point.x() - 5, point.y() - 5, 10, 10
+            )
+            feedback_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 0, 0, 150)))
+            feedback_item.setPen(QtGui.QPen(QtGui.QColor(255, 0, 0), 2))
+            self._scene.addItem(feedback_item)
+        else:
+            # Point is outside all polygons - add as positive point
+            print(f"Adding positive point at {point}")
+            target_annotation.magic_click_positive_points.append(point)
+
+            # Visual feedback for positive point (green)
+            feedback_item = QtWidgets.QGraphicsEllipseItem(
+                point.x() - 5, point.y() - 5, 10, 10
+            )
+            feedback_item.setBrush(QtGui.QBrush(QtGui.QColor(0, 255, 0, 150)))
+            feedback_item.setPen(QtGui.QPen(QtGui.QColor(0, 255, 0), 2))
+            self._scene.addItem(feedback_item)
+
+        # Update the mask using SAM with the adjustment points
+        self.update_mask_with_adjustment_points(mask_object=target_annotation)
+
+    def update_mask_with_adjustment_points(self, mask_object):
+        """Apply the adjustment points to update the current mask"""
+
+        if not hasattr(self, "active_adjustment_annotation_uuid"):
+            return
+
+        image_object = self.MainWindow.DH.BLobj.get_current_image_object()
+        bbox = mask_object.get_bounding_box()
+        x1, y1, w, h = bbox
+        x2 = x1 + w
+        y2 = y1 + h
+
+        # Convert points to format expected by the model
+        positive_points = (
+            np.array([(p.x(), p.y()) for p in mask_object.magic_click_positive_points])
+            if len(mask_object.magic_click_positive_points) > 0
+            else np.array([])
+        )
+
+        negative_points = (
+            np.array([(p.x(), p.y()) for p in mask_object.magic_click_negative_points])
+            if len(mask_object.magic_click_negative_points) > 0
+            else np.array([])
+        )
+
+        if len(positive_points) == 0 and len(negative_points) == 0:
+            return
+
+        # For positive points, get MIN bounding box of all points
+        pos_min_x = (
+            positive_points[:, 0].min() if len(positive_points) > 0 else float("inf")
+        )
+        pos_min_y = (
+            positive_points[:, 1].min() if len(positive_points) > 0 else float("inf")
+        )
+        pos_max_x = (
+            positive_points[:, 0].max() if len(positive_points) > 0 else float("-inf")
+        )
+        pos_max_y = (
+            positive_points[:, 1].max() if len(positive_points) > 0 else float("-inf")
+        )
+
+        # For negative points, get MAX bounding box of all points
+        neg_min_x = (
+            negative_points[:, 0].min() if len(negative_points) > 0 else float("inf")
+        )
+        neg_min_y = (
+            negative_points[:, 1].min() if len(negative_points) > 0 else float("inf")
+        )
+        neg_max_x = (
+            negative_points[:, 0].max() if len(negative_points) > 0 else float("-inf")
+        )
+        neg_max_y = (
+            negative_points[:, 1].max() if len(negative_points) > 0 else float("-inf")
+        )
+
+        # Get overall min/max
+        min_x = min(pos_min_x, neg_min_x)
+        min_y = min(pos_min_y, neg_min_y)
+        max_x = max(pos_max_x, neg_max_x)
+        max_y = max(pos_max_y, neg_max_y)
+
+        # adjust bounding box to contain the edges of the points (so points + bbox)
+        x1 = min(x1, min_x)
+        y1 = min(y1, min_y)
+        x2 = max(x2, max_x)
+        y2 = max(y2, max_y)
+
+        result = self.process_bounding_box(
+            image_object.unique_id,
+            [round(x1), round(y1), round(x2), round(y2)],
+            mask_object.class_id,
+            ideal_annotation_to_image_ratio=0.40,
+        )
+        if result is None:
+            self.threadedBoundingBoxStopWorkerResultFunction()
+            return
+
+        mask_object = image_object.get_by_uuid(self.active_adjustment_annotation_uuid)
+
+        if not mask_object:
+            return
+
+        celer_sight_object = {
+            "image_uuid": result["image_uuid"],
+            "condition_uuid": result["treatment_uuid"],
+            "group_uuid": result["group_uuid"],
+            "class_uuid": self.MainWindow.DH.BLobj.get_current_class_uuid(),
+            "mask_uuid": mask_object,
+            "SizeX": result["image_object"].SizeX,
+            "SizeY": result["image_object"].SizeY,
+        }
+
+        print()
+        # store original polygon array for undo
+        # original_polygon_array = mask_object.get_array().copy()
+
+        if not (len(positive_points) > 0 or len(negative_points) > 0):
+            return
+
+        # Get image data
+        image_data = result["seg_image"]
+
+        # Apply brightness/contrast adjustments as in draw_bounding_box_stop
+        image_data = self.MainWindow.handle_adjustment_to_image(image_data)
+
+        extra_point_prompts = []
+        for p in mask_object.magic_click_positive_points:
+            extra_point_prompts.append(
+                (
+                    (p.x() - result["bbox_tile"][0]),
+                    (p.y() - result["bbox_tile"][1]),
+                    1,
+                )
+            )
+        for p in mask_object.magic_click_negative_points:
+            extra_point_prompts.append(
+                (
+                    (p.x() - result["bbox_tile"][0]),
+                    (p.y() - result["bbox_tile"][1]),
+                    0,
+                )
+            )
+
+        updated_mask, offset_x, offset_y = (
+            self.MainWindow.sdknn_tool.magic_box_2.magic_box_predict(
+                image=image_data,
+                celer_sight_object=celer_sight_object,
+                prompt_bbox=result["bbox_in_seg"],
+                extra_point_prompts=extra_point_prompts,
+                post_process=True,
+                tile_bbox=result["bbox_tile"],
+            )
+        )
+        # Convert mask to polygon and create new annotation
+        from celer_sight_ai.core.magic_box_tools import mask_to_polygon
+
+        resize_factor_x = result["seg_image"].shape[1] / result["bbox_tile"][2]
+        resize_factor_y = result["seg_image"].shape[0] / result["bbox_tile"][3]
+        new_polygon_array = mask_to_polygon(
+            updated_mask,
+            image_shape=result["seg_image"].shape,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            resize_factor_x=resize_factor_x,
+            resize_factor_y=resize_factor_y,
+        )
+        # Create new annotation with same class_id
+        from celer_sight_ai.historyStack import AdjustPolygonCommand
+
+        # Create the command and add to history stack
+        adjust_command = AdjustPolygonCommand(
+            polygon_item=mask_object,
+            old_polygon_array=mask_object.get_array(),
+            new_polygon_array=new_polygon_array,
+            mask_uuid=self.active_adjustment_annotation_uuid,
+            image_uuid=image_object.unique_id,
+            MainWindow=self.MainWindow,
+        )
+        # Add to undo stack
+        self.MainWindow.undoStack.push(adjust_command)
 
     def paint(self, painter=None, style=None, widget=None):
         painter.fillRect(self.scene_rect, self._brush)
@@ -4353,41 +4559,30 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self.ML_brush_tool_draw_scene_items = []
             config.global_signals.update_ML_BitMapScene.emit()
         self.buttonPress = False
-        # self.ui_tool_selection.MyDialog.mouseReleaseEvent(event) # hides the pop up menu for tools
-        # if (
-        #     self.hasPhoto()
-        #     and self.during_drawing_bbox == True
-        #     and self.ui_tool_selection.selected_button == "auto"
-        # ):
-        #     if (
-        #         event.type() == QtCore.QEvent.Type.MouseButtonPress
-        #         or event.type() == QtCore.QEvent.Type.GraphicsSceneMousePress
-        #     ):
-        #         # print("draw_# The above code is not a valid Python code. It seems to be a typo or
-        # incomplete code snippet.
-        # The above code is not a valid Python code. It seems to be a typo or
-        # incomplete code snippet.
-        # bounding_box_stop")
-        #         if len(self._scene.selectedItems()) == 0:
-        #             self.draw_bounding_box_stop_THREADED(
-        #                 self.mapToScene(event.position().toPoint()).toPoint()
-        #             )
-        #             return super(PhotoViewer, self).mousePressEvent(event)
 
         if self.pop_up_tool_choosing_state == True:
             # self.ui_tool_selection.MyDialog.hide()
             self.pop_up_tool_choosing_state = False
             self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
             self.update_tool()
-            return super(PhotoViewer, self).mouseReleaseEvent(event)
+            return super().mouseReleaseEvent(event)
 
-        return super(PhotoViewer, self).mouseReleaseEvent(event)
+        return super().mouseReleaseEvent(event)
 
     def mousePressEvent(self, event):
         if self._photo.isUnderMouse():
             if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 self.leftMouseBtn_autoRepeat = True
+                if event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:
+                    if self.aa_tool_draw is True:  # if we are drawing a magic bbox
+                        # special case that we adjust the precious bbox
+                        self.add_point_as_magic_click(
+                            self.mapToScene(event.position().toPoint()).toPoint()
+                        )
+                        return super().mousePressEvent(event)
+
                 if self.mgcClick_STATE:
+
                     cPos = self.mapToScene(event.position().toPoint())
                     # patch it
                     self.aa_tool_bb_first_x = int(cPos.x() - self.mgcClickWidth / 2)
@@ -4402,19 +4597,19 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self.mapToScene(event.position().toPoint()).toPoint()
             )
             self.buttonPress = True
-        return super(PhotoViewer, self).mousePressEvent(event)
+        return super().mousePressEvent(event)
 
     def keyReleaseEvent(self, ev):
         key = ev.key()
         if key == QtCore.Qt.Key.Key_Shift or key == QtCore.Qt.Key.Key_Alt:
             self.POLYGON_MODIFY_MODE = None
-        return super(PhotoViewer, self).keyReleaseEvent(ev)
+        return super().keyReleaseEvent(ev)
 
     def keyPressEvent(self, event):
         key = event.key()
 
         if key == QtCore.Qt.Key.Key_Escape:
-            if self.i_am_drawing_state == True:
+            if self.i_am_drawing_state is True:
                 self.completeDrawingPolygon()
             if self.SkGb_during_drawing == True:
                 self.placeSkGbFinish(pos=None, COMPLETE=False)
@@ -4670,9 +4865,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                             )
                             self._scene.setSelectionArea(circlPainter)
                             self.polyPreviousSelectedItems = []
-                            return super(PhotoViewer, self).eventFilter(source, event)
+                            return super().eventFilter(source, event)
             if event.buttons() == QtCore.Qt.MouseButton.LeftButton:
-                if self.ML_brush_tool_object_state == True:
+                if self.ML_brush_tool_object_state is True:
                     if self.brushMask_STATE:
                         logger.info(
                             "ML_brush_tool_object_state true and brushMask_STATE"
@@ -4707,7 +4902,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                     self._scene.addItem(self.magic_brush_cursor)
 
         if event.type() == QtCore.QEvent.Type.HoverLeave:
-            if self.mgcClick_STATE == True or self.mgcBrushT == True:
+            if self.mgcClick_STATE is True or self.mgcBrushT is True:
                 if self.magic_brush_cursor:
                     self._scene.removeItem(self.magic_brush_cursor)
             if self.aa_tool_draw:
@@ -4743,6 +4938,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         and self.during_drawing == False
                         and self.aa_review_state == True
                     ):
+
                         logger.debug("aa_tool_draw final is true")
 
                         """
@@ -4755,14 +4951,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                         self.aa_review_state_decider(
                             self.mapToScene(event.position().toPoint()).toPoint()
                         )
-                        return super(PhotoViewer, self).eventFilter(source, event)
+                        return super().eventFilter(source, event)
 
-        # if event.type() == QtCore.QEvent.Type.MouseButtonRelease:
-        #     self.ui_tool_selection.MyDialog.eventFilter( source, event)
-        # if self.hasPhoto() and self.during_drawing_bbox==True:
-        #     if event.type() == QtCore.QEvent.Type.MouseButtonRelease or event.type() == QtCore.QEvent.Type.GraphicsSceneMouseRelease:
-        #         print("draw_bounding_box_stop")
-        #         self.draw_bounding_box_stop_THREADED(self.mapToScene(event.position().toPoint() ).toPoint())
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
             self.postoscene = self.mapToScene(event.position().toPoint()).toPoint()
             if self.aa_review_state == True:
@@ -4898,23 +5088,26 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 and self.ui_tool_selection.selected_button == "auto"
             ):
                 if self.hasPhoto():
-                    if self.during_drawing_bbox == True:
+                    if self.during_drawing_bbox is True:
                         if len(self._scene.selectedItems()) == 0:
                             self.draw_bounding_box_stop_THREADED(
                                 self.mapToScene(event.position().toPoint()).toPoint()
                             )
                             self.completeDrawing_Bounding_Box()
                     elif len(self._scene.selectedItems()) == 0:
+                        # if control modifier is pressed, ignore, as we are adjusting
+                        # the prompt with points
+                        if (
+                            event.modifiers()
+                            & QtCore.Qt.KeyboardModifier.ControlModifier
+                        ):
+                            return super().eventFilter(source, event)
                         # bounding box beggins process by setting init points x,y and allows for while to start
                         self.auto_annotate_tool_start(
                             self.mapToScene(event.position().toPoint()).toPoint()
                         )
                         self.MainWindow.selected_mask -= 1
-
-        # else:
-        #     logger.warning("Not a QEvent passed to the eventFilder.")
-
-        return super(PhotoViewer, self).eventFilter(source, event)
+        return super().eventFilter(source, event)
 
     def combinePolygons(self, pol1, pol2):
         myImageShape = (
@@ -5166,7 +5359,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         import numpy as np
 
         try:
-            if supplied_mask_bool == False:
+            if supplied_mask_bool is False:
                 mask_result = auto_tool_1.grab_cut_v2(
                     threshed_image,
                     self.MainWindow.auto_aa_tool_gui,
@@ -5210,8 +5403,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
         config.global_signals.create_annotation_object_signal.emit(
             [
-                self.MainWindowRef.current_imagenumber,
-                self.MainWindowRef.DH.BLobj.get_current_condition(),
+                self.MainWindow.current_imagenumber,
+                self.MainWindow.DH.BLobj.get_current_condition(),
                 QpointPolygonMC,
                 "polygon",  # by default its polygon annotation
             ]
@@ -6216,7 +6409,7 @@ class BitMapAnnotation(QtWidgets.QGraphicsPixmapItem):
         self.set_clip_elements()
         painter.setClipPath(self.combined_path)
         painter.drawImage(self.rect, self.qimage_bitmap, self.rect)
-        return super(BitMapAnnotation, self).paint(painter, option, widget)
+        return super().paint(painter, option, widget)
 
 
 class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
@@ -6279,10 +6472,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 polygon_array[i] = np.asarray(polygon_array[i])
             self.polygon_array.append(polygon_array[i].squeeze())
 
-        self.polygon_array = [
-            i.squeeze() for i in polygon_array
-        ]  # reference to DH Qpoints polygon
-
+        self.set_polygon_array(polygon_array)
         # For suggested annotations
         self.set_is_suggested(is_suggested)
         self.score = score
@@ -6335,6 +6525,11 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         if not self.check_if_class_is_visible():
             self.set_visible_all(False)
 
+    def set_polygon_array(self, polygon_array):
+        self.polygon_array = [
+            i.squeeze() for i in polygon_array
+        ]  # reference to DH Qpoints polygon
+
     def set_fast_cache_mode(self, mode=True):
         """
         Sets the cache mode for the polygon annotation item
@@ -6342,7 +6537,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         """
         if mode == self.fast_cache_mode:
             return
-        elif mode == True:
+        elif mode is True:
 
             self.setCacheMode(QtWidgets.QGraphicsItem.CacheMode.ItemCoordinateCache)
             self.fast_cache_mode = True
@@ -6976,12 +7171,12 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         self.startingPosX = self.pos().x()
         self.startingPosY = self.pos().y()
         self.MyParent.viewer.polyPreviousSelectedItems.append(self)
-        return super(PolygonAnnotation, self).mousePressEvent(event)
+        return super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         self.endingPosX = self.pos().x()
         self.endingPosY = self.pos().y()
-        return super(PolygonAnnotation, self).mouseReleaseEvent(event)
+        return super().mouseReleaseEvent(event)
 
     def hoverEnterEvent(self, event):
         # make sure current class exists (sometimes due to asyncronus deletion

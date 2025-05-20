@@ -99,7 +99,15 @@ class CelerSightTestSimple(BaseGuiTestCase):
                     bb_point_pair[1][1],
                 ],
             )
-            qttest_utils.magic_box_predict(app, bb_point_pair[0], bb_point_pair[1])
+            qttest_utils.magic_box_predict(
+                app,
+                [
+                    bb_point_pair[0][0],
+                    bb_point_pair[0][1],
+                    bb_point_pair[1][0],
+                    bb_point_pair[1][1],
+                ],
+            )
             QtWidgets.QApplication.processEvents()
             QTest.qWait(8 * DELAY_TIME)
         # make sure that there are 3 annotations

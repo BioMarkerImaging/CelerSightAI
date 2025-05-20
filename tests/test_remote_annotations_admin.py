@@ -1,19 +1,20 @@
-import os
-from PyQt6.QtTest import QTest
-from PyQt6 import QtCore, QtGui, QtWidgets
+import logging
 import os
 import sys
 import unittest
-import pytest
-from celer_sight_ai import config
-import logging
-from tests import qttest_utils
 from unittest.mock import patch
+
 import numpy as np
+import pytest
+from parameterized import parameterized
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtTest import QTest
 
 # import shapely
 from shapely.geometry import Polygon
-from parameterized import parameterized
+
+from celer_sight_ai import config
+from tests import qttest_utils
 from tests.base_gui_testcase import BaseGuiTestCase
 from tests.base_online_testcase import BaseOnlineTestCase
 
@@ -76,7 +77,7 @@ def get_remote_annotation_fixture():
         )
     )
     # read the yml file and return the contents
-    with open(yml_path, "r") as f:
+    with open(yml_path) as f:
         return f.read()
 
 
@@ -129,8 +130,9 @@ class CelerSightRemoteAnnotationAdminTest(BaseGuiTestCase, BaseOnlineTestCase):
     def test_remote_process_part_1(
         self, image_path, bb_points, width, height, image_size
     ):
-        from celer_sight_ai import configHandle, config
         import time
+
+        from celer_sight_ai import config, configHandle
 
         app = self.app
         # wait for app to start
@@ -156,7 +158,15 @@ class CelerSightRemoteAnnotationAdminTest(BaseGuiTestCase, BaseOnlineTestCase):
                     bb_point_pair[1][1],
                 ],
             )
-            qttest_utils.magic_box_predict(app, bb_point_pair[0], bb_point_pair[1])
+            qttest_utils.magic_box_predict(
+                app,
+                [
+                    bb_point_pair[0][0],
+                    bb_point_pair[0][1],
+                    bb_point_pair[1][0],
+                    bb_point_pair[1][1],
+                ],
+            )
         # contribute the images through the ui
         qttest_utils.contribute_images(app)
 
@@ -194,7 +204,7 @@ class CelerSightRemoteAnnotationAdminTest(BaseGuiTestCase, BaseOnlineTestCase):
 
     def test_remote_process_part_2(self):
         # import celer_sight_ai
-        from celer_sight_ai import configHandle, config
+        from celer_sight_ai import config, configHandle
 
         # patch the .yml imported file so that we activate the remote annotation
         os.environ["CELER_SIGHT_ALTERNATIVE_SETTINGS"] = os.path.join(

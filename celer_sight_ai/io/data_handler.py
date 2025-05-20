@@ -3041,6 +3041,10 @@ class maskObj:
         # # if the user accepts it, it becomes permanent
         # self.is_suggestion_mask = False
 
+        # added attributes for magic click
+        self.magic_click_positive_points = []
+        self.magic_click_negative_points = []
+
         # video attributes
         self._annotation_track_id = None
 

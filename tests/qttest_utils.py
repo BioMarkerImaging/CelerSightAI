@@ -414,13 +414,16 @@ def draw_mask_by_array(gui_main, point_array):
 
 
 @add_delay
-def magic_box_predict(gui_main, point1, point2):
+def magic_box_predict(gui_main, prompt_bbox):
     # make sure the magic box tool is selected
     gui_main.actionAutoTool.trigger()
     QTest.qWait(50)
     # make sure that the generic magic box is selected
     gui_main.ai_model_combobox.setIndexAsSelected(1)  # generic magic box
     QTest.qWait(50)
+    x1, y1, x2, y2 = prompt_bbox
+    point1 = [x1, y1]
+    point2 = [x2, y2]
     x1, y1, x2, y2 = adjust_bbox_points(point1, point2)
     point1 = [x1, y1]
     point2 = [x2, y2]

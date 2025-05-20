@@ -148,15 +148,7 @@ class AddBitMapCommand(QtGui.QUndoCommand):
                     "mask_type": self.mask_type,
                 }
             )
-        # If inference is computed , then mark the image as modified and to be send to
-        #  the server for further training.
-        # if (
-        #     self.MainWindow.DH.BLobj.groups["default"]
-        #     .conds[self.condition]
-        #     .images[self.imID]
-        #     .computedInference
-        #     == True
-        # ):
+
         image_object = self.MainWindow.DH.BLobj.get_image_object_by_uuid(
             self.image_uuid
         )
@@ -201,7 +193,7 @@ class AddPolygonCommand(QtGui.QUndoCommand):
         score=1.0,
         mask_uuid=None,
     ):  # HERE
-        super(AddPolygonCommand, self).__init__()
+        super().__init__()
         self.MainWindow = MainWindow
         # self.itemId = ItemId
         logger.debug("AddPolygonCommand running")
@@ -299,7 +291,7 @@ class AddPolygonCommand(QtGui.QUndoCommand):
         from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
 
         for someItem in self.MainWindow.viewer._scene.items():
-            if type(someItem) == PolygonAnnotation:
+            if isinstance(someItem, PolygonAnnotation):
                 if someItem.unique_id == self.mask_uuid:
                     self.MainWindow.viewer._scene.removeItem(someItem)
                     # also remove all extra items
@@ -321,6 +313,123 @@ class AddPolygonCommand(QtGui.QUndoCommand):
 
     def getPosInDict(self, myList):  # HERE
         return len(myList) - 1
+
+
+class AdjustPolygonCommand(QtGui.QUndoCommand):
+    def __init__(
+        self,
+        polygon_item,
+        old_polygon_array,
+        new_polygon_array,
+        mask_uuid,
+        image_uuid,
+        MainWindow,
+        treatment_uuid=None,
+    ):
+        super().__init__()
+        self.MainWindow = MainWindow
+        self.setText("adjust polygon")
+        self.polygon_item = polygon_item
+        self.old_polygon_array = old_polygon_array
+        self.new_polygon_array = new_polygon_array
+        self.mask_uuid = mask_uuid
+        self.image_uuid = image_uuid
+        self.treatment_uuid = treatment_uuid
+        if self.treatment_uuid is None:
+            self.treatment_uuid = self.MainWindow.DH.BLobj.get_current_condition_uuid()
+
+    def redo(self):
+        logger.info("Adjusting polygon redo")
+        # Update the polygon array in the data model
+        mask_object = self.MainWindow.DH.BLobj.get_mask_object_by_uuid(self.mask_uuid)
+        if not mask_object:
+            logger.error(f"Mask object with uuid {self.mask_uuid} not found")
+            return
+
+        mask_object.set_array(self.new_polygon_array)
+
+        # Update the visual representation if this annotation is on the current scene
+        image_object = self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+            self.image_uuid
+        )
+        if (
+            image_object.unique_id
+            == self.MainWindow.DH.BLobj.get_current_image_object().unique_id
+        ):
+            annotation_item = self.polygon_item.get_annotation_item()
+            if annotation_item:
+                # Update the polygon on the scene
+                annotation_item.set_polygon_array(self.new_polygon_array)
+                annotation_item.update_annotation()
+                annotation_item.update_annotations_color()
+                annotation_item.set_visible_all()
+        # If image is remote, update the remote annotation
+        if image_object.is_remote():
+            try:
+                class_name = self.MainWindow.custom_class_list_widget.classes[
+                    mask_object.class_id
+                ].text()
+
+                d = {
+                    "image_uuid": self.image_uuid,
+                    "annotation_uuid": self.mask_uuid,
+                    "data": self.MainWindow.numpy_to_python(
+                        mask_object.get_array_for_storing()
+                    ),
+                    "category": class_name,
+                    "supercategory": config.supercategory,
+                    "audited": True,
+                }
+                config.global_signals.update_remote_annotation_signal.emit(d)
+            except Exception as e:
+                logger.error(f"Error updating remote annotation: {e}")
+
+        # Mark as user modified
+        image_object.setUserModifiedAnnotation(True)
+
+    def undo(self):
+        logger.info("Adjusting polygon undo")
+        # Update the polygon array back to the original in the data model
+        mask_object = self.MainWindow.DH.BLobj.get_mask_object_by_uuid(self.mask_uuid)
+        if not mask_object:
+            logger.error(f"Mask object with uuid {self.mask_uuid} not found")
+            return
+
+        mask_object.set_array(self.old_polygon_array)
+
+        # Update the visual representation if this annotation is on the current scene
+        image_object = self.MainWindow.DH.BLobj.get_image_object_by_uuid(
+            self.image_uuid
+        )
+        if (
+            image_object.unique_id
+            == self.MainWindow.DH.BLobj.get_current_image_object().unique_id
+        ):
+            annotation_item = self.polygon_item.get_annotation_item()
+            if annotation_item:
+                # Update the polygon on the scene
+                annotation_item.setPolygon(self.old_polygon_array)
+
+        # If image is remote, update the remote annotation
+        if image_object.is_remote():
+            try:
+                class_name = self.MainWindow.custom_class_list_widget.classes[
+                    mask_object.class_id
+                ].text()
+
+                d = {
+                    "image_uuid": self.image_uuid,
+                    "annotation_uuid": self.mask_uuid,
+                    "data": self.MainWindow.numpy_to_python(
+                        mask_object.get_array_for_storing()
+                    ),
+                    "category": class_name,
+                    "supercategory": config.supercategory,
+                    "audited": True,
+                }
+                config.global_signals.update_remote_annotation_signal.emit(d)
+            except Exception as e:
+                logger.error(f"Error updating remote annotation: {e}")
 
 
 class GripItemMoveCommand(QtGui.QUndoCommand):
@@ -519,7 +628,7 @@ class DeleteMaskCommand(QtGui.QUndoCommand):
     def __init__(
         self, mask_unique_id, MainWindow, treatment_uuid=None, class_id=None
     ):  # HERE
-        super(DeleteMaskCommand, self).__init__()
+        super().__init__()
         self.MainWindow = MainWindow
         # self.itemId = ItemId
         logger.info("DeletePolygonCommand running")

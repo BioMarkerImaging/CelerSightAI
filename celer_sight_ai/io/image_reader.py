@@ -1732,6 +1732,7 @@ def read_specialized_image(
     In case of a ultra high res array, get a thumbnail array, and mark the object as ultra high res
     """
     import time
+    logging.getLogger('pyvips').setLevel(logging.ERROR)
 
     import javabridge
 

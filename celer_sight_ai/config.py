@@ -116,7 +116,17 @@ def dbg_image(img, bbox=None, mode: str = "xywh", rescale_image=(0, 0), points=[
         else:
             # Original behavior for list of points
             for point in points:
-                cv2.circle(image_drawn, point, 5, (0, 0, 255), -1)
+                color = (0, 0, 255)
+                if len(point) == 3:
+                    point_pos = point[:2]
+                    if point[2] == 1:
+                        color = (0, 0, 255)
+                    else:
+                        color = (0, 255, 0)
+                else:
+                    point_pos = point
+                point_pos = (int(point_pos[0]), int(point_pos[1]))
+                image_drawn = cv2.circle(image_drawn, point_pos, 5, color, -1)
     if not isinstance(bbox, type(None)):
         # draw bbox on the image
 
