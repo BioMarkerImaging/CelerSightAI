@@ -2356,7 +2356,7 @@ def reorder_array(arr, input_order, dim_sizes, output_order="TZCYX"):
 
 
 def get_optimal_crop_bbox(
-    image_width, image_height, bbox, class_id=None, ideal_annotation_to_image_ratio=None
+    image_width, image_height, bbox, class_id=None, ideal_annotation_to_image_ratio=None, retain_object_ratio_from_previous_inference=False
 ):
     """
     Calculate the optimal crop size.
@@ -2375,8 +2375,12 @@ def get_optimal_crop_bbox(
             config.MAGIC_BOX_2_MIN_ANNOTATION_PERCENT_SIZE
             + config.MAGIC_BOX_2_MAX_ANNOTATION_PERCENT_SIZE
         ) / 2
-    average_size = config.CLASS_REGISTRY_WIDTH.get(class_id, 0)
-    if average_size == 0:
+        
+    if retain_object_ratio_from_previous_inference:
+        average_size = config.CLASS_REGISTRY_WIDTH.get(class_id, 0)
+        if average_size == 0:
+            average_size = (bbox_width + bbox_height) / 2
+    else:
         average_size = (bbox_width + bbox_height) / 2
 
     crop_size = min(

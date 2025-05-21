@@ -3388,6 +3388,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         class_id=None,
         current_group="default",
         ideal_annotation_to_image_ratio=None,
+        retain_object_ratio_from_previous_inference = False,
     ):
         """
         Process a bounding box for a given image, handling bounds checking and adjustment.
@@ -3445,6 +3446,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             [round(x1), round(y1), round(x2), round(y2)],
             class_id,
             ideal_annotation_to_image_ratio=ideal_annotation_to_image_ratio,
+            retain_object_ratio_from_previous_inference=retain_object_ratio_from_previous_inference
         )
         bbox_tile = list(bbox_tile)
 
@@ -3472,7 +3474,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             bbox=bbox_tile,
             avoid_loading_ultra_high_res_arrays_normaly=True,
         )
-
+        config.dbg_image(seg_image_prior)
         if isinstance(seg_image_prior, type(None)):
             return None
 
@@ -3543,12 +3545,15 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         logger.debug("draw_bounding_box_stop")
 
         # get current image
-        while config.load_main_scene_read_image == True:
+        while config.load_main_scene_read_image is True:
             import time
 
             time.sleep(0.001)
+        ideal_annotation_to_image_ratio = None
+        retain_object_ratio_from_previous_inference = False
         if self.is_magic_mask_generator_mode():
             ideal_annotation_to_image_ratio = None
+            retain_object_ratio_from_previous_inference = True
         else:
             ideal_annotation_to_image_ratio = 0.40
 
@@ -3558,6 +3563,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             class_id,
             current_group,
             ideal_annotation_to_image_ratio,
+            retain_object_ratio_from_previous_inference
         )
 
         if result is None:
@@ -7299,7 +7305,7 @@ class HoleAnnotationItem(QtWidgets.QGraphicsPathItem):
 
     def update_annotations_color(self, color):
         self.color = QtGui.QColor(color[0], color[1], color[2])
-        self.my_brush.setColor(color)
+        self.my_brush.setColor(self.color)
         self.setBrush(self.my_brush)
 
     def hoverEnterEvent(self, event):
