@@ -1,15 +1,17 @@
+import logging
+
+import numpy as np
+import skimage
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt, pyqtSlot
-import skimage
-import numpy as np
 
-import logging
+from celer_sight_ai import config
 
 logger = logging.getLogger(__name__)
 try:
-    from skimage.draw import circle
-    from skimage.draw import circle_perimeter_aa
-except:
+    from skimage.draw import circle, circle_perimeter_aa
+except Exception as e:
+    logger.error(e)
     from skimage.draw import circle_perimeter as circle
 
 
@@ -18,7 +20,7 @@ class PhotoViewer_test(QtWidgets.QGraphicsView):
     object_signal = QtCore.pyqtSignal()
 
     def __init__(self, parent, Ui_MainWindow):
-        super(PhotoViewer_test, self).__init__(parent)
+        super().__init__(parent)
         from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
 
         self.Ui_MainWindow = Ui_MainWindow
@@ -35,12 +37,12 @@ class PhotoViewer_test(QtWidgets.QGraphicsView):
         self._empty = True
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = BackgroundGraphicsItem()
-        self._photo.setZValue(-50)
+        self._photo.setZValue(config.Z_VALUE_BACKGROUND_IMAGE)
         self._scene.addItem(self._photo)
         self.painter = QtGui.QPainter()
         self._brush = QtGui.QBrush(
             QtGui.QColor(255, 170, 255), QtCore.Qt.BrushStyle.SolidPattern
-        )  # added laer
+        )
         self.painter.setPen(QtGui.QPen(Qt.green, 5, Qt.SolidLine))
 
         self.painter.setBrush(QtGui.QBrush(Qt.green, Qt.SolidPattern))
@@ -55,19 +57,12 @@ class PhotoViewer_test(QtWidgets.QGraphicsView):
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         self.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.setObjectName("graphicsView_main")
-
-        # self.setTransformationAnchor(
-        #     QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse
-        # )
-        # self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setBackgroundBrush(
             QtGui.QBrush(QtGui.QColor(245, 45, 45), QtCore.Qt.BrushStyle.SolidPattern)
         )
         self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-
-        # Button to change from drag/pan to getting pixel info
 
     def dragMoveEvent(self, event):
         pass

@@ -556,7 +556,7 @@ class DeleteHoleCommand(QtGui.QUndoCommand):
         condition=None,
         className=None,
     ):  # HERE
-        super(DeleteHoleCommand, self).__init__()
+        super().__init__()
         self.hole_index = hole_index
         self.hole_graphics_item = hole_graphics_item
         self.MainWindow = MainWindow
@@ -565,25 +565,32 @@ class DeleteHoleCommand(QtGui.QUndoCommand):
         self.mask_uuid = mask_uuid
         self.className = className
         self.hole_array = None
+        self.new_polygon_array = None
+        self.old_polygon_array = None
 
     def redo(self):
-        # remove the array from the polygon_array and store it here to be instarted during undo
-        self.hole_array = (
+        mask_object = (
             self.MainWindow.DH.BLobj.groups["default"]
             .conds[self.condition]
             .images[self.imID]
             .get_by_uuid(self.mask_uuid)
-            .polygon_array.pop(self.hole_index)
         )
+        # remove the array from the polygon_array and store it here to be instarted during undo
+        self.old_polygon_array = mask_object.polygon_array.copy()
+        self.hole_array = mask_object.polygon_array.pop(self.hole_index)
+        self.new_polygon_array = mask_object.polygon_array.copy()
         # remove the hole from the scene if it exists there
         if self.hole_graphics_item in self.MainWindow.viewer.scene().items():
-            annotation_item = self.hole_graphics_item.annotation_item
             self.MainWindow.viewer.scene().removeItem(self.hole_graphics_item)
-            QtWidgets.QApplication.processEvents()
-            annotation_item.update_annotation()
+        mask_object.set_array(self.new_polygon_array)
+        annotation_item = self.hole_graphics_item.annotation_item
+        if annotation_item:
             annotation_item.removeAllPoints()
+            annotation_item.set_polygon_array(self.new_polygon_array)
+            annotation_item.update_annotation()
             annotation_item.initPoints()
-
+            annotation_item.showInitedPoints()
+            annotation_item.update_polygon_holes_indexes(self.hole_index, -1)
         # delete from remote if the session is remote
         if (
             self.MainWindow.DH.BLobj.groups["default"]
@@ -619,9 +626,37 @@ class DeleteHoleCommand(QtGui.QUndoCommand):
         ].get_by_uuid(self.mask_uuid).polygon_array.insert(
             self.hole_index, self.hole_array
         )
-
+        mask_object = (
+            self.MainWindow.DH.BLobj.groups["default"]
+            .conds[self.condition]
+            .images[self.imID]
+            .get_by_uuid(self.mask_uuid)
+        )
         # add the hole back to the scene
         self.MainWindow.viewer.scene().addItem(self.hole_graphics_item)
+        annotation_item = self.hole_graphics_item.annotation_item
+        if annotation_item:
+            annotation_item.set_polygon_array(self.old_polygon_array)
+            annotation_item.update_annotation()
+            annotation_item.initPoints()
+            annotation_item.showInitedPoints()
+            annotation_item.update_polygon_holes_indexes(self.hole_index, 1)
+        if mask_object.is_remote():
+
+            d = {
+                "image_uuid": self.MainWindow.DH.BLobj.groups["default"]
+                .conds[self.condition]
+                .images[self.imID]
+                .unique_id,
+                "annotation_uuid": self.mask_uuid,
+                "data": self.MainWindow.numpy_to_python(
+                    mask_object.get_array_for_storing()
+                ),
+                "category": self.className,
+                "supercategory": config.supercategory,
+                "audited": True,
+            }
+            config.global_signals.update_remote_annotation_signal.emit(d)
 
 
 class DeleteMaskCommand(QtGui.QUndoCommand):

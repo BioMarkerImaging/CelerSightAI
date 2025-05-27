@@ -425,6 +425,9 @@ class Master_MainWindow(CelerSightMainWindow):
         self.pg1_settings_mask_opasity_slider.valueChanged.connect(
             lambda: self.viewer.updateAllPolygonPen()
         )
+        self.pg1_settings_mask_line_opasity_slider.valueChanged.connect(
+            lambda: self.viewer.updateAllPolygonPen()
+        )
 
         self.pg1_Maskshandler_DeleteAll_button.clicked.connect(
             lambda: self.ApplyAttributesToAllImages()
@@ -4929,9 +4932,7 @@ class Master_MainWindow(CelerSightMainWindow):
                 else:
                     pixmap = self.currentUsedPixmap
                 self.viewer._photo.setPixmap(pixmap)
-                self.viewer._photo.setZValue(
-                    -50
-                )  # -49 is interactive deep zoom previous elements and  - 48 is current element on the deep zzom
+                self.viewer._photo.setZValue(config.Z_VALUE_BACKGROUND)
                 # set pixmap size to the actual size of the image
             else:
                 return

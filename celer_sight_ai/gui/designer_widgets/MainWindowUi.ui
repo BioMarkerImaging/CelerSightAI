@@ -3517,9 +3517,9 @@ margin-left:0px;
                         <property name="geometry">
                          <rect>
                           <x>8</x>
-                          <y>-549</y>
+                          <y>-782</y>
                           <width>142</width>
-                          <height>1745</height>
+                          <height>1775</height>
                          </rect>
                         </property>
                         <property name="sizePolicy">
@@ -5521,6 +5521,43 @@ border: 0px solid;
                                <property name="spacing">
                                 <number>0</number>
                                </property>
+                               <item row="3" column="0">
+                                <widget class="QLabel" name="pg1_settings_mask_line_opasity_label">
+                                 <property name="sizePolicy">
+                                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                                   <horstretch>0</horstretch>
+                                   <verstretch>0</verstretch>
+                                  </sizepolicy>
+                                 </property>
+                                 <property name="minimumSize">
+                                  <size>
+                                   <width>0</width>
+                                   <height>23</height>
+                                  </size>
+                                 </property>
+                                 <property name="maximumSize">
+                                  <size>
+                                   <width>16777215</width>
+                                   <height>2</height>
+                                  </size>
+                                 </property>
+                                 <property name="font">
+                                  <font>
+                                   <family>Lato-light</family>
+                                   <pointsize>-1</pointsize>
+                                   <weight>75</weight>
+                                   <italic>false</italic>
+                                   <bold>true</bold>
+                                  </font>
+                                 </property>
+                                 <property name="text">
+                                  <string>Line Opacity</string>
+                                 </property>
+                                 <property name="alignment">
+                                  <set>Qt::AlignCenter</set>
+                                 </property>
+                                </widget>
+                               </item>
                                <item row="0" column="0">
                                 <widget class="QLabel" name="pg1_settings_mask_opasity_label">
                                  <property name="sizePolicy">
@@ -5614,7 +5651,7 @@ border: 0px solid;
                                  </property>
                                 </widget>
                                </item>
-                               <item row="4" column="0">
+                               <item row="5" column="0">
                                 <widget class="QFrame" name="frame_3">
                                  <property name="sizePolicy">
                                   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -5684,6 +5721,62 @@ Color</string>
                                    </widget>
                                   </item>
                                  </layout>
+                                </widget>
+                               </item>
+                               <item row="4" column="0">
+                                <widget class="QSlider" name="pg1_settings_mask_line_opasity_slider">
+                                 <property name="sizePolicy">
+                                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                                   <horstretch>0</horstretch>
+                                   <verstretch>0</verstretch>
+                                  </sizepolicy>
+                                 </property>
+                                 <property name="styleSheet">
+                                  <string notr="true">        QSlider::sub-page{
+	 	background-color:rgb(210, 210, 210);
+		margin-left:4px;
+
+		}
+        QSlider::groove{
+        background-color:rgb(92, 92, 92);
+        border: 0px solid black;
+        height: 2px;
+        border-radius: 1px;
+		margin-left:2px;
+        }
+
+        QSlider::handle{
+        background-color: rgb(192,192,192);
+        border: 1px solid rgb(210,210,210); 
+        width: 9px; 
+        height: 9px; 
+        line-height: 4px; 
+        margin-top: -4px; 
+        margin-bottom: -4px; 
+        border-radius:5px;		
+}</string>
+                                 </property>
+                                 <property name="minimum">
+                                  <number>0</number>
+                                 </property>
+                                 <property name="maximum">
+                                  <number>100</number>
+                                 </property>
+                                 <property name="pageStep">
+                                  <number>5</number>
+                                 </property>
+                                 <property name="value">
+                                  <number>90</number>
+                                 </property>
+                                 <property name="orientation">
+                                  <enum>Qt::Horizontal</enum>
+                                 </property>
+                                 <property name="invertedAppearance">
+                                  <bool>false</bool>
+                                 </property>
+                                 <property name="tickPosition">
+                                  <enum>QSlider::NoTicks</enum>
+                                 </property>
                                 </widget>
                                </item>
                               </layout>
@@ -12703,7 +12796,7 @@ border-radius:8px;</string>
      <x>0</x>
      <y>0</y>
      <width>1297</width>
-     <height>24</height>
+     <height>37</height>
     </rect>
    </property>
    <property name="font">

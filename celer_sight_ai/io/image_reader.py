@@ -961,6 +961,7 @@ def read_and_display_tile_deepzoom(tile_pos, slide, best_level, downsample, imag
                 "image_data": [pixmap],
                 "image_bounding_box": [tile_pos],
                 "image_name": image_name,
+                "downsample": downsample,
             }
         )
     except Exception as e:
@@ -1732,7 +1733,8 @@ def read_specialized_image(
     In case of a ultra high res array, get a thumbnail array, and mark the object as ultra high res
     """
     import time
-    logging.getLogger('pyvips').setLevel(logging.ERROR)
+
+    logging.getLogger("pyvips").setLevel(logging.ERROR)
 
     import javabridge
 
@@ -2287,6 +2289,7 @@ def interactive_untiled_tiff_preview(tiff_path, tile_bbox=None):
                 "image_data": [pixmap],
                 "image_bounding_box": [tile_bbox],
                 "image_name": os.path.basename(tiff_path),
+                "downsample": downsample,
             }
         )
 
@@ -2356,7 +2359,12 @@ def reorder_array(arr, input_order, dim_sizes, output_order="TZCYX"):
 
 
 def get_optimal_crop_bbox(
-    image_width, image_height, bbox, class_id=None, ideal_annotation_to_image_ratio=None, retain_object_ratio_from_previous_inference=False
+    image_width,
+    image_height,
+    bbox,
+    class_id=None,
+    ideal_annotation_to_image_ratio=None,
+    retain_object_ratio_from_previous_inference=False,
 ):
     """
     Calculate the optimal crop size.
@@ -2375,7 +2383,7 @@ def get_optimal_crop_bbox(
             config.MAGIC_BOX_2_MIN_ANNOTATION_PERCENT_SIZE
             + config.MAGIC_BOX_2_MAX_ANNOTATION_PERCENT_SIZE
         ) / 2
-        
+
     if retain_object_ratio_from_previous_inference:
         average_size = config.CLASS_REGISTRY_WIDTH.get(class_id, 0)
         if average_size == 0:

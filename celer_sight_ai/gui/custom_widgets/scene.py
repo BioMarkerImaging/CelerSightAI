@@ -389,7 +389,9 @@ def create_pyramidal_tiff_for_image_object(image_object):
     image_object.set_pyramidal_path(out_file)
     image_object._is_pyramidal = True
     # update the viewport once finished
-    config.global_signals.check_and_update_high_res_slides_signal.emit()
+    # config.global_signals.check_and_update_high_res_slides_signal.emit()
+    if hasattr(config, "current_photo_viewer") and config.current_photo_viewer:
+        config.current_photo_viewer.request_debounced_high_res_update(force_update=True)
 
 
 def find_treatment_patterns_within_filepaths(filepaths):
@@ -1601,7 +1603,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self._empty = True
         self._scene = SceneViewer(self)
         self._photo = BackgroundGraphicsItem()
-        self._photo.setZValue(-50)
+        self._photo.setZValue(config.Z_VALUE_BACKGROUND_IMAGE)
         self._scene.addItem(self._photo)
         self.setScene(self._scene)
         self.setMouseTracking(True)
@@ -1713,6 +1715,110 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         from celer_sight_ai.gui.custom_widgets.QitemTools import quickToolsUi
 
         self.QuickTools = quickToolsUi(self)
+
+        # High-res update debouncing
+        self._high_res_update_timer = QtCore.QTimer()
+        self._high_res_update_timer.setSingleShot(True)
+        self._high_res_update_timer.timeout.connect(
+            self._perform_debounced_high_res_update
+        )
+
+        # Store the last update parameters to avoid redundant calls
+        self._last_update_params = {
+            "viewport_bbox": None,
+            "zoom_level": None,
+            "force_update": False,
+        }
+
+        # Debounce settings
+        self._debounce_delay_ms = 250  # 150ms delay
+        self._min_movement_threshold = 50  # minimum pixels moved before update
+        self._min_zoom_threshold = 0.1  # minimum zoom change before update
+
+    def request_debounced_high_res_update(self, force_update=False):
+        """
+        Public method to request a debounced high-res update.
+        This replaces direct signal emissions.
+        """
+        if not self.hasPhoto():
+            return
+
+        # Get current viewport and zoom information
+        bbox_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+        viewport_bbox = [
+            bbox_rect.x(),
+            bbox_rect.y(),
+            bbox_rect.width(),
+            bbox_rect.height(),
+        ]
+        zoom_level = self.transform().m11()
+
+        # Check if significant change occurred
+        if not force_update and self._should_skip_update(viewport_bbox, zoom_level):
+            return
+
+        # Store parameters for the actual update
+        self._last_update_params = {
+            "viewport_bbox": viewport_bbox,
+            "zoom_level": zoom_level,
+            "force_update": force_update,
+        }
+
+        # Start/restart the debounce timer
+        self._high_res_update_timer.start(self._debounce_delay_ms)
+
+    def _should_skip_update(self, viewport_bbox, zoom_level):
+        """
+        Check if update should be skipped based on movement/zoom thresholds.
+        """
+        last_params = self._last_update_params
+
+        if not last_params["viewport_bbox"]:
+            return False
+
+        # Calculate movement distance (center points)
+        current_center_x = viewport_bbox[0] + viewport_bbox[2] / 2
+        current_center_y = viewport_bbox[1] + viewport_bbox[3] / 2
+
+        last_center_x = (
+            last_params["viewport_bbox"][0] + last_params["viewport_bbox"][2] / 2
+        )
+        last_center_y = (
+            last_params["viewport_bbox"][1] + last_params["viewport_bbox"][3] / 2
+        )
+
+        movement_distance = (
+            (current_center_x - last_center_x) ** 2
+            + (current_center_y - last_center_y) ** 2
+        ) ** 0.5
+
+        # Calculate zoom difference
+        zoom_difference = abs(zoom_level - last_params["zoom_level"])
+
+        # Skip if movement and zoom change are below thresholds
+        return (
+            movement_distance < self._min_movement_threshold
+            and zoom_difference < self._min_zoom_threshold
+        )
+
+    def _perform_debounced_high_res_update(self):
+        """
+        Internal method that performs the actual high-res update.
+        Called by the debounce timer.
+        """
+        params = self._last_update_params
+        if not params["viewport_bbox"]:
+            return
+
+        # Update config with the latest viewport info
+        config.viewport_bounding_box = params["viewport_bbox"]
+
+        # Emit the actual signal
+        config.global_signals.check_and_update_high_res_slides_signal.emit()
+        # if hasattr(config, "current_photo_viewer") and config.current_photo_viewer:
+        #     config.current_photo_viewer.request_debounced_high_res_update(
+        #         force_update=True
+        #     )
 
     def removeItemByUuid(self, uuid):
         for item in self.scene().items():
@@ -1987,47 +2093,43 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
         from celer_sight_ai.io.image_reader import DEEPZOOM_TILE_SIZE
 
+        items_added = []
+        idx = 1
         logger.info("Adding deepview images to scene")
         image_objects = object.get("image_data", None)
         bbox_objects = object.get("image_bounding_box", None)
         image_name = object.get("image_name", None)
-        items_added = []
-        idx = 0
-        # remove large objects
-        if len(config._deepzoom_pixmaps) > config.MAX_DEEPZOOM_OBJECTS:
-            # Use a heap to find the largest items
-            largest_items = heapq.nlargest(
-                config.MAX_DEEPZOOM_OBJECTS,
-                config._deepzoom_pixmaps,
-                key=lambda x: x[3],
-            )
+        downsample = object.get("downsample", None)
 
-            items_to_remove = [
-                item
-                for item in config._deepzoom_pixmaps
-                if item not in largest_items
-                and item[2] != config._current_deep_zoom_downsample_level
-            ]
-            for item in items_to_remove:
-                config._deepzoom_pixmaps.remove(item)
-                try:
-                    self.scene().removeItem(item[0])
-                except Exception as e:
-                    logger.error(e)
+        scale = downsample
+
+        # Get current zoom level to determine if this tile is appropriate
+        current_zoom = self.transform().m11()
+        optimal_downsample = self.calculate_optimal_downsample_for_zoom()
+        min_downsample, max_downsample = self.get_downsample_range_for_zoom(
+            optimal_downsample
+        )
+
         image_object = image_objects[0]
         bbox = bbox_objects[0]
-        idx += 1
 
         photo = QtWidgets.QGraphicsPixmapItem()
-        logger.debug(f"Pixmap width is {image_object.width()}")
-        scale = bbox[2] / image_object.width()
+
+        # Set cache mode based on zoom level
+        if current_zoom > 1.0:
+            # High zoom - use ItemCoordinateCache for better performance
+            photo.setCacheMode(QtWidgets.QGraphicsItem.CacheMode.ItemCoordinateCache)
+        else:
+            # Low zoom - use DeviceCoordinateCache
+            photo.setCacheMode(QtWidgets.QGraphicsItem.CacheMode.DeviceCoordinateCache)
+
         photo.setPos(bbox[0], bbox[1])
         photo.setScale(scale)
         photo.setPixmap(image_object)
         photo.setCacheMode(
             QtWidgets.QGraphicsItem.CacheMode.DeviceCoordinateCache
         )  # DeviceCoordinateCache
-        downsample = 1 / scale
+
         # make sure current image is the same as the objects unique id
         condition_object = self.MainWindow.DH.BLobj.get_current_condition_object()
         if not condition_object:
@@ -2045,6 +2147,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             ):
                 logger.debug("Got a differnt image object while updating deep maps")
                 return
+            photo.setZValue(config.Z_VALUE_BACKGROUND_IMAGE + int(downsample))
             self.scene().addItem(photo)
             items_added.append(
                 (
@@ -2071,12 +2174,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         except Exception as e:
             logger.error(e)
             return
-        for i, item in enumerate(config._deepzoom_pixmaps):
-            try:
-                item[0].setZValue(-50 + order_dict[round(item[2], 3)])
-            except Exception as e:
-                logger.error(e)
-                pass
 
     def MoveLeftImage(self):
         if (
@@ -3059,7 +3156,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         # visible within the viewport
         # if there is an image
         if (
-            self.MainWindow.current_imagenumber == None
+            self.MainWindow.current_imagenumber is None
             or self.MainWindow.current_imagenumber == -1
         ):
             return
@@ -3129,7 +3226,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             zoom_factor = 1.2
         mod = 5
         self.scale(1 + (zoom_factor / mod), 1 + (zoom_factor / mod))
-        config.global_signals.check_and_update_high_res_slides_signal.emit()
+        # config.global_signals.check_and_update_high_res_slides_signal.emit()
+        if hasattr(config, "current_photo_viewer") and config.current_photo_viewer:
+            config.current_photo_viewer.request_debounced_high_res_update(
+                force_update=True
+            )
 
     def zoom_out(self, zoom_factor=None):
         if zoom_factor == None:
@@ -3143,7 +3244,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         matrix.translate(-400, 0)  # -50 is just an example, adjust as needed
         # Apply the new transformation matrix
         self.setTransform(matrix)
-        config.global_signals.check_and_update_high_res_slides_signal.emit()
+        # config.global_signals.check_and_update_high_res_slides_signal.emit()
+        if hasattr(config, "current_photo_viewer") and config.current_photo_viewer:
+            config.current_photo_viewer.request_debounced_high_res_update(
+                force_update=True
+            )
 
     def wheelEvent(self, event):
         main_pixmap_scale = self._photo.scale()
@@ -3167,7 +3272,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 event.pixelDelta().x() * scroll_step,
                 event.pixelDelta().y() * scroll_step,
             )
-            return super(PhotoViewer, self).wheelEvent(event)
+            return super().wheelEvent(event)
 
     def scaleBarPlaceFirstPoint(self, pos):
         if not self.scaleBarDraw_duringDraw_STATE:
@@ -3381,6 +3486,164 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             return True
         return False
 
+    def calculate_optimal_downsample_for_zoom(self):
+        """
+        Calculate the optimal downsample level based on current zoom level.
+        Higher zoom (transform().m11()) needs lower downsample (higher resolution).
+        Lower zoom needs higher downsample (lower resolution).
+        """
+        current_zoom = self.transform().m11()
+
+        # Get baseline zoom
+        if hasattr(self, "_fit_view_zoom") and self._fit_view_zoom > 0:
+            relative_zoom = current_zoom / self._fit_view_zoom
+        else:
+            # Fallback calculation
+            image_object = self.MainWindow.DH.BLobj.get_current_image_object()
+            if image_object and image_object.SizeX:
+                viewport_rect = self.viewport().rect()
+                scale_x = viewport_rect.width() / image_object.SizeX
+                scale_y = viewport_rect.height() / image_object.SizeY
+                fit_scale = min(scale_x, scale_y) * 0.9
+                relative_zoom = current_zoom / fit_scale
+            else:
+                relative_zoom = 1.0
+
+        # Traditional downsample: higher value = lower resolution
+        if relative_zoom >= 8.0:
+            optimal_downsample = 1.0  # Highest resolution
+        elif relative_zoom >= 4.0:
+            optimal_downsample = 2.0  # High resolution
+        elif relative_zoom >= 2.0:
+            optimal_downsample = 4.0  # Medium resolution
+        elif relative_zoom >= 1.0:
+            optimal_downsample = 8.0  # Lower resolution
+        elif relative_zoom >= 0.5:
+            optimal_downsample = 16.0  # Low resolution
+        else:
+            optimal_downsample = 32.0  # Lowest resolution
+
+        return optimal_downsample
+
+    def get_downsample_range_for_zoom(self, optimal_downsample):
+        """
+        Get the acceptable downsample range for smooth transitions.
+        We keep tiles within a certain range to avoid abrupt changes.
+        """
+        # Allow some tolerance around the optimal downsample
+        tolerance_factor = 1.5
+
+        min_downsample = optimal_downsample / tolerance_factor
+        max_downsample = optimal_downsample * tolerance_factor
+
+        return min_downsample, max_downsample
+
+    def cull_inappropriate_zoom_tiles(self):
+        """
+        Remove tiles that are inappropriate for the current zoom level.
+        This is the core optimization for zoom-aware tile management.
+        """
+        if not config._deepzoom_pixmaps:
+            return
+
+        optimal_downsample = self.calculate_optimal_downsample_for_zoom()
+        min_downsample, max_downsample = self.get_downsample_range_for_zoom(
+            optimal_downsample
+        )
+
+        # Get current viewport for additional culling
+        viewport_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+        viewport_padding = 500  # Keep some tiles outside viewport for smooth panning
+        viewport_rect.adjust(
+            -viewport_padding, -viewport_padding, viewport_padding, viewport_padding
+        )
+
+        tiles_to_remove = []
+        tiles_by_downsample = {}
+
+        # Group tiles by downsample level and check if they should be kept
+        for item_data in config._deepzoom_pixmaps:
+            pixmap_item, bbox, downsample, order, image_name = item_data
+
+            # Check if tile is outside acceptable downsample range
+            if downsample < min_downsample or downsample > max_downsample:
+                tiles_to_remove.append(item_data)
+                continue
+
+            # Check if tile is outside viewport (with padding)
+            item_rect = QtCore.QRectF(bbox[0], bbox[1], bbox[2], bbox[3])
+            if not viewport_rect.intersects(item_rect):
+                tiles_to_remove.append(item_data)
+                continue
+
+            # Group remaining tiles by downsample for further optimization
+            downsample_key = round(downsample, 3)
+            if downsample_key not in tiles_by_downsample:
+                tiles_by_downsample[downsample_key] = []
+            tiles_by_downsample[downsample_key].append(item_data)
+
+        # If we have too many tiles at the optimal level, keep only the closest ones
+        optimal_key = round(optimal_downsample, 3)
+        if (
+            optimal_key in tiles_by_downsample
+            and len(tiles_by_downsample[optimal_key]) > 15
+        ):
+            # Sort by distance from viewport center and keep only the closest ones
+            viewport_center = viewport_rect.center()
+            tiles_by_downsample[optimal_key].sort(
+                key=lambda item: (
+                    (item[1][0] + item[1][2] / 2 - viewport_center.x()) ** 2
+                    + (item[1][1] + item[1][3] / 2 - viewport_center.y()) ** 2
+                )
+                ** 0.5
+            )
+            # Keep only the 15 closest tiles, mark the rest for removal
+            tiles_to_remove.extend(tiles_by_downsample[optimal_key][15:])
+
+        # Remove inappropriate tiles
+        for item_data in tiles_to_remove:
+            pixmap_item = item_data[0]
+            if pixmap_item in self.scene().items():
+                self.scene().removeItem(pixmap_item)
+            if item_data in config._deepzoom_pixmaps:
+                config._deepzoom_pixmaps.remove(item_data)
+
+        logger.debug(
+            f"Removed {len(tiles_to_remove)} inappropriate tiles. "
+            f"Optimal downsample: {optimal_downsample}, "
+            f"Range: {min_downsample:.2f}-{max_downsample:.2f}"
+        )
+
+    def update_tiles_for_zoom_change(self):
+        """
+        Called when zoom level changes significantly.
+        Triggers tile updates if needed.
+        """
+        current_zoom = self.transform().m11()
+
+        # Check if zoom changed significantly since last update
+        if hasattr(self, "_last_zoom_level"):
+            zoom_change = abs(current_zoom - self._last_zoom_level) / max(
+                current_zoom, 0.1
+            )
+            if zoom_change < 0.1:  # Less than 10% change
+                return
+
+        self._last_zoom_level = current_zoom
+
+        # Cull inappropriate tiles
+        self.cull_inappropriate_zoom_tiles()
+
+        # Update config to track current zoom-appropriate downsample
+        optimal_downsample = self.calculate_optimal_downsample_for_zoom()
+        config._current_deep_zoom_downsample_level = optimal_downsample
+
+        # Request new tiles if we don't have enough at the current zoom level
+        if hasattr(config, "current_photo_viewer") and config.current_photo_viewer:
+            config.current_photo_viewer.request_debounced_high_res_update(
+                force_update=True
+            )
+
     def process_bounding_box(
         self,
         image_uuid,
@@ -3388,7 +3651,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         class_id=None,
         current_group="default",
         ideal_annotation_to_image_ratio=None,
-        retain_object_ratio_from_previous_inference = False,
+        retain_object_ratio_from_previous_inference=False,
     ):
         """
         Process a bounding box for a given image, handling bounds checking and adjustment.
@@ -3446,7 +3709,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             [round(x1), round(y1), round(x2), round(y2)],
             class_id,
             ideal_annotation_to_image_ratio=ideal_annotation_to_image_ratio,
-            retain_object_ratio_from_previous_inference=retain_object_ratio_from_previous_inference
+            retain_object_ratio_from_previous_inference=retain_object_ratio_from_previous_inference,
         )
         bbox_tile = list(bbox_tile)
 
@@ -3563,7 +3826,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             class_id,
             current_group,
             ideal_annotation_to_image_ratio,
-            retain_object_ratio_from_previous_inference
+            retain_object_ratio_from_previous_inference,
         )
 
         if result is None:
@@ -4642,52 +4905,63 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         return super(PhotoViewer, self).keyPressEvent(event)
 
     def mouseMoveEvent(self, event):
-        pos_point = self.mapToScene(event.position().toPoint())
-        self.MainWindow.under_window_comments.setText(
-            f"Scene pos: {int(pos_point.x())} {int(pos_point.y())} viewport pos: {event.position().toPoint().x()} {event.position().toPoint().y()} "
-        )
+        scene_pos = self.mapToScene(event.position().toPoint())
+        scene_pos_point = scene_pos.toPoint()
+
+        # Update status text less frequently
+        if hasattr(self, "_status_update_timer"):
+            self._status_update_timer.stop()
+        else:
+            self._status_update_timer = QtCore.QTimer()
+            self._status_update_timer.setSingleShot(True)
+            self._status_update_timer.timeout.connect(
+                lambda: self.MainWindow.under_window_comments.setText(
+                    f"Scene pos: {int(scene_pos.x())} {int(scene_pos.y())}"
+                )
+            )
+        self._status_update_timer.start(50)
+        # Zoom-aware tile culling (debounced)
+        if hasattr(self, "_zoom_cull_timer"):
+            self._zoom_cull_timer.stop()
+        else:
+            self._zoom_cull_timer = QtCore.QTimer()
+            self._zoom_cull_timer.setSingleShot(True)
+            self._zoom_cull_timer.timeout.connect(self.cull_inappropriate_zoom_tiles)
+        self._zoom_cull_timer.start(100)
+
         # rubber band mode:
-        if self.scaleBarDraw_duringDraw_STATE == True:
-            self.scaleBarWhile(self.mapToScene(event.position().toPoint()))
+        if self.scaleBarDraw_duringDraw_STATE is True:
+            self.scaleBarWhile(scene_pos_point)
 
         if self.ui_tool_selection.selected_button == "skeleton grabcut":
-            if self.SkGb_during_drawing == True:
-                self.SkGbWhileDrawing(self.mapToScene(event.position().toPoint()))
+            if self.SkGb_during_drawing is True:
+                self.SkGbWhileDrawing(scene_pos_point)
 
-        if self.MAGIC_BRUSH_DURING_DRAWING == True:
-            currentPos = self.mapToScene(event.position().toPoint())
+        if self.MAGIC_BRUSH_DURING_DRAWING is True:
             self.movePointsBrushToolMagic1(
-                self.magic_brush_pos_a.x() - currentPos.x(),
-                self.magic_brush_pos_a.y() - currentPos.y(),
+                self.magic_brush_pos_a.x() - scene_pos.x(),
+                self.magic_brush_pos_a.y() - scene_pos.y(),
                 self.magic_brush_points_set_A,
             )
-            self.magic_brush_pos_a = self.mapToScene(event.position().toPoint())
-            # circlPainter = self.getPainterPathCircle(
-            #     self.QuickTools.brushSizeSpinBoxGrabCut.value(), self.magic_brush_pos_a
-            # )
-            # self._scene.setSelectionArea(circlPainter)
-            # self.magic_brush_points_set_A = [i for i in self._scene.selectedItems() if type(i) == GripItem]
+            self.magic_brush_pos_a = scene_pos
+
         # FIX RUBBER BAND HERE
         """
         Draw FG or BG at CELL Random Forrest
         """
-        if self.rm_Masks_tool_draw == True:
-            self.DeleteAllMasksUnderMouse(event.position())
-            return super(PhotoViewer, self).mouseMoveEvent(event)
-        if self.i_am_drawing_state == True:
-            self.CurrentPosOnScene = self.mapToScene(
-                event.position().toPoint()
-            ).toPoint()
-        if self.aa_review_state == True:
-            return super(PhotoViewer, self).mouseMoveEvent(event)
-        if self.aa_tool_draw == True:
-            if self.i_am_drawing_state_bbox == True:
+        if self.rm_Masks_tool_draw is True:
+            self.DeleteAllMasksUnderMouse(scene_pos_point)
+            return super().mouseMoveEvent(event)
+        if self.i_am_drawing_state is True:
+            self.CurrentPosOnScene = scene_pos_point
+        if self.aa_review_state is True:
+            return super().mouseMoveEvent(event)
+        if self.aa_tool_draw is True:
+            if self.i_am_drawing_state_bbox is True:
                 # starts the drawing process
-                self.auto_annotate_tool_while_draw(
-                    self.mapToScene(event.position().toPoint()).toPoint()
-                )
+                self.auto_annotate_tool_while_draw(scene_pos_point)
             self.global_pos = self.mapToGlobal(
-                QtCore.QPoint(int(event.position().x()), int(event.position().y()))
+                QtCore.QPoint(int(scene_pos.x()), int(scene_pos.y()))
             )
             # if magic tool is active
 
@@ -4719,17 +4993,15 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         ):
             # if gui_main.DH.masks_state[gui_main.current_imagenumber] == True or gui_main.DH.masks_state_usr[gui_main.current_imagenumber] == True :
 
-            if self._photo.isUnderMouse() and self.add_mask_btn_state == True:
-                if self.MainWindow.counter_tmp > 0 and self.i_am_drawing_state == True:
-                    self.draw_while_mouse_move(
-                        self.mapToScene(event.position().toPoint()).toPoint()
-                    )
-                    return super(PhotoViewer, self).mouseMoveEvent(event)
+            if self._photo.isUnderMouse() and self.add_mask_btn_state is True:
+                if self.MainWindow.counter_tmp > 0 and self.i_am_drawing_state is True:
+                    self.draw_while_mouse_move(scene_pos_point)
+                    return super().mouseMoveEvent(event)
 
-        if self.ML_brush_tool_draw_is_active == True and self.brushMask_STATE == True:
-            if self.ML_brush_tool_draw_foreground_add == True:
+        if self.ML_brush_tool_draw_is_active is True and self.brushMask_STATE is True:
+            if self.ML_brush_tool_draw_foreground_add is True:
                 # get pos on scene
-                evPos = self.mapToScene(event.position().toPoint())
+                evPos = scene_pos
 
                 currentImg = (
                     self.MainWindow.DH.BLobj.groups["default"]
@@ -4764,10 +5036,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self.ML_brush_tool_draw_scene_items.append(self.CELL_RM_point_drawing)
                 self.ML_brush_tool_draw_background_added = True
                 self.ML_brush_tool_draw_refreshed = False
-                return super(PhotoViewer, self).mouseMoveEvent(event)
+                return super().mouseMoveEvent(event)
 
-            elif self.ML_brush_tool_draw_background_add == True:
-                evPos = self.mapToScene(event.position().toPoint())
+            elif self.ML_brush_tool_draw_background_add is True:
+                evPos = scene_pos
                 currentImg = (
                     self.MainWindow.DH.BLobj.groups["default"]
                     .conds[self.MainWindow.DH.BLobj.get_current_condition()]
@@ -4800,13 +5072,13 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self.ML_brush_tool_draw_foreground_added = True
                 self.ML_brush_tool_draw_scene_items.append(self.CELL_RM_point_drawing)
                 self.ML_brush_tool_draw_refreshed = False
-                return super(PhotoViewer, self).mouseMoveEvent(event)
+                return super().mouseMoveEvent(event)
 
-        if self.pop_up_tool_choosing_state == True:
+        if self.pop_up_tool_choosing_state is True:
             if event.type() == QtCore.QEvent.Type.MouseMove:
                 self.ui_tool_selection.MyDialog.mouseMoveEvent(event)
                 # return True
-        return super(PhotoViewer, self).mouseMoveEvent(event)
+        return super().mouseMoveEvent(event)
 
     def eventFilter(self, source, event):
         """
@@ -4825,10 +5097,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 # During that event we are adjusting the factor of zoom
                 if self.transform().m11() < 0:
                     self.scale(-1, 1)
-                    return True
+                    # return True
                 if self.transform().m22() < 0:
                     self.scale(1, -1)
-                    return True
+                    # return True
 
                 zoom_scale = 2
                 self.scale(
@@ -4836,14 +5108,22 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                     np.clip(event.value(), -zoom_scale, zoom_scale) + 1.0,
                 )
 
-                config.global_signals.check_and_update_high_res_slides_signal.emit()
+                # config.global_signals.check_and_update_high_res_slides_signal.emit()
+                if (
+                    hasattr(config, "current_photo_viewer")
+                    and config.current_photo_viewer
+                ):
+                    config.current_photo_viewer.request_debounced_high_res_update(
+                        force_update=True
+                    )
+                return True
             elif typ == QtCore.Qt.NativeGestureType.SwipeNativeGesture:
                 print(f"other gesture type: {typ}")
             if typ == QtCore.Qt.NativeGestureType.EndNativeGesture:
                 print(f"ending gesture {-1 if self.zoomValue < 0 else 1}")
             return True
 
-        if type(event) == QtWidgets.QWidgetItem:
+        if isinstance(event, QtWidgets.QWidgetItem):
             # need to skip this event it will cause errors.
             return True
 
@@ -5803,11 +6083,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         print("---------")
         if not asIs:
             for item in self._scene.items():
-                if type(item) == QtWidgets.QGraphicsPixmapItem:
+                if type(item) is QtWidgets.QGraphicsPixmapItem:
                     if cursor != None:
                         item.setCursor(cursor)
                     continue
-                if type(item) == PolygonAnnotation:
+                if type(item) is PolygonAnnotation:
                     item.removeAllPoints()
                     item.canDetectChange = False
                 item.setFlag(
@@ -5815,16 +6095,16 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 )
         else:
             for item in self._scene.items():
-                if type(item) == QtWidgets.QGraphicsPixmapItem:
+                if type(item) is QtWidgets.QGraphicsPixmapItem:
                     continue
-                if type(item) == PolygonAnnotation:
+                if type(item) is PolygonAnnotation:
                     if not item.pointsInited:
                         item.canDetectChange = False
                         item.setFlag(
                             QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,
                             False,
                         )
-                    elif pointsOnly == True:
+                    elif pointsOnly is True:
                         # item.canDetectChange = False
                         item.setFlag(
                             QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable,
@@ -5841,9 +6121,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         iterate overa ll graphic items and make them non selectable
         """
         for item in self._scene.items():
-            if type(item) == QtWidgets.QGraphicsPixmapItem:
+            if type(item) is QtWidgets.QGraphicsPixmapItem:
                 continue
-            if type(item) == PolygonAnnotation or type(item) == GripItem:
+            if type(item) is PolygonAnnotation or type(item) is GripItem:
                 item.canDetectChange = True
                 item.setFlag(
                     QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True
@@ -5935,7 +6215,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 ):
                     # for item self.polyPreviousSelectedItems
                     for item in self.polyPreviousSelectedItems:
-                        if type(item) == PolygonAnnotation:
+                        if type(item) is PolygonAnnotation:
                             item.PassThroughClicks = True
                             item.setFlag(
                                 QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,
@@ -6297,7 +6577,7 @@ class BitMapAnnotation(QtWidgets.QGraphicsPixmapItem):
         class_id=None,
         unique_id=None,
     ):
-        super(BitMapAnnotation, self).__init__()
+        super().__init__()
 
         self.non_hover_opacity = 50
         self.hover_opacity = 120
@@ -6531,6 +6811,32 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         if not self.check_if_class_is_visible():
             self.set_visible_all(False)
 
+    def get_hover_opacity(self):
+        """
+        Maps slider value (0-100) to opacity values:
+        - At slider=0: both opacities near zero
+        - At slider=50: current values (30, 80)
+        - At slider=100: both opacities near 100
+        """
+        slider_value = self.MyParent.pg1_settings_mask_opasity_slider.value()
+        # For hover_opacity: 10 -> 80 -> 100
+        if slider_value <= 50:
+            hover = 10 + slider_value * (70 / 50)  # Linear from 10 to 80
+        else:
+            hover = 80 + (slider_value - 50) * (20 / 50)  # Linear from 80 to 100
+
+        return int(hover)
+
+    def get_non_hover_opacity(self):
+        # For non_hover_opacity: 0 -> 30 -> 90
+
+        slider_value = self.MyParent.pg1_settings_mask_opasity_slider.value()
+        if slider_value <= 50:
+            non_hover = slider_value * (30 / 50)  # Linear from 0 to 30
+        else:
+            non_hover = 30 + (slider_value - 50) * (60 / 50)  # Linear from 30 to 90
+        return int(non_hover)
+
     def set_polygon_array(self, polygon_array):
         self.polygon_array = [
             i.squeeze() for i in polygon_array
@@ -6587,8 +6893,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
     def update_annotations_color(self):
         # updates the annotation color and opacity from the class properties
 
-        opacity_value = self.MyParent.pg1_settings_mask_opasity_slider.value() / 100
-        opacity_value = int(self.non_hover_opacity * opacity_value)
+        opacity_value = self.get_non_hover_opacity()
 
         ### Set the opacity of the polygon annotation
 
@@ -6777,9 +7082,11 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 colorToUseNow[1],
                 colorToUseNow[2],
                 int(
-                    self.non_hover_opacity
-                    * self.polygon_edge_multiplier
-                    * (self.MyParent.pg1_settings_mask_opasity_slider.value() / 100),
+                    self.get_hover_opacity()
+                    * (
+                        self.MyParent.pg1_settings_mask_line_opasity_slider.value()
+                        / 100
+                    ),
                 ),
             )
         )
@@ -6804,7 +7111,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 colorToUseNow[1],
                 colorToUseNow[2],
                 int(
-                    self.non_hover_opacity
+                    self.get_non_hover_opacity()
                     * (self.MyParent.pg1_settings_mask_opasity_slider.value() / 100)
                 ),
             )
@@ -6833,7 +7140,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 self.center_point.y(),
                 colorToUseNow,
             )  # Change "Sample text" to your desired text
-        else:
+        elif self.is_suggested:
             # For suggested annotations, make them non-hover non-selectable and non clickable
             self.setAcceptHoverEvents(False)
             self.setFlag(
@@ -6871,12 +7178,12 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
 
     def paint(self, painter, option, widget):
         option.state &= ~QtWidgets.QStyle.StateFlag.State_Selected
-        super(PolygonAnnotation, self).paint(painter, option, widget)
+        super().paint(painter, option, widget)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
             event.ignore()
-        return super(PolygonAnnotation, self).eventFilter(source, event)
+        return super().eventFilter(source, event)
 
     def FindPosAtList(self, ListToIndex):
         """
@@ -6993,14 +7300,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 )
                 iterator += 1
 
-        # poly_items = [i for i in self.polygon()]
-        # self.update_annotation()
-
-        # print("init all points end")
-        # self.removeAllPoints()
-
-        # Needs to be here to not invoke selection when we create points
-
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setFlag(
             QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges, True
@@ -7070,6 +7369,12 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
                 # add it to the viewer scene
                 self.MyParent.viewer.scene().addItem(self.poly_hole_scene_items[-1])
 
+    def update_polygon_holes_indexes(self, index: int, amount: int = 1):
+        for i, item in enumerate(self.poly_hole_scene_items):
+            if i < index:
+                continue
+            item.array_index += amount
+
     def despawn_polygon_holes(self):
         for item in self.poly_hole_scene_items:
             self.MyParent.viewer.scene().removeItem(item)
@@ -7112,7 +7417,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
             import traceback
 
             logger.error(traceback.format_exc())
-        return super(PolygonAnnotation, self).itemChange(change, value)
+        return super().itemChange(change, value)
 
     def contextMenuEvent(self, event):
         """
@@ -7227,7 +7532,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
             self.setZValue(self.hover_enter_zvalue)
             self.setFocus()
 
-        return super(PolygonAnnotation, self).hoverEnterEvent(event)
+        return super().hoverEnterEvent(event)
 
     def hoverLeaveEvent(self, event):
         color = self.get_mask_color()
@@ -7265,7 +7570,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
             self.setZValue(self.on_click_zvalue)
         else:
             self.setZValue(self.non_selected_zvalue)
-        return super(PolygonAnnotation, self).hoverLeaveEvent(event)
+        return super().hoverLeaveEvent(event)
 
 
 class HoleAnnotationItem(QtWidgets.QGraphicsPathItem):
@@ -7276,15 +7581,6 @@ class HoleAnnotationItem(QtWidgets.QGraphicsPathItem):
         self.annotation_item = annotation_item
         # set brush to dark gray
         self.setAcceptHoverEvents(True)
-        # class_name = (
-        #     self.annotation_item.MyParent.DH.BLobj.groups["default"]
-        #     .conds[self.annotation_item.MyParent.DH.BLobj.get_current_condition()]
-        #     .images[self.annotation_item.MyParent.current_imagenumber]
-        #     .get_by_uuid(self.annotation_item.unique_id)
-        #     # The above code is setting the alpha value of a brush color to 255, which means the color is
-        #     # fully opaque. The brush color is defined as white with RGB values of 255, 255, 255.
-        #     .class_id
-        # )
         self.my_brush = self.brush()
         self.color = QtGui.QColor(color[0], color[1], color[2])
         self.color.setAlpha(125)
@@ -7316,13 +7612,13 @@ class HoleAnnotationItem(QtWidgets.QGraphicsPathItem):
             self.color.setAlpha(125)
             self.my_brush.setColor(self.color)
             self.setFocus()
-        return super(HoleAnnotationItem, self).hoverEnterEvent(event)
+        return super().hoverEnterEvent(event)
 
     def hoverLeaveEvent(self, event):
         self.color = self.my_brush.color()
         self.color.setAlpha(255)
         self.my_brush.setColor(self.color)
-        return super(HoleAnnotationItem, self).hoverLeaveEvent(event)
+        return super().hoverLeaveEvent(event)
 
     def delete_hole(self):
         config.global_signals.delete_hole_from_mask_signal.emit(
@@ -7480,8 +7776,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setZValue(11)
         self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        # if self.m_annotation_item.MyParent.viewer.ui_tool_selection.selected_button == "magic_brush_move":
-        #     self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -7529,10 +7824,10 @@ class GripItem(QtWidgets.QGraphicsPathItem):
                             False
                         )
                     if value.isNull():
-                        return super(GripItem, self).itemChange(change, value)
+                        return super().itemChange(change, value)
                     self.m_annotation_item.movePoint(self.m_index, value)
                     self.m_annotation_item.update_annotation()
-        return super(GripItem, self).itemChange(change, value)
+        return super().itemChange(change, value)
 
 
 class mgcClick_cursor_cls(QtWidgets.QGraphicsItemGroup):

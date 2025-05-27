@@ -595,7 +595,17 @@ IS_TILE_SIZE = 3750  # if the image is larger than that on any size, its tilled
 DEEPZOOM_TILE_SIZE = 256 * 6
 
 tiles_in_use = []  # list of tile coordinates  that are cached in scene
-_deepzoom_pixmaps = []
+_deepzoom_pixmaps = (
+    []
+)  # key: tile_id, value: (graphics_item, bbox, downsample, order, image_name)
+_deepzoom_order_counter = 0  # counter for the order of the tiles
+_deepzoom_cache_size = 0  # size of the cache in bytes
+current_photo_viewer = None
+
+Z_VALUE_BACKGROUND = -9999
+Z_VALUE_BACKGROUND_IMAGE = (
+    -9000
+)  # this can be a normal image or  the background in a pyramidal image
 
 
 HIGH_RES_SCENE_LAST_UPDATED_POS = None  # last updated position of the high res scene
@@ -611,7 +621,15 @@ CURRENT_SAVE_FILE = None  # if we save during the current session or
 VIEWPORT_MIN_RESOLUTION = (
     2000  # minimum resolution to display on ultra high resolution images
 )
-MAX_DEEPZOOM_OBJECTS = 100
+MAX_DEEPZOOM_OBJECTS = 45
+ZOOM_DOWNSAMPLE_THRESHOLDS = {
+    "very_high": (2.0, 1.0),  # zoom >= 2.0, downsample = 1.0
+    "high": (1.0, 2.0),  # zoom >= 1.0, downsample = 2.0
+    "medium": (0.5, 4.0),  # zoom >= 0.5, downsample = 4.0
+    "low": (0.25, 8.0),  # zoom >= 0.25, downsample = 8.0
+    "very_low": (0.0, 16.0),  # zoom < 0.25, downsample = 16.0
+}
+
 
 ### Interactive Magic Tools ###
 

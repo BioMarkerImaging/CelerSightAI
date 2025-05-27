@@ -1,5 +1,5 @@
 """
-This is a module that applies the css sepcified to the the whole app 
+This is a module that applies the css sepcified to the the whole app
 and brings the app together essensialy
 """
 
@@ -300,7 +300,7 @@ class myMainWindow(QtWidgets.QMainWindow):
                         else:
                             self.showMaximized()
                         return True
-            return super(myMainWindow, self).eventFilter(source, event)
+            return super().eventFilter(source, event)
 
         return False
 
@@ -540,6 +540,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Set up viewer
         logger.debug("Setting up viewer")
         self.viewer = PhotoViewer(self)  # Create an instance of the photoviwer
+        config.current_photo_viewer = self.viewer
         self.viewer.viewport().installEventFilter(self)
         self.viewer.setMouseTracking(True)
         self.viewer.setAcceptDrops(True)
@@ -1362,6 +1363,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         from celer_sight_ai.gui.custom_widgets.channel_picker_widget import (
             ChannelPickerWidget,
         )
+
         self.channel_picker_widget = ChannelPickerWidget(
             parent=self.pg1_Maskshandler_groupBox_ToolBox,
             MainWindow=self,
@@ -1722,9 +1724,11 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             opacity = 100
         # stop the signal from being emitted, as we only need to change the value of the UI
         self.pg1_settings_mask_opasity_slider.blockSignals(True)
+        self.pg1_settings_mask_line_opasity_slider.blockSignals(True)
         self.pg1_settings_mask_opasity_slider.setValue(opacity)
         # restore
         self.pg1_settings_mask_opasity_slider.blockSignals(False)
+        self.pg1_settings_mask_line_opasity_slider.blockSignals(False)
 
     def clamp(self, x):
         return max(0, min(x, 255))
@@ -2525,7 +2529,6 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: self.assignFontsFamilyInPlotTab()
         )
 
-
         self.pg2_graphs_view.itemSelectionChanged.connect(
             self.show_only_active_plot_settings
         )
@@ -2561,7 +2564,6 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.SelectedMaskDialog.setAttribute(
             QtCore.Qt.WidgetAttribute.WA_TranslucentBackground
         )
-
 
         self.SelectedMaskDialog.hide()
         self.pg_2_Source_Data_btn.clicked.connect(lambda: self.spawnAnnotationDialog())
@@ -3438,14 +3440,12 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.pg1_Maskshandler_groupBox_ToolBox.hide()
         self.pg1_settings_groupBox_mask_appearance_2.hide()
-        # self.pg1_settings_groupBox_classes.hide()
 
-        # hide mask tabs
-        #
-        # Set Up animatin cursor class
-        #
-        # from celer_sight_ai.gui.animate_qpushbutton import AnimationCursor
-        # self.CustomCursor = AnimationCursor(self)
+        # extend hight for extra parameters
+        self.pg1_settings_groupBox_mask_appearance.setMaximumHeight(
+            self.pg1_settings_groupBox_mask_appearance.height() + 200
+        )
+
         from celer_sight_ai import config
 
         config.global_signals.StopCursorAnimationSignal.connect(

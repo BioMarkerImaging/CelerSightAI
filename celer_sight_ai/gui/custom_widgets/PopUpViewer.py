@@ -6,7 +6,7 @@ class PopUpPhotoViewer(QtWidgets.QGraphicsView):
     object_signal = QtCore.pyqtSignal()
 
     def __init__(self, MainWindow=None):
-        super(PopUpPhotoViewer, self).__init__()
+        super().__init__()
         # super(Ui_MainWindow, self).__init__()
         from celer_sight_ai import config
 
@@ -16,7 +16,7 @@ class PopUpPhotoViewer(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self._photo = QtWidgets.QGraphicsPixmapItem()
-        self._photo.setZValue(-50)
+        self._photo.setZValue(config.Z_VALUE_BACKGROUND_IMAGE)
         self._scene = QtWidgets.QGraphicsScene(self)
         self.setScene(self._scene)
         self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
