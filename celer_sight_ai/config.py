@@ -630,9 +630,10 @@ ZOOM_DOWNSAMPLE_THRESHOLDS = {
     "very_low": (0.0, 16.0),  # zoom < 0.25, downsample = 16.0
 }
 
+# if a polygon too many points, when zoomed out, dont render all
+LARGE_SCALE_POLYGON_THRESHOLD = 300
 
 ### Interactive Magic Tools ###
-
 MAGIC_BOX_1_RESOLUTION = 320
 MAGIC_BOX_2_RESOLUTION = 1024
 MAGIC_BOX_2_MIN_ANNOTATION_PERCENT_SIZE = 0.06  # the bounding box of the subject of interest is this size compared to the image crop

@@ -1331,7 +1331,7 @@ class SamPredictorONNX:
                 logger.debug("Invalid Area")
             try:
                 # make sure mean color is similar
-                if (
+                if any(
                     abs(np.mean(image_arr[mask_arr]) - image_feature["mean_color"])
                     >= (1 - (w.image_similarity_threshold_slider.value() / 100))
                     * 255  # this might not be the best threshold
