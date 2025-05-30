@@ -17187,7 +17187,7 @@ class ColorPrefsPhotoViewer:
     """
 
     def __init__(self, MainWindow=None):
-        super(ColorPrefsPhotoViewer, self).__init__()
+        super().__init__()
         self.Main = MainWindow
         self.AvailabelChannels = {"RED": 0, "GREEN": 1, "BLUE": 2}
         self.ChannelsInUse = [0]
@@ -17311,7 +17311,7 @@ class ColorPrefsPhotoViewer:
 
 class ImagePreviewGraphicsView(QtWidgets.QGraphicsView):
     def __init__(self, parent=None, MainWindow=None):
-        super(ImagePreviewGraphicsView, self).__init__(parent)
+        super().__init__(parent)
         from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
         self.setMouseTracking(True)
@@ -20016,6 +20016,37 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             config.current_photo_viewer.request_debounced_high_res_update(
                 force_update=True
             )
+
+    def calculate_minimum_zoom(self):
+        """
+        Calculate the minimum zoom level based on image content and viewport size.
+        Returns a zoom level that ensures content remains visible.
+        """
+        if not self.hasPhoto():
+            return 0.01  # Fallback minimum
+
+        # Get image object and its dimensions
+        image_object = self.MainWindow.DH.BLobj.get_current_image_object()
+        if not image_object or not image_object.SizeX or not image_object.SizeY:
+            return 0.01
+
+        # Get viewport dimensions
+        viewport_rect = self.viewport().rect()
+        viewport_width = viewport_rect.width()
+        viewport_height = viewport_rect.height()
+
+        if viewport_width <= 0 or viewport_height <= 0:
+            return 0.01
+
+        # Calculate scale needed to fit image in viewport with some margin
+        scale_x = viewport_width / (image_object.SizeX * 4)  # 4x margin for zoom out
+        scale_y = viewport_height / (image_object.SizeY * 4)
+
+        # Use the smaller scale to ensure content fits
+        min_scale = min(scale_x, scale_y)
+
+        # Ensure minimum is not too small
+        return max(0.01, min_scale)
 
     def ensure_content_visible(self):
         """
@@ -23525,7 +23556,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         _disable_spawn_extra_items=False,
     ):
         self.canDetectChange = False
-        super(PolygonAnnotation, self).__init__()
+        super().__init__()
         import uuid
 
         assert polygon_array is not None
@@ -23861,6 +23892,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
     def boundingRect(self):
         if self.bbox is None:
             return QtCore.QRectF(0, 0, 0, 0)
+
         return QtCore.QRectF(
             self.bbox[0],
             self.bbox[1],
@@ -24091,8 +24123,54 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         polygon = Polygon(coordinates)
         return polygon.representative_point()
 
+    # def paint(self, painter, option, widget):
+    #     option.state &= ~QtWidgets.QStyle.StateFlag.State_Selected
+    #     super().paint(painter, option, widget)
+
     def paint(self, painter, option, widget):
+        """Optimized paint method with viewport awareness"""
+
+        # Early exit if polygon is completely outside viewport
+        if self.bbox and hasattr(self, "MyParent") and self.MyParent:
+            try:
+                viewer = self.MyParent.viewer
+                if viewer.hasPhoto():
+                    # Get viewport in scene coordinates
+                    viewport_rect = viewer.mapToScene(
+                        viewer.viewport().rect()
+                    ).boundingRect()
+
+                    # Check if polygon intersects with viewport
+                    polygon_rect = QtCore.QRectF(
+                        self.bbox[0],
+                        self.bbox[1],
+                        self.bbox[2] - self.bbox[0],
+                        self.bbox[3] - self.bbox[1],
+                    )
+
+                    if not viewport_rect.intersects(polygon_rect):
+                        return  # Don't paint if not visible
+
+                    # For very large polygons, set fast rendering hints
+                    polygon_area = (self.bbox[2] - self.bbox[0]) * (
+                        self.bbox[3] - self.bbox[1]
+                    )
+                    if polygon_area > 5_000_000:
+                        painter.setRenderHint(
+                            QtGui.QPainter.RenderHint.Antialiasing, False
+                        )
+                        painter.setRenderHint(
+                            QtGui.QPainter.RenderHint.SmoothPixmapTransform, False
+                        )
+
+            except Exception as e:
+                logger.error(f"PolygonAnnotation paint error: {e}")
+                pass
+
+        # Remove selection state for performance
         option.state &= ~QtWidgets.QStyle.StateFlag.State_Selected
+
+        # Call parent paint
         super().paint(painter, option, widget)
 
     def eventFilter(self, source, event):
