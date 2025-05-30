@@ -1,8 +1,9 @@
-import sys
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 import os
+
 from celer_sight_ai import config
 
 if config.is_executable:
@@ -64,7 +65,7 @@ class featureBuilder:
         orgDf = VarianceFilterF.run()
         self.allFeaturesComputed.append(VarianceFilterF)
 
-        logger.info("VarianceFilterF: ".format(time.time() - startVarianceFilterF))
+        logger.info("VarianceFilterF: ")
         # DifferenceOfGaussiansF = featureDifferenceOfGaussians(channels.copy() ,orgDf , MODE )
         # startDifferenceOfGaussiansF = time.time()
         # orgDf = DifferenceOfGaussiansF.run()
@@ -74,9 +75,7 @@ class featureBuilder:
         orgDf = HessianMatrixEigvalsF.run()
         self.allFeaturesComputed.append(HessianMatrixEigvalsF)
 
-        logger.info(
-            "HessianMatrixEigvalsF: ".format(time.time() - startHessianMatrixEigvalsF)
-        )
+        logger.info("HessianMatrixEigvalsF: ")
         GaussianSmoothingF = featureGaussianSmoothing(chUsed.copy(), orgDf, "Low")
         orgDf = GaussianSmoothingF.run()
         self.allFeaturesComputed.append(GaussianSmoothingF)
@@ -378,8 +377,8 @@ class featureVarianceFilter:
         return ((sigma * 2) + 1) * 3
 
     def run(self):
-        import skimage
         import cv2
+        import skimage
 
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
@@ -457,8 +456,8 @@ class featureDifferenceOfGaussians:
         return ((HighSig + 1) * (1.6 * (HighSig + 2))) * self.a
 
     def run(self):
-        import skimage
         import cv2
+        import skimage
 
         self.num = 0
         for i in range(len(self.channels)):
@@ -559,8 +558,8 @@ class featureHessianMatrixEigvals:
         return (lowSig * 3) + 0.1
 
     def run(self):
-        import skimage
         import cv2
+        import skimage
 
         self.num = 0
         origWidth = self.channels[0][0].shape[1]
@@ -653,7 +652,7 @@ class ML_ContRun_DialogUi(exitSaveDialog_UI):
         self.MainWindow.viewer.ModelLoadedLabel.deleteLater()
 
 
-class ML_RF(object):
+class ML_RF:
     def __init__(
         self, input_image=None, ForgroundHint=None, backgroundHint=None, MainWindow=None
     ):
@@ -682,10 +681,8 @@ class ML_RF(object):
 
         gl = config.global_signals
         an = self.MainWindow.new_analysis_object
-        logger.info("gl is ".format(gl.area))
-        logger.info(
-            "an is ".format(self.MainWindow.new_analysis_object.area_map["scratch"])
-        )
+        logger.info("gl is ")
+        logger.info("an is ")
         self.featureModel = self.getFeaturesSingle
         self.fillHoles = False
         self.areaOfInt = gl.area
@@ -756,7 +753,7 @@ class ML_RF(object):
             )
 
     def getClassifier(self):
-        from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+        from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
         # Initialize CatBoostClassifier
 
@@ -811,12 +808,13 @@ class ML_RF(object):
 
     def getFilters(self):
         config.global_signals.PreProcessingLabeUpdatelSignal.emit()
-        from sklearn.model_selection import train_test_split
         import time
-        import numpy as np
+
         import cv2
+        import numpy as np
         import pandas as pd
-        from skimage.transform import rescale, resize, downscale_local_mean
+        from skimage.transform import downscale_local_mean, rescale, resize
+        from sklearn.model_selection import train_test_split
 
         img = self.image.copy()
         df, rbgImage = self.prepModel(img + 1)
@@ -833,14 +831,15 @@ class ML_RF(object):
         self.currentFeatures = df
 
     def trainNormal(self):
-        from sklearn.model_selection import train_test_split
-        import time
-        import numpy as np
-        import cv2
-        import skimage
-        import pandas as pd
-        from skimage.transform import rescale, resize, downscale_local_mean
         import pickle
+        import time
+
+        import cv2
+        import numpy as np
+        import pandas as pd
+        import skimage
+        from skimage.transform import downscale_local_mean, rescale, resize
+        from sklearn.model_selection import train_test_split
 
         if self.FeaturesCalculated == False:
             start = time.time()
@@ -921,7 +920,7 @@ class ML_RF(object):
         model_RF.fit(X_train, y_train.astype(np.float))
         config.global_signals.spawnLoadedMLModelSignal.emit()
         config.global_signals.predictingLabeUpdatelSignal.emit()
-        logger.info("train took ".format(time.time() - startSKLEARN))
+        logger.info("train took ")
 
         # Test prediction on testing data.
         # prediction_test_RF = model_RF.predict(X_test)#
@@ -952,7 +951,7 @@ class ML_RF(object):
         # logger.info(dfPred)
 
         prediction_test_RF = model_RF.predict(dfPred)  # img.copy().reshape(-1))
-        logger.info("time to predict: ".format(time.time() - beforePred))
+        logger.info("time to predict: ")
         logger.info(prediction_test_RF)
 
         # # Convert into ONNX format
@@ -1082,13 +1081,14 @@ class ML_RF(object):
         return X_train, pca
 
     def improveTrainedModel(self):
-        import skimage
-        from sklearn.model_selection import train_test_split
         import time
-        import numpy as np
+
         import cv2
+        import numpy as np
         import pandas as pd
-        from skimage.transform import rescale, resize, downscale_local_mean
+        import skimage
+        from skimage.transform import downscale_local_mean, rescale, resize
+        from sklearn.model_selection import train_test_split
 
         if self.FeaturesCalculated == False:
             start = time.time()
@@ -1142,15 +1142,16 @@ class ML_RF(object):
         # X_train = Y
         # y_train = X
         # RANDOM FOREST
-        from sklearn.ensemble import RandomForestClassifier
         import time
+
+        from sklearn.ensemble import RandomForestClassifier
 
         model_RF = self.myPixelClassifier
 
         # Train the model on training data
         model_RF.fit(X_train, y_train)
         config.global_signals.spawnLoadedMLModelSignal.emit()
-        logger.info("time to train: ".format(time.time() - start))
+        logger.info("time to train: ")
         # Test prediction on testing data.
         # prediction_test_RF = model_RF.predict(X_test)#
         self.MainWindow.viewer.ML_brush_tool_draw_last_model = model_RF
@@ -1177,7 +1178,7 @@ class ML_RF(object):
         dfPred = PrevDf
         beforePred = time.time()
         prediction_test_RF = model_RF.predict(dfPred)  # img.copy().reshape(-1))
-        logger.info("time to predict: ".format(time.time() - beforePred))
+        logger.info("time to predict: ")
 
         prediction_test_RF = prediction_test_RF.reshape(
             labeled_img_org.shape[0], labeled_img_org.shape[1]
@@ -1210,7 +1211,7 @@ class ML_RF(object):
             from scipy import ndimage
 
             prediction_test_RF_F = ndimage.binary_fill_holes(prediction_test_RF_F)
-        logger.info("final time is ".format(time.time() - start))
+        logger.info("final time is ")
         listAllMasks = []
         startControur = time.time()
         contours = skimage.measure.find_contours(
@@ -1219,7 +1220,7 @@ class ML_RF(object):
             fully_connected="high",
             positive_orientation="high",
         )
-        logger.info("contours take: ".format(time.time() - startControur))
+        logger.info("contours take: ")
         startControur = time.time()
         if self.currentModel == "scratch":
             startLen = 0
@@ -1344,8 +1345,8 @@ class ML_RF(object):
         return
 
     def prepImageForFeatureExtraction(self, img):
-        import pandas as pd
         import cv2
+        import pandas as pd
         from scipy import ndimage
 
         img = resize(
@@ -1433,9 +1434,10 @@ class ML_RF(object):
         return df, img2_ORIG
 
     def saveBioMLModel(self):
-        import sklearn
-        import catboost
         import pickle
+
+        import catboost
+        import sklearn
 
         # if self.MainWindow.viewer.ML_brush_tool_draw_last_model:
         #     model = self.MainWindow.viewer.ML_brush_tool_draw_last_model
@@ -1480,6 +1482,7 @@ class ML_RF(object):
 
     def getFeaturesWoundHeal(self, df, rbgImage, origImage):
         import time
+
         import cv2
 
         # Generate Gabor features
@@ -1736,7 +1739,7 @@ def variance_filter(img, VAR_FILTER_SIZE):
     return win_var
 
 
-class Grab_cut_tool(object):
+class Grab_cut_tool:
     """
     Class for handling mainly the Threshold adjustment and Grabcut function
     """
@@ -1774,7 +1777,7 @@ class Grab_cut_tool(object):
     def threshold_adjuster(self, img):
         import scipy.ndimage as ndi
         import skimage
-        from skimage.transform import rescale, resize, downscale_local_mean
+        from skimage.transform import downscale_local_mean, rescale, resize
 
         """
 
@@ -1864,8 +1867,8 @@ class Grab_cut_tool(object):
 
         mean_val = 100  # np.mean(self.resized_image[np.where(mask==cv2.GC_PR_FGD)])
 
-        import skimage
         import scipy
+        import skimage
 
         logger.info("ok before")
         final_mask, bgdModel, fgdModel = cv2.grabCut(
@@ -1916,11 +1919,16 @@ class Grab_cut_tool(object):
         whole image added together
         """
         self.reduced_by = aa_tool.detail_value
-        from skimage.morphology import binary_closing, disk
-        from skimage.transform import rescale, resize, downscale_local_mean
-        import scipy.ndimage as nd
         import cv2
-        from skimage.morphology import medial_axis, skeletonize, thin
+        import scipy.ndimage as nd
+        from skimage.morphology import (
+            binary_closing,
+            disk,
+            medial_axis,
+            skeletonize,
+            thin,
+        )
+        from skimage.transform import downscale_local_mean, rescale, resize
 
         # self.reduced_by =2
         self.xstart_reduced = xstart // self.reduced_by
@@ -2016,8 +2024,8 @@ class Grab_cut_tool(object):
 
         mean_val = 100  # np.mean(self.resized_image[np.where(mask==cv2.GC_PR_FGD)])
         logger.info("mean is ", mean_val)
-        import skimage
         import scipy
+        import skimage
 
         final_mask, bgdModel, fgdModel = cv2.grabCut(
             self.resized_image,
@@ -2123,8 +2131,8 @@ class Grab_cut_tool(object):
 
 
 def findPeaksOptimizer(image, mask, min_distance=6, num_peaks=5):
-    from skimage.feature import peak_local_max
     import scipy
+    from skimage.feature import peak_local_max
 
     COMPLETE = False
     xy = peak_local_max(
@@ -2208,8 +2216,8 @@ def GetPointsFromQPolygonF(polygonF):
 
 
 def CellsSplitterSearch(image, maskPOL, seedNum=4):
-    import skimage
     import cv2
+    import skimage
 
     maskPOL, boundingBox = np.asarray(GetPointsFromQPolygonF(maskPOL))
     resultF = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
@@ -2267,7 +2275,7 @@ def CellsSplitterSearch(image, maskPOL, seedNum=4):
     from scipy import ndimage as ndi
 
     distance = ndi.distance_transform_edt(imageCanvas)
-    from skimage.segmentation import watershed, random_walker
+    from skimage.segmentation import random_walker, watershed
 
     xy = ndi.label(np.asarray(xy))
 
@@ -2301,8 +2309,8 @@ def CellsSplitterSearch(image, maskPOL, seedNum=4):
 
 def watershedWithSeeds(maskOrig, maskSeeds):
     from scipy import ndimage as ndi
-    from skimage.segmentation import watershed
     from skimage.feature import peak_local_max
+    from skimage.segmentation import watershed
 
     # Now we want to separate the two objects in image
     # Generate the markers as local maxima of the distance to the background
@@ -2317,8 +2325,8 @@ def watershedWithSeeds(maskOrig, maskSeeds):
 
 
 def CellsSplitter(image, maskPOL, seeds=[]):
-    import skimage
     import cv2
+    import skimage
 
     maskPOL, boundingBox = np.asarray(GetPointsFromQPolygonF(maskPOL))
     resultF = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)

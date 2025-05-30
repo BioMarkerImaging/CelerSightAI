@@ -704,7 +704,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
         import time
 
         from celer_sight_ai import config
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
 
         # if mask suggestion is running, stop it
         # wait until not runnning any more
@@ -851,7 +851,7 @@ class AnnotationAssistantWidget(QtWidgets.QWidget, Ui_Form):
         """
         Delete all the suggested masks from the scene, leaves the orignal mask on
         """
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
 
         # cancel the ROI assistant
         # get all masks from the scene that are suggested

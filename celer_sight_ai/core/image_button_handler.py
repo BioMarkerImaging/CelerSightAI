@@ -21,7 +21,7 @@ import logging
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 from celer_sight_ai import config
-from celer_sight_ai.gui.custom_widgets.scene import readImage
+from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 
 logger = logging.getLogger(__name__)
 
@@ -449,7 +449,10 @@ class AddButtonHandler(QtWidgets.QWidget):
 
         import numpy as np
 
-        from celer_sight_ai.gui.custom_widgets.scene import image_to_uint8, readImage
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
+            image_to_uint8,
+            readImage,
+        )
 
         img_id = signal_object.get("image_idx")
         cond_id = signal_object.get("condition_id")
@@ -602,7 +605,7 @@ class AddButtonHandler(QtWidgets.QWidget):
         import numpy as np
 
         from celer_sight_ai import config
-        from celer_sight_ai.gui.custom_widgets.scene import is_video_file
+        from celer_sight_ai.gui.custom_widgets.viewer.utils import is_video_file
 
         # if condition already exists and there are images set for it, dont  set_common_name
         # if the text condition or treatment exists within the treatment name , also rename acording to the file filename

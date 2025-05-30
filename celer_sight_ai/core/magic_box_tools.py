@@ -951,7 +951,7 @@ class SamPredictorONNX:
         return
 
     def accept_current_suggested_annotations(self):
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
 
         # Stop threaded generator process
         # Then convert all suggested annotations to normal annotations

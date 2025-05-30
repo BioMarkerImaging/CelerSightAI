@@ -43,10 +43,10 @@ from celer_sight_ai.gui.designer_widgets_py_files.MainWindowUi import (
 )  # Mainwindow_pg1_v2 import Ui_MainWindow
 
 logger.info("imported Ui_MainWindow")
-from celer_sight_ai.gui.custom_widgets.scene import PhotoViewer
+from celer_sight_ai.gui.custom_widgets.viewer.photoviewer import PhotoViewer
 
 logger.info("imported PhotoViewer")
-from celer_sight_ai.gui.custom_widgets.scene import (
+from celer_sight_ai.gui.custom_widgets.viewer import (
     ColorPrefsPhotoViewer as ColorPrefsPhotoViewer,
 )
 
@@ -1852,7 +1852,7 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             )
 
     def FilterMinArea_ML_RF(self):
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
 
         if self.viewer.ML_brush_tool_object_state == True:
             numberFilterArea = self.pg1_ML_advanced_minSpinBox.value()
@@ -2348,7 +2348,9 @@ class CelerSightMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.viewer.setParent(self.pg_2_widget_graph_visualizer_3)
 
         # Create a QGraphicsScene and set it as the scene for the view of image preview
-        from celer_sight_ai.gui.custom_widgets.scene import ImagePreviewGraphicsView
+        from celer_sight_ai.gui.custom_widgets.viewer import (
+            ImagePreviewGraphicsView,
+        )
 
         self.images_preview_graphicsview = ImagePreviewGraphicsView(
             self.overview_tabs_image, self

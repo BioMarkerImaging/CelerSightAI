@@ -399,7 +399,7 @@ class MultiChannelImporterUi(DialogMultichannelImporter):
         self.gridLayout_2.addWidget(self.graphicsView, 3, 1, 1, 1)
 
         self._scene = QtWidgets.QGraphicsScene(self.graphicsView)
-        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import BackgroundGraphicsItem
 
         self._photo = BackgroundGraphicsItem()
         self._photo.setZValue(-50)

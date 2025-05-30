@@ -28,10 +28,10 @@ from celer_sight_ai.config import (
     IMAGE_THUMBNAIL_MAX_SIZE,
 )
 from celer_sight_ai.gui.custom_widgets.image_button import ImageButtonPlaceHolderClass
-from celer_sight_ai.gui.custom_widgets.scene import readImage
 from celer_sight_ai.gui.custom_widgets.transparent_graphics_widget import (
     TransparentGraphicsWidget,
 )
+from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 from celer_sight_ai.io.image_reader import (
     combine_channels,
     getImage,
@@ -1344,7 +1344,7 @@ class condObj:
         return False
 
     def load_current_ram_image(self, bbox=None) -> None:
-        from celer_sight_ai.gui.custom_widgets.scene import readImage
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 
         # bbox: [x,y,w,h]
         # check if the current config.ram_image is the correct image
@@ -1927,7 +1927,7 @@ class ImageObject:
         return False
 
     def set_fast_cache_mode(self, value):
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer import PolygonAnnotation
 
         # make sure all mask graphics items have the same value
         all_mask_items = [
@@ -1939,7 +1939,7 @@ class ImageObject:
             m.set_fast_cache_mode(value)
 
     def set_disable_overlay_annotation_items(self, value):
-        from celer_sight_ai.gui.custom_widgets.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer import PolygonAnnotation
 
         if value == self._disable_overlay_annotation_items:
             return
@@ -1992,7 +1992,7 @@ class ImageObject:
         return False
 
     def load_current_ram_image(self, bbox=None) -> None:
-        from celer_sight_ai.gui.custom_widgets.scene import readImage
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 
         # bbox: [x,y,w,h]
         # check if the current config.ram_image is the correct image

@@ -27,7 +27,7 @@ from celer_sight_ai import config
 from celer_sight_ai.gui.custom_widgets.celer_sight_main_window_ui_extended import (
     CelerSightMainWindow,
 )
-from celer_sight_ai.gui.custom_widgets.scene import (
+from celer_sight_ai.gui.custom_widgets.viewer.scene import (
     CropItem,
     create_pyramidal_tiff_for_image_object,
     readImage,
@@ -56,7 +56,7 @@ class Master_MainWindow(CelerSightMainWindow):
     signal_hide_dialog = QtCore.pyqtSignal()  # not needed?
 
     def __init__(self, parent=None):
-        super(Master_MainWindow, self).__init__(parent)
+        super().__init__(parent)
         from celer_sight_ai import config
 
         # a class to process all variables and to hadnle storage
@@ -607,7 +607,7 @@ class Master_MainWindow(CelerSightMainWindow):
     def toggle_mask_class_visibility(self, show=False, class_uuid=None):
         # hide all of the annotation on screen with that class_uuid
         # get all items in the scene
-        from celer_sight_ai.gui.custom_widgets.scene import (
+        from celer_sight_ai.gui.custom_widgets.viewer import (
             BitMapAnnotation,
             PolygonAnnotation,
         )
@@ -4006,7 +4006,9 @@ class Master_MainWindow(CelerSightMainWindow):
         self.images_preview_graphicsview.clear_out_visible_buttons()
 
     def delete_RNAi_list_item(self):
-        from celer_sight_ai.gui.custom_widgets.scene import BackgroundGraphicsItem
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
+            BackgroundGraphicsItem,
+        )
 
         self.channel_picker_widget.clear_channels()
         logger.debug("delete_RNAi_list_item")
@@ -4642,7 +4644,7 @@ class Master_MainWindow(CelerSightMainWindow):
         Args:
             object_dict (dict): _description_
         """
-        from celer_sight_ai.gui.custom_widgets.scene import (
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
             BitMapAnnotation,
             PolygonAnnotation,
         )
@@ -4699,9 +4701,11 @@ class Master_MainWindow(CelerSightMainWindow):
         Returns:
           None
         """
-        from celer_sight_ai.gui.custom_widgets.scene import (
-            BackgroundGraphicsItem,
+        from celer_sight_ai.gui.custom_widgets.viewer import (
             BitMapAnnotation,
+        )
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
+            BackgroundGraphicsItem,
         )
 
         self.loading_tile_inference_graphic_items = []
@@ -4722,9 +4726,9 @@ class Master_MainWindow(CelerSightMainWindow):
         if hasattr(self.viewer, "v_guide_magic_tool"):
             if self.viewer.v_guide_magic_tool in self.viewer._scene.items():
                 self.viewer._scene.removeItem(self.viewer.v_guide_magic_tool)
-        if self.viewer.i_am_drawing_state == True:
+        if self.viewer.i_am_drawing_state is True:
             self.viewer.completeDrawingPolygon()
-        if self.viewer.SkGb_during_drawing == True:
+        if self.viewer.SkGb_during_drawing is True:
             self.viewer.placeSkGbFinish(pos=None, COMPLETE=False)
         if self.viewer.aa_tool_draw and self.viewer.during_drawing_bbox:
             self.viewer.completeDrawing_Bounding_Box()
@@ -4798,7 +4802,7 @@ class Master_MainWindow(CelerSightMainWindow):
             logger.exception("Error deleting image with button")
 
     def load_all_current_image_annotations(self, img_uuid):
-        from celer_sight_ai.gui.custom_widgets.scene import (
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
             BitMapAnnotation,
             PolygonAnnotation,
         )
