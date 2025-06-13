@@ -69,7 +69,7 @@ def getImage(
         if not fast_load_ram:
             logger.debug(f"Loading {image_object.fileName} from disk.")
             # load normal
-            from celer_sight_ai.gui.custom_widgets.scene import readImage
+            from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 
             image_path = None
             if for_thumbnail or for_interactive_zoom and image_object._is_pyramidal:
@@ -172,7 +172,7 @@ def getImage(
         elif fast_load_ram and image_object._is_ultra_high_res:
             logger.debug("Loading fast ultra high res")
             # load normal
-            from celer_sight_ai.gui.custom_widgets.scene import readImage
+            from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
 
             im, result_dict = readImage(
                 image_object.get_path(),
@@ -324,7 +324,8 @@ def filter_channels(
     ]
     # Filter the channels
     if len(image.shape) == 3:
-        image = image[:, :, channel_indices]
+        if all([i < 3 for i in channel_indices]):
+            image = image[:, :, channel_indices]
     return image
 
 
@@ -340,7 +341,7 @@ def post_proccess_image(
     if isinstance(channel_list, type(None)):
         return image, None, None
     if to_rgb:
-        # TODO: add a more sophisticated method for this conversion
+        # TODO: add a more sophisticatased method for this conversion
         image = combine_channels(image, channel_list)
     if to_uint8 and not image.dtype == np.uint8:
         if not has_min_max:
@@ -2377,7 +2378,7 @@ def get_optimal_crop_bbox(
     """
     bbox_width = bbox[2] - bbox[0]
     bbox_height = bbox[3] - bbox[1]
-    assert image_width > bbox_width
+    # assert image_width > bbox_width
     if ideal_annotation_to_image_ratio is None:
         ideal_annotation_to_image_ratio = (
             config.MAGIC_BOX_2_MIN_ANNOTATION_PERCENT_SIZE

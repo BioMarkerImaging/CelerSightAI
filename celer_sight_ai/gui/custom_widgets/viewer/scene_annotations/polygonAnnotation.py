@@ -730,6 +730,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
         Initiates all points at the begining
         """
         logger.debug("init all points start")
+        from celer_sight_ai.gui.custom_widgets.viewer import GripItem
+
         iterator = 0
         self.m_items = []
         self.MyParent.blockSignals(True)
@@ -822,9 +824,10 @@ class PolygonAnnotation(QtWidgets.QGraphicsPathItem):
             item.setEnabled(True)
 
     def spawn_polygon_holes(self):
-        from celer_sight_ai.gui.custom_widgets.scene_objects.holeAnnotation import (
+        from celer_sight_ai.gui.custom_widgets.viewer import (
             HoleAnnotationItem,
         )
+
         if len(self.polygon_array) > 0:
             color = self.get_mask_color()
             for h in range(1, len(self.polygon_array)):

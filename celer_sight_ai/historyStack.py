@@ -685,7 +685,7 @@ class DeleteMaskCommand(QtGui.QUndoCommand):
         self.mask_pos = None
 
     def redo(self):
-        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer import PolygonAnnotation
 
         logger.info("redo running")
         for someItem in self.MainWindow.viewer._scene.items():
@@ -727,7 +727,7 @@ class DeleteMaskCommand(QtGui.QUndoCommand):
         - add the polygon item to dicitonary
         - add the qbuttonwidget for the mask
         """
-        from celer_sight_ai.gui.custom_widgets.viewer.scene import PolygonAnnotation
+        from celer_sight_ai.gui.custom_widgets.viewer import PolygonAnnotation
 
         # get image uuid from the mask uuid
         mask_obj = self.previous_mask_object

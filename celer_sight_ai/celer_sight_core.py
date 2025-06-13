@@ -4644,7 +4644,7 @@ class Master_MainWindow(CelerSightMainWindow):
         Args:
             object_dict (dict): _description_
         """
-        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
+        from celer_sight_ai.gui.custom_widgets.viewer import (
             BitMapAnnotation,
             PolygonAnnotation,
         )
@@ -4798,11 +4798,11 @@ class Master_MainWindow(CelerSightMainWindow):
         # delete the image and the button
         try:
             image_object.myButton.button_instance.deleteCurrentImage(reload_image=True)
-        except:
-            logger.exception("Error deleting image with button")
+        except Exception as e:
+            logger.exception(f"Error deleting image with button {e}")
 
     def load_all_current_image_annotations(self, img_uuid):
-        from celer_sight_ai.gui.custom_widgets.viewer.scene import (
+        from celer_sight_ai.gui.custom_widgets.viewer import (
             BitMapAnnotation,
             PolygonAnnotation,
         )

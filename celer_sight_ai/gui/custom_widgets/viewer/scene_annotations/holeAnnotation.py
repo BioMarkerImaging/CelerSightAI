@@ -1,5 +1,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+from celer_sight_ai import config
+
 
 class HoleAnnotationItem(QtWidgets.QGraphicsPathItem):
     def __init__(self, annotation_item, hole_array, array_index=None, color=None):

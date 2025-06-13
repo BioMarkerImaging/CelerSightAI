@@ -1094,11 +1094,30 @@ class UserConfig:
 visible_channel_cache = {}
 
 
-def update_visible_channel_cache(channel_name, is_checked):
+def update_visible_channel_cache(channel_name: str, is_checked: bool) -> None:
+    """Update the visibility state of a channel in the cache.
+
+    Args:
+        channel_name (str): The name of the channel to update
+        is_checked (bool): Whether the channel should be visible (True) or hidden (False)
+
+    Returns:
+        None
+    """
     visible_channel_cache[channel_name] = is_checked
 
 
-def get_visible_channel_cache(channel_name, non_cached_value):
+def get_visible_channel_cache(channel_name: str, non_cached_value: bool) -> bool:
+    """Get the visibility state of a channel from the cache.
+
+    Args:
+        channel_name (str): The name of the channel to check
+        non_cached_value (bool): The value to return if the channel is not in the cache
+
+
+    Returns:
+        bool: The visibility state of the channel
+    """
     if channel_name in visible_channel_cache:
         return visible_channel_cache[channel_name]
     return non_cached_value

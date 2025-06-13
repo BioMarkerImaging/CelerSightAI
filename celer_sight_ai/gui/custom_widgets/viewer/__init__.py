@@ -13,9 +13,12 @@ from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.bitmapAnnotation
 from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.CenterCircleItem import (
     CenterCircleGraphicsItem,
 )
+from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.gripItem import (
+    GripItem,
+)
+from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.holeAnnotation import (
+    HoleAnnotationItem,
+)
 from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.polygonAnnotation import (
     PolygonAnnotation,
-)
-from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.textGraphicItem import (
-    ClassGraphicsTextItem,
 )

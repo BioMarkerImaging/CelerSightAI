@@ -193,7 +193,7 @@ class TestImageImport(BaseImageTestCase):
         import time
 
         from celer_sight_ai import config
-        from celer_sight_ai.gui.custom_widgets.scene import readImage
+        from celer_sight_ai.gui.custom_widgets.viewer.scene import readImage
         from celer_sight_ai.io.image_reader import (
             create_pyramidal_tiff,
             get_deep_zoom_by_tiffslide,

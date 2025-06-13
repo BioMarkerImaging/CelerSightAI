@@ -1331,13 +1331,20 @@ class SamPredictorONNX:
                 logger.debug("Invalid Area")
             try:
                 # make sure mean color is similar
-                if any(
+
+                mean_val = (
                     abs(np.mean(image_arr[mask_arr]) - image_feature["mean_color"])
-                    >= (1 - (w.image_similarity_threshold_slider.value() / 100))
-                    * 255  # this might not be the best threshold
-                ):
-                    color_invalid = True
-                    logger.debug("Invalid Color")
+                    >= (1 - (w.image_similarity_threshold_slider.value() / 100)) * 255
+                )  # this might not be the best threshold
+                if isinstance(mean_val, list) or isinstance(mean_val, tuple):
+                    # case its an array
+                    if any(mean_val):
+                        color_invalid = True
+                        logger.debug("Invalid Color")
+                else:
+                    if mean_val:
+                        color_invalid = True
+                        logger.debug("Invalid Color")
             except Exception:
                 pass
         if size_invalid or area_invalid or color_invalid:
@@ -1478,9 +1485,12 @@ class SamPredictorONNX:
                         i * height_chunk : (i + 1) * height_chunk,
                         j * width_chunk : (j + 1) * width_chunk,
                     ]
-                    input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
-                        None, :, :, :
-                    ]
+                    if len(input_image_encoder.shape) == 3:
+                        input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
+                            None, :, :, :
+                        ]
+                    else:
+                        input_image_encoder = input_image_encoder[None, :, :]
                     input_image_encoder = self.preprocess(input_image_encoder).astype(
                         np.float32
                     )

@@ -1739,13 +1739,12 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         else:
             event.ignore()
 
-        return super(PhotoViewer, self).dragEnterEvent(event)
+        return super().dragEnterEvent(event)
 
     def hasPhoto(self):
         return not self._empty
 
     def fitImageInView(self):  # , scale=True):D
-
         image_object = self.MainWindow.DH.BLobj.get_current_image_object()
         if not image_object:
             return
@@ -1760,7 +1759,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 y_padding = image_object.SizeY * 0.25
                 self.scene().setSceneRect(
                     -image_object.SizeX - x_padding,
-                    -image_object.SizeX - y_padding,
+                    -image_object.SizeY
+                    - y_padding,  # BUG: This was using SizeX instead of SizeY
                     (3 * image_object.SizeX) + (2 * x_padding),
                     (3 * image_object.SizeY) + (2 * y_padding),
                 )
@@ -1795,7 +1795,9 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.groupPath.closeSubpath()
         return self.groupPath
 
-    def setPhoto_and_mask(self, pixmap=None):
+    def setPhoto_and_mask(self, pixmap: QtGui.QPixmap | None = None):
+        if pixmap is None:
+            return
         self._zoom = 0
         self.Cpixmap = pixmap
         self._empty = False
@@ -1824,7 +1826,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self.update()
         else:
             return
-        if fit_in_view_state == True:
+        if fit_in_view_state is True:
             pass
         else:
             pass
