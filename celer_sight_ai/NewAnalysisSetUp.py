@@ -51,8 +51,10 @@ class exitSaveDialog(exitSaveDialog_UI):
         """
         runs the saves as action
         """
-        self.MainWindow.save_celer_sight_file(
-            plab_object=self.MainWindow.DH.plab_object_user
+        from celer_sight_ai.save_load_celer_sight_file import save_celer_sight_file
+        save_celer_sight_file(
+            mainwindow=self,
+            filename=config.CURRENT_SAVE_FILE
         )
 
 
