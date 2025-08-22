@@ -75,7 +75,8 @@ class TestImageImport(BaseImageTestCase):
     def tifffile_loader_core(self, image_data):
         # test that all of the images that should be loaded are loaded correctly and the ones that should not are not
         for img_path in image_data.keys():
-
+            if img_path == "vs_sample_1.png":
+                print()
             logger.info("Testing image: " + img_path)
             try:
                 result, arr_metadata = read_specialized_image(img_path)

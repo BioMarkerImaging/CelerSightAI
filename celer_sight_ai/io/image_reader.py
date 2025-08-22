@@ -1769,6 +1769,24 @@ def read_specialized_image(
     IS_PYRAMIDAL = False
     IS_ULTRA_HIGH_RES = None
     IS_OME_TIFF = False
+
+    # for png, just read the image.
+    if tif_path.endswith(".png"):
+        import cv2
+
+        arr = cv2.imread(tif_path, cv2.IMREAD_UNCHANGED)
+        if arr.shape[2] == 4:
+            dict_out["channels"] = ["red", "green", "blue", "alpha"]
+        elif arr.shape[2] == 3:
+            dict_out["channels"] = ["red", "green", "blue"]
+        elif len(arr.shape) == 2:
+            dict_out["channels"] = ["gray"]
+        else:
+            raise ValueError(f"Unsupported image shape: {arr.shape}")
+        dict_out["size_x"] = arr.shape[1]
+        dict_out["size_y"] = arr.shape[0]
+        return arr, dict_out
+
     # test if its ome tiff
     with tifffile.TiffFile(tif_path) as tif:
         if tif.is_ome:

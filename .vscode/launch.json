@@ -52,7 +52,7 @@
             "program": "C:/Users/manos_p10dzie/Code/celer_sight_ai/celer_sight_ai/Celer Sight AI.py",
             "console": "integratedTerminal",
             "args": [
-                // "--offline"
+                "--offline"
             ]
         },
         {
@@ -66,7 +66,7 @@
             // },
             "args": [
                 // "--empty-local-dir",
-                // "--offline",
+                "--offline",
                 // "--run-tests-short"
                 // "--load-from-file",
                 // "/Users/mchaniotakis/Downloads/test_project_2.bmics"

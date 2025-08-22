@@ -152,12 +152,22 @@ class SamPredictorONNX:
     pixel_mean = np.array([123.675, 116.28, 103.53])[None, :, None, None]
     pixel_std = np.array([58.395, 57.12, 57.375])[None, :, None, None]
 
-    def __init__(self, MainWindow: any, encoder_path: str, decoder_path: str) -> None:
+    def __init__(
+        self,
+        MainWindow: any,
+        encoder_path: str,
+        decoder_path: str,
+        encoder_type: str = "sam2.1",
+    ) -> None:
         super().__init__()
         self.encoder = None
         self.decoder = None
         self.encoder_path = encoder_path
         self.decoder_path = decoder_path
+        self.encoder_type = encoder_type
+        self.high_resolution_features = None
+        self.low_resolution_features = None
+
         self.disable_tool()
 
         self.load_models()
@@ -268,6 +278,10 @@ class SamPredictorONNX:
                 sess_options_decoder.profile_file_prefix = (
                     "generic_model_profile_decoder"
                 )
+            encoder_path_with_version = "/Users/mchaniotakis/Downloads/sam2.1_small/sam2.1_small_preprocess.onnx"
+            decoder_path_with_version = (
+                "/Users/mchaniotakis/Downloads/sam2.1_small/sam2.1_small.onnx"
+            )
             self.encoder = onnxruntime.InferenceSession(
                 encoder_path_with_version,
                 providers=providers,
@@ -1479,39 +1493,49 @@ class SamPredictorONNX:
         width_chunk = input_image.shape[1] // upscale
         height_chunk = input_image.shape[0] // upscale
         if provided_features is None:
-            for i in range(upscale):
-                for j in range(upscale):
-                    input_image_encoder = input_image[
-                        i * height_chunk : (i + 1) * height_chunk,
-                        j * width_chunk : (j + 1) * width_chunk,
-                    ]
-                    if len(input_image_encoder.shape) == 3:
-                        input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
-                            None, :, :, :
-                        ]
-                    else:
-                        input_image_encoder = input_image_encoder[None, :, :]
-                    input_image_encoder = self.preprocess(input_image_encoder).astype(
-                        np.float32
-                    )
+            input_image_encoder = input_image[
+                0:height_chunk,
+                0:width_chunk,
+            ]
+            if len(input_image_encoder.shape) == 3:
+                input_image_encoder = input_image_encoder.transpose(2, 0, 1)[
+                    None, :, :, :
+                ]
+            else:
+                input_image_encoder = input_image_encoder[None, :, :]
+            input_image_encoder = self.preprocess(input_image_encoder).astype(
+                np.float32
+            )
 
-                    input_name = self.encoder.get_inputs()[0].name
+            if self.encoder_type == "sam2.1":
+                (
+                    embeded_features,
+                    self.high_resolution_features,
+                    self.low_resolution_features,
+                ) = self.encoder.run(
+                    None,
+                    {
+                        "input": np.expand_dims(input_image_encoder, 0).reshape(
+                            1, 3, self.img_size, self.img_size
+                        )
+                    },
+                )
+            else:
+                input_name = self.encoder.get_inputs()[0].name
 
-                    outputs = self.encoder.run(
-                        None,
-                        {
-                            input_name: np.expand_dims(input_image_encoder, 0).reshape(
-                                1, 3, self.img_size, self.img_size
-                            )
-                        },
-                    )
-                    total_output[:, :, i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64] = (
-                        outputs[0]
-                    )
+                outputs = self.encoder.run(
+                    None,
+                    {
+                        input_name: np.expand_dims(input_image_encoder, 0).reshape(
+                            1, 3, self.img_size, self.img_size
+                        )
+                    },
+                )
+                embeded_features = outputs[0]
         else:
-            total_output = provided_features
+            embeded_features = provided_features
         # features, adjusted points, input image, map_points_to_input_image
-        return total_output, points, input_image, map_points_to_input_image
+        return embeded_features, points, input_image, map_points_to_input_image
 
     def predict(
         self,
@@ -1533,17 +1557,34 @@ class SamPredictorONNX:
         # make sure all coords are constrained within 0 to img_size
         coords[..., 0] = np.clip(coords[..., 0], 0, self.img_size)
         coords[..., 1] = np.clip(coords[..., 1], 0, self.img_size)
+        if self.encoder_type == "sam2.1":
+            outputs = self.decoder.run(
+                None,
+                {
+                    "image_embeddings": features,
+                    "high_res_features1": self.high_resolution_features,
+                    "high_res_features2": self.low_resolution_features,
+                    "point_coords": coords.astype(np.float32),
+                    "point_labels": np.array(point_labels).astype(np.float32),
+                    "mask_input": np.zeros((1, 1, 256, 256), dtype=np.float32),
+                    "has_mask_input": np.array(
+                        [0.0], dtype=np.float32
+                    ),  # Array with shape [1] instead of scalar
+                    "orig_im_size": np.array([1024, 1024], dtype=np.int64),
+                },
+            )
+            scores, low_res_masks = outputs[1], outputs[0]
+        else:
+            outputs = self.decoder.run(
+                None,
+                {
+                    "image_embeddings": features,
+                    "point_coords": coords.astype(np.float32),
+                    "point_labels": np.array(point_labels).astype(np.float32),
+                },
+            )
 
-        outputs = self.decoder.run(
-            None,
-            {
-                "image_embeddings": features,
-                "point_coords": coords.astype(np.float32),
-                "point_labels": np.array(point_labels).astype(np.float32),
-            },
-        )
-
-        scores, low_res_masks = outputs[0], outputs[1]
+            scores, low_res_masks = outputs[0], outputs[1]
         if post_process:
             return self.post_process(low_res_masks, scores, coords=coords)
         else:
@@ -1707,7 +1748,6 @@ class sdknn_tool:
             )
 
             # config.global_signals.annotation_generator_stop_signal.connect(lambda)
-
             self.magic_box_2 = SamPredictorONNX(
                 MainWindow=self.MainWindow, encoder_path=part1, decoder_path=part2
             )

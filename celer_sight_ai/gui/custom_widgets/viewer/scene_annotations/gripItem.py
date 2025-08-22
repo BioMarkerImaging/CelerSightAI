@@ -2,7 +2,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 
 
 class GripItem(QtWidgets.QGraphicsPathItem):
-    def __init__(self, annotation_item=None, index=None, color=None):
+    def __init__(self, annotation_item=None, index=None, color=[0,0,0]):
         super().__init__()
         self.is_being_created = True
         self.circle = QtGui.QPainterPath()

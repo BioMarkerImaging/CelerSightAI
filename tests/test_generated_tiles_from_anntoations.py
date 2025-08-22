@@ -144,7 +144,9 @@ class TestAnnotationSizeForInfereceFromUI(BaseGuiTestCase):
                     bb_point_pair[0][0],
                     bb_point_pair[0][1],
                     bb_point_pair[1][0],
-                    bb_point_pair[1][1],]
+                    bb_point_pair[1][1],
+                ],
+            )
 
 
 if __name__ == "__main__":

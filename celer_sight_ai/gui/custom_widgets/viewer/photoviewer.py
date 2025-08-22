@@ -2536,16 +2536,17 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         )
         bbox_tile = list(bbox_tile)
 
-        # Adjust if out of bounds
-        if image_object.SizeX - bbox_tile[3] < 0:
-            difference = bbox_tile[3] - image_object.SizeY
-            bbox_tile[3] = int(bbox_tile[3] - difference)
-            bbox_tile[1] = int(max(0, bbox_tile[1] - difference))
-
-        if image_object.SizeY - bbox_tile[2] < 0:
-            difference = bbox_tile[2] - image_object.SizeX
+        # Adjust if bbox extends beyond right edge
+        if bbox_tile[0] + bbox_tile[2] > image_object.SizeX:
+            difference = (bbox_tile[0] + bbox_tile[2]) - image_object.SizeX
             bbox_tile[2] = int(bbox_tile[2] - difference)
             bbox_tile[0] = int(max(0, bbox_tile[0] - difference))
+
+        # Adjust if bbox extends beyond bottom edge  
+        if bbox_tile[1] + bbox_tile[3] > image_object.SizeY:
+            difference = (bbox_tile[1] + bbox_tile[3]) - image_object.SizeY
+            bbox_tile[3] = int(bbox_tile[3] - difference)
+            bbox_tile[1] = int(max(0, bbox_tile[1] - difference))
 
         # Make bbox square using largest dimension
         bbox_tile[2] = bbox_tile[3] = max(bbox_tile[2], bbox_tile[3])
@@ -5013,7 +5014,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         its a faster version of the draw polygon tool and the one currently used
         """
         import time
-
+        from celer_sight_ai.gui.custom_widgets.viewer.scene_annotations.gripItem import GripItem
         start = time.time()
         import cv2
         import numpy as np
@@ -5394,3 +5395,4 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         # self.viewer.update()
         self.during_drawing = True
         return
+

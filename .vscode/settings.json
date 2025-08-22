@@ -21,5 +21,8 @@
     ],
     "python.autoComplete.extraPaths": [
         "/Users/mchaniotakis/.vscode/extensions/continue.continue-0.0.412-darwin-arm64"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "/Users/mchaniotakis/.vscode/extensions/continue.continue-0.0.412-darwin-arm64"
     ]
 }

@@ -116,6 +116,12 @@ class BaseImageTestCase(BaseTestCase):
         # Define base dictionary with relative paths
         all_files = {
             # AS_09125_050118150001_A03f00d0.DIB
+            "vs_sample_1.png": {
+                "channels": ["red", "green", "blue", "alpha"],
+                "size_x": 1965,
+                "size_y": 643,
+                "readable": True,
+            },
             "PIR3_L1_TMRE_Image015.tif": {
                 "channels": ["red", "green", "blue"],
                 "size_x": 1392,
